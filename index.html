@@ -2,1484 +2,920 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Hanzi Lad Simulator</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: #0a0a0f;
-            color: #fff;
-            font-family: 'Orbitron', sans-serif;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-        }
-
-        #game-container {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* ===== STARFIELD BACKGROUND ===== */
-        .stars {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ===== TITLE SCREEN ===== */
-        #title-screen {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            background: radial-gradient(ellipse at center, #1a0030 0%, #0a0a0f 70%);
-        }
-
-        #title-screen h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 4rem;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ff006e, #ff6b35, #ffbe0b, #ff006e);
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: gradientShift 3s ease infinite, titlePulse 2s ease-in-out infinite;
-            text-shadow: 0 0 40px rgba(255, 0, 110, 0.5);
-            filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.5));
-            margin-bottom: 10px;
-        }
-
-        #title-screen .subtitle {
-            font-size: 1rem;
-            color: #ff6b35;
-            letter-spacing: 4px;
-            margin-bottom: 50px;
-            opacity: 0.8;
-        }
-
-        .start-btn {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            padding: 15px 50px;
-            border: 2px solid #ff006e;
-            background: transparent;
-            color: #ff006e;
-            cursor: pointer;
-            letter-spacing: 3px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .start-btn:hover {
-            background: #ff006e;
-            color: #fff;
-            box-shadow: 0 0 30px rgba(255, 0, 110, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
-        }
-
-        .start-btn::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            animation: shimmer 3s infinite;
-        }
-
-        /* ===== GAME HUD ===== */
-        #game-hud {
-            display: none;
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 10;
-        }
-
-        .hud-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            padding: 20px 30px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-        }
-
-        .stat-bars {
-            display: flex;
-            gap: 20px;
-        }
-
-        .stat-bar {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .stat-bar label {
-            font-size: 0.6rem;
-            letter-spacing: 2px;
-            opacity: 0.7;
-        }
-
-        .stat-bar .bar-container {
-            width: 120px;
-            height: 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .stat-bar .bar-fill {
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.5s ease;
-            position: relative;
-        }
-
-        .bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 50%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.3), transparent);
-            border-radius: 6px 6px 0 0;
-        }
-
-        .stat-bar .bar-value {
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .bar-styrke .bar-fill { background: linear-gradient(90deg, #ff006e, #ff4d8d); }
-        .bar-style .bar-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-        .bar-charm .bar-fill { background: linear-gradient(90deg, #ffbe0b, #ffd966); }
-        .bar-energi .bar-fill { background: linear-gradient(90deg, #00d4aa, #34ebc6); }
-
-        .day-counter {
-            text-align: right;
-        }
-
-        .day-counter .day {
-            font-size: 1.5rem;
-            font-weight: 900;
-            color: #ff006e;
-        }
-
-        .day-counter .money {
-            font-size: 0.9rem;
-            color: #ffbe0b;
-            margin-top: 5px;
-        }
-
-        /* ===== MAIN AREA ===== */
-        .game-main {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: calc(100vh - 100px);
-            padding: 20px;
-        }
-
-        /* ===== CHARACTER ===== */
-        .character-display {
-            position: relative;
-            margin-bottom: 30px;
-        }
-
-        #character-canvas {
-            image-rendering: pixelated;
-        }
-
-        .character-name {
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #ff006e;
-            margin-top: 10px;
-            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
-        }
-
-        .character-mood {
-            text-align: center;
-            font-size: 0.7rem;
-            color: #aaa;
-            margin-top: 5px;
-        }
-
-        /* ===== ACTION BUTTONS ===== */
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            max-width: 600px;
-            width: 100%;
-        }
-
-        .action-btn {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 20px 15px;
-            border: 1px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.05);
-            color: #fff;
-            cursor: pointer;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-            letter-spacing: 1px;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
-        }
-
-        .action-btn .icon {
-            font-size: 2rem;
-        }
-
-        .action-btn.gym:hover { border-color: #ff006e; background: rgba(255, 0, 110, 0.15); }
-        .action-btn.style:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.15); }
-        .action-btn.charm:hover { border-color: #ffbe0b; background: rgba(255, 190, 11, 0.15); }
-        .action-btn.work:hover { border-color: #00d4aa; background: rgba(0, 212, 170, 0.15); }
-        .action-btn.rest:hover { border-color: #60a5fa; background: rgba(96, 165, 250, 0.15); }
-        .action-btn.club:hover { border-color: #ff006e; background: rgba(255, 0, 110, 0.2); box-shadow: 0 0 40px rgba(255, 0, 110, 0.3); }
-
-        .action-btn.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        .action-btn .cost {
-            font-size: 0.55rem;
-            opacity: 0.5;
-        }
-
-        /* ===== EVENT LOG ===== */
-        .event-log {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .event-message {
-            font-size: 0.75rem;
-            padding: 12px 20px;
-            background: rgba(0,0,0,0.7);
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            animation: fadeInUp 0.5s ease;
-            line-height: 1.5;
-        }
-
-        /* ===== CLUB SCENE ===== */
-        #club-scene {
-            display: none;
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 20;
-            background: #0a0010;
-            overflow: hidden;
-        }
-
-        .club-bg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-        }
-
-        #club-canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        .club-ui {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 30px;
-            z-index: 2;
-        }
-
-        .club-dialogue {
-            max-width: 500px;
-            width: 90%;
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid rgba(255, 0, 110, 0.3);
-            border-radius: 16px;
-            padding: 25px;
-            backdrop-filter: blur(20px);
-            margin-bottom: 20px;
-        }
-
-        .club-dialogue .speaker {
-            font-size: 0.7rem;
-            color: #ff006e;
-            letter-spacing: 2px;
-            margin-bottom: 10px;
-        }
-
-        .club-dialogue .text {
-            font-size: 0.8rem;
-            line-height: 1.6;
-            color: #ddd;
-        }
-
-        .club-choices {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-width: 500px;
-            width: 90%;
-            margin-bottom: 30px;
-        }
-
-        .club-choice {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            padding: 14px 20px;
-            border: 1px solid rgba(255, 0, 110, 0.3);
-            background: rgba(255, 0, 110, 0.08);
-            color: #fff;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            text-align: left;
-            letter-spacing: 1px;
-        }
-
-        .club-choice:hover {
-            border-color: #ff006e;
-            background: rgba(255, 0, 110, 0.2);
-            transform: translateX(5px);
-        }
-
-        .club-back-btn {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.65rem;
-            padding: 10px 25px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.05);
-            color: #aaa;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-            letter-spacing: 2px;
-        }
-
-        .club-back-btn:hover {
-            border-color: #fff;
-            color: #fff;
-        }
-
-        /* ===== RESULT SCREEN ===== */
-        #result-screen {
-            display: none;
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 30;
-            background: rgba(0,0,0,0.95);
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .result-content {
-            text-align: center;
-        }
-
-        .result-content .result-icon {
-            font-size: 5rem;
-            margin-bottom: 20px;
-        }
-
-        .result-content h2 {
-            font-size: 2rem;
-            font-weight: 900;
-            margin-bottom: 15px;
-        }
-
-        .result-content p {
-            font-size: 0.85rem;
-            color: #aaa;
-            max-width: 400px;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-
-        .result-content .score-display {
-            font-size: 1.5rem;
-            color: #ffbe0b;
-            margin-bottom: 30px;
-        }
-
-        /* ===== ANIMATIONS ===== */
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        @keyframes titlePulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) rotate(45deg); }
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes neonFlicker {
-            0%, 100% { opacity: 1; }
-            92% { opacity: 1; }
-            93% { opacity: 0.8; }
-            94% { opacity: 1; }
-            96% { opacity: 0.9; }
-            97% { opacity: 1; }
-        }
-
-        .float-text {
-            position: absolute;
-            font-size: 0.8rem;
-            font-weight: 700;
-            pointer-events: none;
-            animation: floatUp 1.5s ease forwards;
-            z-index: 100;
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
-        }
-
-        /* ===== HANZI ENTRANCE ===== */
-        .hanzi-title-art {
-            margin-bottom: 30px;
-            animation: hanziFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes hanziFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 600px) {
-            #title-screen h1 { font-size: 2.2rem; }
-            .action-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .stat-bars { flex-wrap: wrap; gap: 10px; }
-            .stat-bar .bar-container { width: 80px; }
-            .hud-top { padding: 10px 15px; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#0a0a0f;color:#fff;font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:none;user-select:none;-webkit-user-select:none;}
+        #app{width:100vw;height:100vh;position:relative;overflow:hidden;}
+
+        /* ===== TITLE ===== */
+        #title{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#1a0030,#0a0a0f 70%);z-index:10;}
+        #title h1{font-family:'Orbitron',sans-serif;font-size:clamp(2.5rem,9vw,5rem);font-weight:900;background:linear-gradient(135deg,#ff006e,#ff6b35,#ffbe0b,#ff006e);background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:grad 3s ease infinite;filter:drop-shadow(0 0 25px rgba(255,0,110,0.4));margin-bottom:6px;}
+        #title .sub{font-family:'Orbitron',sans-serif;font-size:clamp(0.5rem,2vw,0.9rem);color:#ff6b35;letter-spacing:6px;margin-bottom:15px;opacity:0.7;}
+        #title .tagline{font-size:clamp(0.6rem,1.8vw,0.8rem);color:#aaa;margin-bottom:35px;text-align:center;max-width:80%;line-height:1.6;}
+        .btn{font-family:'Orbitron',sans-serif;font-size:clamp(0.75rem,2vw,1rem);font-weight:700;padding:14px 40px;border:2px solid #ff006e;background:transparent;color:#ff006e;cursor:pointer;letter-spacing:3px;transition:all 0.3s;border-radius:6px;-webkit-tap-highlight-color:transparent;}
+        .btn:active{background:#ff006e;color:#fff;transform:scale(0.96);}
+        .btn-sm{font-size:clamp(0.6rem,1.5vw,0.75rem);padding:10px 24px;letter-spacing:2px;}
+        .btn-green{border-color:#00d4aa;color:#00d4aa;}
+        .btn-green:active{background:#00d4aa;color:#000;}
+        .btn-purple{border-color:#8b5cf6;color:#8b5cf6;}
+        .btn-purple:active{background:#8b5cf6;color:#fff;}
+
+        /* ===== PHONE CALL ===== */
+        #phone-scene{position:absolute;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:#0a0a0f;z-index:10;}
+        .phone{width:min(340px,88vw);height:min(620px,85vh);background:#1a1a2e;border-radius:30px;border:3px solid #2a2a3e;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+        .phone-top{background:#111;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2a2a3e;}
+        .phone-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;}
+        .phone-name{font-weight:700;font-size:0.85rem;}
+        .phone-status{font-size:0.6rem;color:#00d4aa;}
+        .phone-msgs{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
+        .msg-bubble{max-width:82%;padding:10px 14px;border-radius:16px;font-size:clamp(0.7rem,1.8vw,0.82rem);line-height:1.5;animation:msgIn 0.3s ease;word-wrap:break-word;}
+        .msg-in{background:#2a2a3e;border-bottom-left-radius:4px;align-self:flex-start;color:#ddd;}
+        .msg-out{background:#ff006e;border-bottom-right-radius:4px;align-self:flex-end;color:#fff;}
+        .msg-narrator{background:transparent;align-self:center;color:#666;font-size:0.65rem;font-style:italic;text-align:center;}
+        .phone-bottom{padding:12px 16px;border-top:1px solid #2a2a3e;display:flex;justify-content:center;}
+        .phone-continue{font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:700;padding:10px 28px;border:1px solid #ff006e;background:rgba(255,0,110,0.1);color:#ff006e;cursor:pointer;border-radius:20px;transition:all 0.2s;-webkit-tap-highlight-color:transparent;letter-spacing:0.5px;}
+        .phone-continue:active{background:#ff006e;color:#fff;}
+        @keyframes msgIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+        /* ===== MAP ===== */
+        #map-screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;background:#0a0a12;z-index:10;}
+        .map-hud{padding:10px 15px;background:rgba(0,0,0,0.6);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);}
+        .stats-wrap{display:flex;gap:8px;flex-wrap:wrap;}
+        .mini-stat{display:flex;flex-direction:column;align-items:center;gap:2px;}
+        .mini-stat label{font-family:'Orbitron',sans-serif;font-size:0.4rem;letter-spacing:1px;opacity:0.5;}
+        .mini-stat .track{width:clamp(44px,10vw,75px);height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
+        .mini-stat .fill{height:100%;border-radius:4px;transition:width 0.5s;}
+        .mini-stat .val{font-family:'Orbitron',sans-serif;font-size:0.45rem;font-weight:700;color:#ddd;}
+        .hud-info{text-align:right;font-family:'Orbitron',sans-serif;}
+        .hud-info .day-timer{font-size:clamp(0.65rem,1.8vw,0.85rem);font-weight:900;color:#ff006e;}
+        .hud-info .money{font-size:clamp(0.55rem,1.5vw,0.75rem);color:#ffbe0b;margin-top:2px;}
+        .hud-info .energi{font-size:0.5rem;color:#00d4aa;margin-top:2px;}
+
+        .map-area{flex:1;position:relative;overflow:hidden;}
+        .map-bg{position:absolute;top:0;left:0;width:100%;height:100%;}
+        .map-bg canvas{width:100%;height:100%;}
+
+        .map-locations{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:12px;padding:15px;}
+        .loc-card{width:clamp(120px,28vw,155px);height:clamp(130px,22vh,160px);background:rgba(15,15,30,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:all 0.3s;backdrop-filter:blur(10px);-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;}
+        .loc-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 50% 30%,var(--glow) 0%,transparent 70%);opacity:0.08;transition:opacity 0.3s;}
+        .loc-card:active{transform:scale(0.95);border-color:var(--glow);}
+        .loc-card:active::before{opacity:0.2;}
+        .loc-card .loc-icon{font-size:2.2rem;}
+        .loc-card .loc-name{font-family:'Orbitron',sans-serif;font-size:clamp(0.5rem,1.3vw,0.65rem);font-weight:700;letter-spacing:1px;}
+        .loc-card .loc-cost{font-size:0.5rem;opacity:0.4;}
+        .loc-card.locked{opacity:0.3;pointer-events:none;}
+        .loc-card .loc-badge{position:absolute;top:8px;right:8px;font-size:0.45rem;font-family:'Orbitron',sans-serif;padding:2px 6px;border-radius:8px;font-weight:700;}
+
+        .map-msg{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);max-width:90%;text-align:center;font-size:clamp(0.6rem,1.5vw,0.72rem);padding:10px 18px;background:rgba(0,0,0,0.8);border-radius:12px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px);opacity:0;transition:opacity 0.4s;pointer-events:none;line-height:1.5;}
+        .map-msg.show{opacity:1;}
+
+        /* ===== LOCATION OVERLAYS ===== */
+        .overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:20;background:rgba(5,5,15,0.97);padding:15px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+        .ov-title{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,3vw,1.4rem);font-weight:900;letter-spacing:3px;margin:10px 0 5px;}
+        .ov-sub{font-size:0.6rem;color:#aaa;margin-bottom:15px;text-align:center;}
+
+        /* GYM */
+        .gym-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px;width:100%;}
+        .gym-card{padding:16px 12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);border-radius:14px;cursor:pointer;transition:all 0.25s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;}
+        .gym-card:active{transform:scale(0.96);border-color:#ff006e;background:rgba(255,0,110,0.1);}
+        .gym-card .gi{font-size:2rem;}
+        .gym-card .gn{font-family:'Orbitron',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:1px;}
+        .gym-card .gs{font-size:0.5rem;opacity:0.4;}
+        .gym-card .gl{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#ffbe0b;margin-top:2px;}
+
+        /* TRAINING */
+        #train-ov .train-area{display:flex;flex-direction:column;align-items:center;width:100%;}
+        #train-ov canvas{max-width:100%;border-radius:12px;margin:10px 0;}
+        .train-info{display:flex;justify-content:space-between;width:100%;max-width:380px;margin-bottom:5px;}
+        .train-info span{font-family:'Orbitron',sans-serif;font-size:0.65rem;}
+        .train-instr{font-size:0.6rem;color:#aaa;text-align:center;margin-top:8px;letter-spacing:0.5px;}
+        .train-result{text-align:center;margin-top:20px;}
+        .train-result h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.3rem,4vw,2rem);margin-bottom:8px;}
+        .train-result .xp-gain{font-family:'Orbitron',sans-serif;font-size:clamp(0.9rem,2.5vw,1.2rem);color:#ffbe0b;margin-bottom:6px;}
+        .train-result .grade{font-size:0.7rem;color:#aaa;margin-bottom:20px;}
+
+        /* SHOP */
+        .shop-list{display:flex;flex-direction:column;gap:8px;max-width:400px;width:100%;max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:5px;}
+        .shop-row{padding:12px 14px;border:1px solid rgba(139,92,246,0.2);background:rgba(139,92,246,0.04);border-radius:12px;cursor:pointer;transition:all 0.25s;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent;}
+        .shop-row:active{border-color:#8b5cf6;background:rgba(139,92,246,0.12);transform:scale(0.98);}
+        .shop-row.bought{opacity:0.25;pointer-events:none;}
+        .sr-left{display:flex;align-items:center;gap:10px;}
+        .sr-icon{font-size:1.3rem;}
+        .sr-name{font-size:0.7rem;font-weight:700;}
+        .sr-stat{font-size:0.5rem;color:#8b5cf6;}
+        .sr-price{font-family:'Orbitron',sans-serif;font-size:0.65rem;color:#ffbe0b;font-weight:700;}
+
+        /* CLUB */
+        #club-ov{background:rgba(10,0,16,0.98);}
+        #club-ov canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;}
+        .club-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%;padding:15px;}
+        .club-girl-card{text-align:center;margin-bottom:10px;}
+        .club-girl-card .cg-icon{font-size:3rem;}
+        .club-girl-card .cg-name{font-family:'Orbitron',sans-serif;font-size:0.85rem;font-weight:900;color:#ff006e;margin-top:4px;}
+        .club-girl-card .cg-diff{font-size:0.5rem;color:#aaa;letter-spacing:1px;}
+        .club-box{max-width:460px;width:95%;background:rgba(0,0,0,0.85);border:1px solid rgba(255,0,110,0.2);border-radius:14px;padding:16px;backdrop-filter:blur(15px);margin-bottom:10px;}
+        .club-box .cb-speaker{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#ff006e;letter-spacing:2px;margin-bottom:6px;}
+        .club-box .cb-text{font-size:clamp(0.65rem,1.7vw,0.78rem);line-height:1.6;color:#ddd;}
+        .club-choices{display:flex;flex-direction:column;gap:8px;max-width:460px;width:95%;margin-bottom:12px;}
+        .club-ch{font-family:'Inter',sans-serif;font-size:clamp(0.6rem,1.5vw,0.7rem);padding:12px 14px;border:1px solid rgba(255,0,110,0.2);background:rgba(255,0,110,0.05);color:#ddd;cursor:pointer;border-radius:10px;transition:all 0.25s;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent;}
+        .club-ch:active{border-color:#ff006e;background:rgba(255,0,110,0.15);transform:scale(0.98);}
+        .club-ch .ch-pct{font-family:'Orbitron',sans-serif;font-size:0.55rem;font-weight:700;white-space:nowrap;padding:3px 8px;border-radius:6px;}
+        .pct-high{color:#00d4aa;background:rgba(0,212,170,0.12);}
+        .pct-mid{color:#ffbe0b;background:rgba(255,190,11,0.12);}
+        .pct-low{color:#ff006e;background:rgba(255,0,110,0.12);}
+
+        /* WORK */
+        .work-options{display:flex;flex-direction:column;gap:10px;max-width:400px;width:100%;margin-top:10px;}
+        .work-card{padding:16px;border:1px solid rgba(0,212,170,0.2);background:rgba(0,212,170,0.04);border-radius:12px;cursor:pointer;transition:all 0.25s;-webkit-tap-highlight-color:transparent;}
+        .work-card:active{border-color:#00d4aa;background:rgba(0,212,170,0.12);transform:scale(0.98);}
+        .work-card .wk-name{font-weight:700;font-size:0.75rem;margin-bottom:4px;}
+        .work-card .wk-info{font-size:0.55rem;color:#aaa;}
+
+        /* RESULT */
+        #result-ov{justify-content:center;}
+        .result-box{text-align:center;}
+        .result-box .r-icon{font-size:4rem;margin-bottom:15px;}
+        .result-box h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,5vw,2.5rem);margin-bottom:10px;}
+        .result-box .r-desc{font-size:0.75rem;color:#aaa;max-width:360px;line-height:1.6;margin:0 auto 20px;}
+        .result-box .r-score{font-family:'Orbitron',sans-serif;font-size:clamp(0.8rem,2vw,1rem);color:#ffbe0b;margin-bottom:25px;}
+
+        /* LETH TIPS */
+        .leth-tip{display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);max-width:90%;width:380px;background:rgba(0,0,0,0.9);border:1px solid rgba(0,212,170,0.3);border-radius:14px;padding:14px 16px;z-index:25;animation:msgIn 0.3s ease;}
+        .leth-tip .lt-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+        .leth-tip .lt-avi{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00d4aa,#047857);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;}
+        .leth-tip .lt-name{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#00d4aa;letter-spacing:1px;}
+        .leth-tip .lt-text{font-size:0.7rem;line-height:1.5;color:#ccc;}
+        .leth-tip .lt-close{font-family:'Orbitron',sans-serif;font-size:0.5rem;padding:6px 16px;border:1px solid rgba(0,212,170,0.3);background:transparent;color:#00d4aa;cursor:pointer;border-radius:8px;margin-top:10px;-webkit-tap-highlight-color:transparent;}
+
+        /* FLOAT TEXT */
+        .float-text{position:fixed;font-family:'Orbitron',sans-serif;font-size:clamp(0.8rem,2.2vw,1.1rem);font-weight:900;pointer-events:none;z-index:100;animation:floatUp 1.2s ease forwards;text-shadow:0 0 10px currentColor;}
+        @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-50px) scale(1.3);}}
+        @keyframes grad{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <!-- STARFIELD -->
-        <canvas class="stars" id="starfield"></canvas>
+<div id="app">
 
-        <!-- TITLE SCREEN -->
-        <div id="title-screen">
-            <div class="hanzi-title-art">
-                <canvas id="title-character" width="160" height="200"></canvas>
+    <!-- TITLE -->
+    <div id="title">
+        <h1>HANZI LAD</h1>
+        <div class="sub">S I M U L A T O R</div>
+        <div class="tagline">Hanzi var engang nummer 1. Nu starter comebacket.</div>
+        <button class="btn" id="start-btn">START</button>
+    </div>
+
+    <!-- PHONE SCENE -->
+    <div id="phone-scene">
+        <div class="phone">
+            <div class="phone-top">
+                <div class="phone-avatar">L</div>
+                <div><div class="phone-name">Leth 💪</div><div class="phone-status">Online</div></div>
             </div>
-            <h1>HANZI LAD</h1>
-            <div class="subtitle">S I M U L A T O R</div>
-            <button class="start-btn" onclick="startGame()">START SPILLET</button>
-        </div>
-
-        <!-- GAME HUD -->
-        <div id="game-hud">
-            <div class="hud-top">
-                <div class="stat-bars">
-                    <div class="stat-bar bar-styrke">
-                        <label>STYRKE</label>
-                        <div class="bar-container"><div class="bar-fill" id="bar-styrke" style="width:10%"></div></div>
-                        <div class="bar-value" id="val-styrke">10</div>
-                    </div>
-                    <div class="stat-bar bar-style">
-                        <label>STYLE</label>
-                        <div class="bar-container"><div class="bar-fill" id="bar-style" style="width:10%"></div></div>
-                        <div class="bar-value" id="val-style">10</div>
-                    </div>
-                    <div class="stat-bar bar-charm">
-                        <label>CHARM</label>
-                        <div class="bar-container"><div class="bar-fill" id="bar-charm" style="width:10%"></div></div>
-                        <div class="bar-value" id="val-charm">10</div>
-                    </div>
-                    <div class="stat-bar bar-energi">
-                        <label>ENERGI</label>
-                        <div class="bar-container"><div class="bar-fill" id="bar-energi" style="width:100%"></div></div>
-                        <div class="bar-value" id="val-energi">100</div>
-                    </div>
-                </div>
-                <div class="day-counter">
-                    <div class="day">DAG <span id="day-num">1</span></div>
-                    <div class="money" id="money-display">0 KR</div>
-                </div>
-            </div>
-
-            <div class="game-main">
-                <div class="character-display">
-                    <canvas id="character-canvas" width="160" height="200"></canvas>
-                    <div class="character-name">HANZI</div>
-                    <div class="character-mood" id="char-mood">Klar til at grinde</div>
-                </div>
-
-                <div class="action-grid">
-                    <button class="action-btn gym" onclick="doAction('gym')">
-                        <span class="icon">💪</span>
-                        GYM
-                        <span class="cost">-20 energi</span>
-                    </button>
-                    <button class="action-btn style" onclick="doAction('style')">
-                        <span class="icon">👔</span>
-                        STYLE
-                        <span class="cost">-15 energi, -50 kr</span>
-                    </button>
-                    <button class="action-btn charm" onclick="doAction('charm')">
-                        <span class="icon">🗣️</span>
-                        CHARM
-                        <span class="cost">-15 energi</span>
-                    </button>
-                    <button class="action-btn work" onclick="doAction('work')">
-                        <span class="icon">💰</span>
-                        ARBEJDE
-                        <span class="cost">-30 energi</span>
-                    </button>
-                    <button class="action-btn rest" onclick="doAction('rest')">
-                        <span class="icon">😴</span>
-                        HVILE
-                        <span class="cost">Ny dag</span>
-                    </button>
-                    <button class="action-btn club" onclick="doAction('club')">
-                        <span class="icon">🪩</span>
-                        KLUBBEN
-                        <span class="cost">-50 energi, -100 kr</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="event-log">
-                <div class="event-message" id="event-msg">Yo Hanzi! Tid til at grinde og blive klar til klubben, bror!</div>
-            </div>
-        </div>
-
-        <!-- CLUB SCENE -->
-        <div id="club-scene">
-            <div class="club-bg">
-                <canvas id="club-canvas"></canvas>
-            </div>
-            <div class="club-ui">
-                <div class="club-dialogue">
-                    <div class="speaker" id="club-speaker">???</div>
-                    <div class="text" id="club-text"></div>
-                </div>
-                <div class="club-choices" id="club-choices"></div>
-                <button class="club-back-btn" onclick="leaveClub()">SMUT FRA KLUBBEN</button>
-            </div>
-        </div>
-
-        <!-- RESULT SCREEN -->
-        <div id="result-screen">
-            <div class="result-content">
-                <div class="result-icon" id="result-icon"></div>
-                <h2 id="result-title"></h2>
-                <p id="result-text"></p>
-                <div class="score-display" id="result-score"></div>
-                <button class="start-btn" onclick="restartGame()">PRØV IGEN</button>
+            <div class="phone-msgs" id="phone-msgs"></div>
+            <div class="phone-bottom">
+                <button class="phone-continue" id="phone-next">Fortsæt ▶</button>
             </div>
         </div>
     </div>
 
-    <script>
-    // ===== AUDIO ENGINE =====
-    const AudioEngine = {
-        ctx: null,
-        masterGain: null,
-        musicGain: null,
-        sfxGain: null,
-        isPlaying: false,
-        currentOscs: [],
+    <!-- MAP -->
+    <div id="map-screen">
+        <div class="map-hud">
+            <div class="stats-wrap" id="hud-stats"></div>
+            <div class="hud-info">
+                <div class="day-timer" id="hud-timer">KLUB OM 7 DAGE</div>
+                <div class="money" id="hud-money">200 KR</div>
+                <div class="energi" id="hud-energi">ENERGI: 5/5</div>
+            </div>
+        </div>
+        <div class="map-area">
+            <div class="map-bg"><canvas id="map-canvas"></canvas></div>
+            <div class="map-locations" id="map-locs"></div>
+            <div class="map-msg" id="map-msg"></div>
+            <div class="leth-tip" id="leth-tip">
+                <div class="lt-header"><div class="lt-avi">L</div><div class="lt-name">LETH</div></div>
+                <div class="lt-text" id="lt-text"></div>
+                <button class="lt-close" id="lt-close">OK 👊</button>
+            </div>
+        </div>
+    </div>
 
-        init() {
-            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-            this.masterGain = this.ctx.createGain();
-            this.masterGain.gain.value = 0.3;
-            this.masterGain.connect(this.ctx.destination);
+    <!-- GYM -->
+    <div class="overlay" id="gym-ov">
+        <div class="ov-title" style="color:#ff006e;">💪 FITNESSCENTER</div>
+        <div class="ov-sub">Vælg en øvelse (-1 energi)</div>
+        <div class="gym-grid" id="gym-grid"></div>
+        <button class="btn btn-sm" style="margin-top:18px;" onclick="closeOv()">GÅ UD</button>
+    </div>
 
-            this.musicGain = this.ctx.createGain();
-            this.musicGain.gain.value = 0.15;
-            this.musicGain.connect(this.masterGain);
+    <!-- TRAINING -->
+    <div class="overlay" id="train-ov">
+        <div class="train-area">
+            <div class="train-info"><span id="t-title" style="color:#ff006e;"></span><span id="t-score" style="color:#ffbe0b;"></span></div>
+            <canvas id="t-canvas" width="360" height="360"></canvas>
+            <div class="train-instr" id="t-instr"></div>
+            <div id="t-result"></div>
+        </div>
+    </div>
 
-            this.sfxGain = this.ctx.createGain();
-            this.sfxGain.gain.value = 0.4;
-            this.sfxGain.connect(this.masterGain);
-        },
+    <!-- SHOP -->
+    <div class="overlay" id="shop-ov">
+        <div class="ov-title" style="color:#8b5cf6;">👔 STYLE SHOP</div>
+        <div class="ov-sub">Upgrade din look</div>
+        <div class="shop-list" id="shop-list"></div>
+        <button class="btn btn-sm btn-purple" style="margin-top:15px;" onclick="closeOv()">GÅ UD</button>
+    </div>
 
-        playNote(freq, duration, type = 'square', gainNode = this.sfxGain, volume = 0.3) {
-            if (!this.ctx) return;
-            const osc = this.ctx.createOscillator();
-            const gain = this.ctx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(volume, this.ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(gainNode);
-            osc.start();
-            osc.stop(this.ctx.currentTime + duration);
-        },
+    <!-- WORK -->
+    <div class="overlay" id="work-ov">
+        <div class="ov-title" style="color:#00d4aa;">💰 ARBEJDE</div>
+        <div class="ov-sub">Tjen penge (-1 energi)</div>
+        <div class="work-options" id="work-opts"></div>
+        <button class="btn btn-sm btn-green" style="margin-top:18px;" onclick="closeOv()">GÅ HJEM</button>
+    </div>
 
-        sfxClick() {
-            this.playNote(800, 0.08, 'square');
-            setTimeout(() => this.playNote(1200, 0.06, 'square'), 40);
-        },
+    <!-- CLUB -->
+    <div class="overlay" id="club-ov">
+        <canvas id="club-canvas"></canvas>
+        <div class="club-content">
+            <div class="club-girl-card" id="club-girl-info"></div>
+            <div class="club-box"><div class="cb-speaker" id="cb-speaker"></div><div class="cb-text" id="cb-text"></div></div>
+            <div class="club-choices" id="club-choices"></div>
+            <button class="btn btn-sm" id="club-leave" style="display:none;" onclick="leaveClub()">SMUT HJEM</button>
+        </div>
+    </div>
 
-        sfxSuccess() {
-            this.playNote(523, 0.15, 'square');
-            setTimeout(() => this.playNote(659, 0.15, 'square'), 100);
-            setTimeout(() => this.playNote(784, 0.2, 'square'), 200);
-        },
+    <!-- RESULT -->
+    <div class="overlay" id="result-ov">
+        <div class="result-box" id="result-box"></div>
+    </div>
+</div>
 
-        sfxFail() {
-            this.playNote(400, 0.2, 'sawtooth');
-            setTimeout(() => this.playNote(300, 0.3, 'sawtooth'), 150);
-        },
+<script>
+// ===== AUDIO =====
+const S={ctx:null,mg:null,oscs:[],playing:false,
+init(){this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.mg=this.ctx.createGain();this.mg.gain.value=0.25;this.mg.connect(this.ctx.destination);},
+n(f,d,t='square',v=0.3){if(!this.ctx)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d);o.connect(g);g.connect(this.mg);o.start();o.stop(this.ctx.currentTime+d);},
+click(){this.n(800,0.06);setTimeout(()=>this.n(1200,0.05),30);},
+ok(){this.n(523,0.12);setTimeout(()=>this.n(659,0.12),80);setTimeout(()=>this.n(784,0.15),160);},
+bad(){this.n(350,0.15,'sawtooth');setTimeout(()=>this.n(260,0.2,'sawtooth'),120);},
+perf(){this.n(784,0.1);setTimeout(()=>this.n(988,0.1),60);setTimeout(()=>this.n(1175,0.15),120);},
+coin(){for(let i=0;i<4;i++)setTimeout(()=>this.n(900+i*200,0.06,'sine'),i*40);},
+ring(){for(let i=0;i<3;i++)setTimeout(()=>{this.n(880,0.15,'sine',0.2);setTimeout(()=>this.n(1100,0.1,'sine',0.15),100);},i*400);},
+startClub(){if(this.playing)return;this.playing=true;this._cl();},
+_cl(){if(!this.playing||!this.ctx)return;const n=this.ctx.currentTime,b=60/128;for(let i=0;i<8;i++){const t=n+i*b;const ko=this.ctx.createOscillator(),kg=this.ctx.createGain();ko.type='sine';ko.frequency.setValueAtTime(150,t);ko.frequency.exponentialRampToValueAtTime(40,t+0.1);kg.gain.setValueAtTime(0.35,t);kg.gain.exponentialRampToValueAtTime(0.001,t+0.15);ko.connect(kg);kg.connect(this.mg);ko.start(t);ko.stop(t+0.15);this.oscs.push(ko);if(i%2===1){const h=this.ctx.createOscillator(),hg=this.ctx.createGain();h.type='square';h.frequency.value=5500;hg.gain.setValueAtTime(0.03,t);hg.gain.exponentialRampToValueAtTime(0.001,t+0.04);h.connect(hg);hg.connect(this.mg);h.start(t);h.stop(t+0.04);this.oscs.push(h);}if(i%4===0){const bs=this.ctx.createOscillator(),bg=this.ctx.createGain();bs.type='sawtooth';bs.frequency.value=[110,130,146,110][(i/4)%4];bg.gain.setValueAtTime(0.07,t);bg.gain.exponentialRampToValueAtTime(0.001,t+b*2);bs.connect(bg);bg.connect(this.mg);bs.start(t);bs.stop(t+b*2);this.oscs.push(bs);}}setTimeout(()=>this._cl(),(8*b)*1000);},
+stopClub(){this.playing=false;this.oscs.forEach(o=>{try{o.stop();}catch(e){}});this.oscs=[];}};
 
-        sfxGym() {
-            this.playNote(200, 0.1, 'square');
-            setTimeout(() => this.playNote(250, 0.1, 'square'), 80);
-            setTimeout(() => this.playNote(300, 0.15, 'square'), 160);
-        },
-
-        sfxMoney() {
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => this.playNote(1000 + i * 200, 0.08, 'sine'), i * 50);
-            }
-        },
-
-        startClubMusic() {
-            if (!this.ctx || this.isPlaying) return;
-            this.isPlaying = true;
-            this.playClubBeat();
-        },
-
-        playClubBeat() {
-            if (!this.isPlaying || !this.ctx) return;
-            const now = this.ctx.currentTime;
-            const bpm = 128;
-            const beatLen = 60 / bpm;
-
-            for (let i = 0; i < 8; i++) {
-                const t = now + i * beatLen;
-
-                // Kick
-                const kickOsc = this.ctx.createOscillator();
-                const kickGain = this.ctx.createGain();
-                kickOsc.type = 'sine';
-                kickOsc.frequency.setValueAtTime(150, t);
-                kickOsc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
-                kickGain.gain.setValueAtTime(0.5, t);
-                kickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-                kickOsc.connect(kickGain);
-                kickGain.connect(this.musicGain);
-                kickOsc.start(t);
-                kickOsc.stop(t + 0.15);
-                this.currentOscs.push(kickOsc);
-
-                // Hi-hat on off-beats
-                if (i % 2 === 1) {
-                    const hatOsc = this.ctx.createOscillator();
-                    const hatGain = this.ctx.createGain();
-                    hatOsc.type = 'square';
-                    hatOsc.frequency.value = 6000;
-                    hatGain.gain.setValueAtTime(0.05, t);
-                    hatGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-                    hatOsc.connect(hatGain);
-                    hatGain.connect(this.musicGain);
-                    hatOsc.start(t);
-                    hatOsc.stop(t + 0.05);
-                    this.currentOscs.push(hatOsc);
-                }
-
-                // Bass synth
-                if (i % 4 === 0) {
-                    const bassOsc = this.ctx.createOscillator();
-                    const bassGain = this.ctx.createGain();
-                    bassOsc.type = 'sawtooth';
-                    const bassNotes = [55, 65, 73, 55];
-                    bassOsc.frequency.value = bassNotes[Math.floor(i / 4) % 4] * 2;
-                    bassGain.gain.setValueAtTime(0.12, t);
-                    bassGain.gain.exponentialRampToValueAtTime(0.001, t + beatLen * 2);
-                    bassOsc.connect(bassGain);
-                    bassGain.connect(this.musicGain);
-                    bassOsc.start(t);
-                    bassOsc.stop(t + beatLen * 2);
-                    this.currentOscs.push(bassOsc);
-                }
-            }
-
-            setTimeout(() => this.playClubBeat(), (8 * beatLen) * 1000);
-        },
-
-        stopClubMusic() {
-            this.isPlaying = false;
-            this.currentOscs.forEach(o => { try { o.stop(); } catch(e) {} });
-            this.currentOscs = [];
-        },
-
-        startMenuMusic() {
-            if (!this.ctx) return;
-            const notes = [261, 329, 392, 523, 392, 329];
-            let i = 0;
-            const playNext = () => {
-                if (document.getElementById('title-screen').style.display === 'none') return;
-                this.playNote(notes[i % notes.length], 0.4, 'sine', this.musicGain, 0.08);
-                i++;
-                setTimeout(playNext, 500);
-            };
-            playNext();
+// ===== GAME STATE =====
+const G={
+    day:1, daysUntilClub:7, money:200, energi:5, maxEnergi:5,
+    round:1, maxRounds:4,
+    stats:{styrke:1,arms:1,ben:1,cardio:1,style:1,charm:1},
+    xp:{styrke:0,arms:0,ben:0,cardio:0,style:0,charm:0},
+    xpNeed(lv){return 20+lv*18;},
+    bought:[],
+    girlsMet:0,totalScore:0,
+    scene:'title',
+    tutorial:0,
+    addXP(stat,amt){
+        this.xp[stat]+=amt;
+        while(this.xp[stat]>=this.xpNeed(this.stats[stat])){
+            this.xp[stat]-=this.xpNeed(this.stats[stat]);
+            this.stats[stat]++;
+            floatText('LEVEL UP! '+stat.toUpperCase()+' LV'+this.stats[stat],'#ffbe0b');
         }
-    };
-
-    // ===== GAME STATE =====
-    const game = {
-        day: 1,
-        money: 200,
-        energi: 100,
-        stats: { styrke: 10, style: 10, charm: 10 },
-        maxStat: 100,
-        clubVisits: 0,
-        totalScore: 0,
-        girlsMet: 0,
-        started: false,
-    };
-
-    // ===== CHARACTER RENDERER =====
-    function drawCharacter(canvasId, options = {}) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width;
-        const h = canvas.height;
-        ctx.clearRect(0, 0, w, h);
-
-        const scale = w / 160;
-        ctx.save();
-        ctx.scale(scale, scale);
-
-        const skinColor = '#c68642';
-        const hairColor = '#1a1a2e';
-        const shirtColor = options.clubMode ? '#ff006e' : (game.stats.style > 50 ? '#8b5cf6' : '#334155');
-        const pantsColor = options.clubMode ? '#1a1a2e' : '#1e293b';
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath();
-        ctx.ellipse(80, 190, 25, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Legs
-        ctx.fillStyle = pantsColor;
-        ctx.fillRect(62, 140, 14, 45);
-        ctx.fillRect(84, 140, 14, 45);
-
-        // Shoes
-        ctx.fillStyle = game.stats.style > 30 ? '#fff' : '#555';
-        ctx.fillRect(58, 180, 20, 8);
-        ctx.fillRect(82, 180, 20, 8);
-
-        // Body
-        ctx.fillStyle = shirtColor;
-        const bodyWidth = 36 + Math.min(game.stats.styrke / 3, 20);
-        ctx.fillRect(80 - bodyWidth/2, 90, bodyWidth, 55);
-
-        // Arms
-        const armWidth = 10 + Math.min(game.stats.styrke / 10, 8);
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(80 - bodyWidth/2 - armWidth, 92, armWidth, 35);
-        ctx.fillRect(80 + bodyWidth/2, 92, armWidth, 35);
-
-        // Bicep highlight
-        if (game.stats.styrke > 30) {
-            ctx.fillStyle = 'rgba(255,255,255,0.15)';
-            ctx.beginPath();
-            ctx.ellipse(80 - bodyWidth/2 - armWidth/2, 105, armWidth/2 - 1, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.ellipse(80 + bodyWidth/2 + armWidth/2, 105, armWidth/2 - 1, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Neck
-        ctx.fillStyle = skinColor;
-        ctx.fillRect(73, 75, 14, 18);
-
-        // Head
-        ctx.fillStyle = skinColor;
-        ctx.beginPath();
-        ctx.ellipse(80, 55, 22, 26, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Hair
-        ctx.fillStyle = hairColor;
-        ctx.beginPath();
-        ctx.ellipse(80, 42, 24, 18, 0, 0, Math.PI);
-        ctx.fill();
-        // Fade on sides
-        ctx.fillStyle = hairColor;
-        ctx.fillRect(58, 42, 5, 20);
-        ctx.fillRect(97, 42, 5, 20);
-
-        // Eyes
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(70, 50, 8, 6);
-        ctx.fillRect(82, 50, 8, 6);
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(74, 51, 4, 5);
-        ctx.fillRect(86, 51, 4, 5);
-
-        // Eyebrows
-        ctx.fillStyle = hairColor;
-        ctx.fillRect(69, 47, 10, 2);
-        ctx.fillRect(81, 47, 10, 2);
-
-        // Mouth
-        ctx.fillStyle = '#d4604a';
-        if (options.smile) {
-            ctx.beginPath();
-            ctx.arc(80, 65, 6, 0, Math.PI);
-            ctx.fill();
-        } else {
-            ctx.fillRect(75, 65, 10, 2);
-        }
-
-        // Chain
-        if (game.stats.style > 40) {
-            ctx.strokeStyle = '#ffbe0b';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(80, 88, 8, 0.2, Math.PI - 0.2);
-            ctx.stroke();
-        }
-
-        // Sunglasses
-        if (game.stats.style > 60 || options.clubMode) {
-            ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            ctx.fillRect(67, 49, 12, 8);
-            ctx.fillRect(81, 49, 12, 8);
-            ctx.strokeStyle = '#ffbe0b';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(67, 49, 12, 8);
-            ctx.strokeRect(81, 49, 12, 8);
-            ctx.beginPath();
-            ctx.moveTo(79, 53);
-            ctx.lineTo(81, 53);
-            ctx.stroke();
-        }
-
-        // Muscles glow
-        if (game.stats.styrke > 70) {
-            ctx.shadowColor = '#ff006e';
-            ctx.shadowBlur = 15;
-            ctx.fillStyle = 'rgba(255, 0, 110, 0.1)';
-            ctx.fillRect(80 - bodyWidth/2 - armWidth - 2, 90, armWidth + 4, 37);
-            ctx.fillRect(80 + bodyWidth/2 - 2, 90, armWidth + 4, 37);
-            ctx.shadowBlur = 0;
-        }
-
-        ctx.restore();
+    },
+    totalLvl(){return Object.values(this.stats).reduce((a,b)=>a+b,0);},
+    chance(stat,req){
+        const lv=this.stats[stat]||1;
+        const pct=Math.min(95,Math.max(10, 30+(lv-req)*12 ));
+        return pct;
     }
-
-    // ===== STARFIELD =====
-    function initStarfield() {
-        const canvas = document.getElementById('starfield');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const ctx = canvas.getContext('2d');
-        const stars = [];
-        for (let i = 0; i < 150; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2,
-                speed: Math.random() * 0.5 + 0.1,
-                opacity: Math.random()
-            });
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            stars.forEach(s => {
-                s.opacity += (Math.random() - 0.5) * 0.02;
-                s.opacity = Math.max(0.1, Math.min(1, s.opacity));
-                ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity * 0.5})`;
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-            requestAnimationFrame(animate);
-        }
-        animate();
-    }
-
-    // ===== CLUB SCENE RENDERER =====
-    function renderClubScene() {
-        const canvas = document.getElementById('club-canvas');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        const ctx = canvas.getContext('2d');
-        let time = 0;
-
-        function animate() {
-            if (document.getElementById('club-scene').style.display === 'none') return;
-
-            ctx.fillStyle = '#0a0010';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            time += 0.02;
-
-            // Dance floor
-            const floorY = canvas.height * 0.6;
-            for (let x = 0; x < canvas.width; x += 60) {
-                for (let y = floorY; y < canvas.height; y += 60) {
-                    const hue = (x + y + time * 100) % 360;
-                    const brightness = 20 + Math.sin(time * 2 + x * 0.05) * 10;
-                    ctx.fillStyle = `hsl(${hue}, 80%, ${brightness}%)`;
-                    ctx.fillRect(x + 2, y + 2, 56, 56);
-                }
-            }
-
-            // Laser beams
-            for (let i = 0; i < 6; i++) {
-                const angle = Math.sin(time + i * 1.5) * 0.8;
-                const startX = canvas.width * (0.2 + i * 0.12);
-                ctx.strokeStyle = `hsla(${(time * 50 + i * 60) % 360}, 100%, 60%, 0.3)`;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(startX, 0);
-                ctx.lineTo(startX + Math.sin(angle) * canvas.height, canvas.height);
-                ctx.stroke();
-            }
-
-            // Disco ball
-            const ballX = canvas.width / 2;
-            const ballY = 60;
-            ctx.fillStyle = '#ccc';
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, 25, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Reflections from disco ball
-            for (let i = 0; i < 12; i++) {
-                const angle = time * 2 + (i / 12) * Math.PI * 2;
-                const dist = 80 + Math.sin(time + i) * 40;
-                const rx = ballX + Math.cos(angle) * dist;
-                const ry = ballY + Math.sin(angle) * dist * 0.5 + dist * 0.3;
-                ctx.fillStyle = `hsla(${i * 30}, 100%, 80%, ${0.3 + Math.sin(time * 3 + i) * 0.2})`;
-                ctx.beginPath();
-                ctx.arc(rx, ry, 3, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Crowd silhouettes
-            for (let i = 0; i < 15; i++) {
-                const cx = (canvas.width / 16) * (i + 1);
-                const cy = floorY - 10 + Math.sin(time * 3 + i * 0.7) * 5;
-                ctx.fillStyle = `rgba(0, 0, 0, 0.6)`;
-                ctx.beginPath();
-                ctx.ellipse(cx, cy - 25, 8, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillRect(cx - 8, cy - 15, 16, 30);
-            }
-
-            // Fog
-            for (let i = 0; i < 3; i++) {
-                const fogY = canvas.height * 0.3 + i * 80;
-                const gradient = ctx.createLinearGradient(0, fogY - 30, 0, fogY + 30);
-                gradient.addColorStop(0, 'transparent');
-                gradient.addColorStop(0.5, `rgba(255, 0, 110, ${0.03 + Math.sin(time + i) * 0.02})`);
-                gradient.addColorStop(1, 'transparent');
-                ctx.fillStyle = gradient;
-                ctx.fillRect(0, fogY - 30, canvas.width, 60);
-            }
-
-            // Neon sign "CLUB"
-            ctx.font = 'bold 40px Orbitron';
-            ctx.textAlign = 'center';
-            const neonOpacity = 0.7 + Math.sin(time * 4) * 0.3;
-            ctx.fillStyle = `rgba(255, 0, 110, ${neonOpacity})`;
-            ctx.shadowColor = '#ff006e';
-            ctx.shadowBlur = 20;
-            ctx.fillText('KLUBBEN', canvas.width / 2, 130);
-            ctx.shadowBlur = 0;
-
-            requestAnimationFrame(animate);
-        }
-        animate();
-    }
-
-    // ===== GAME LOGIC =====
-    function updateUI() {
-        ['styrke', 'style', 'charm'].forEach(stat => {
-            const val = game.stats[stat];
-            document.getElementById(`bar-${stat}`).style.width = `${val}%`;
-            document.getElementById(`val-${stat}`).textContent = val;
-        });
-        document.getElementById('bar-energi').style.width = `${game.energi}%`;
-        document.getElementById('val-energi').textContent = game.energi;
-        document.getElementById('day-num').textContent = game.day;
-        document.getElementById('money-display').textContent = `${game.money} KR`;
-
-        // Update button states
-        document.querySelectorAll('.action-btn').forEach(btn => {
-            btn.classList.remove('disabled');
-        });
-        if (game.energi < 20) document.querySelector('.action-btn.gym').classList.add('disabled');
-        if (game.energi < 15 || game.money < 50) document.querySelector('.action-btn.style').classList.add('disabled');
-        if (game.energi < 15) document.querySelector('.action-btn.charm').classList.add('disabled');
-        if (game.energi < 30) document.querySelector('.action-btn.work').classList.add('disabled');
-        if (game.energi < 50 || game.money < 100) document.querySelector('.action-btn.club').classList.add('disabled');
-
-        drawCharacter('character-canvas');
-        updateMood();
-    }
-
-    function updateMood() {
-        const total = game.stats.styrke + game.stats.style + game.stats.charm;
-        const moods = [
-            [0, "Helt grøn... men motiveret"],
-            [50, "Begynder at føle det"],
-            [100, "Viberne er der, bror"],
-            [150, "Hanzi er ON FIRE"],
-            [200, "Absolut enhed. Legendestatus."],
-        ];
-        let mood = moods[0][1];
-        for (const [threshold, text] of moods) {
-            if (total >= threshold) mood = text;
-        }
-        document.getElementById('char-mood').textContent = mood;
-    }
-
-    function showMessage(text) {
-        const el = document.getElementById('event-msg');
-        el.textContent = text;
-        el.style.animation = 'none';
-        el.offsetHeight; // reflow
-        el.style.animation = 'fadeInUp 0.5s ease';
-    }
-
-    function floatText(text, color = '#fff') {
-        const el = document.createElement('div');
-        el.className = 'float-text';
-        el.textContent = text;
-        el.style.color = color;
-        el.style.left = (window.innerWidth / 2 - 30) + 'px';
-        el.style.top = (window.innerHeight / 2 - 50) + 'px';
-        document.getElementById('game-container').appendChild(el);
-        setTimeout(() => el.remove(), 1500);
-    }
-
-    function addStat(stat, amount) {
-        game.stats[stat] = Math.min(game.maxStat, game.stats[stat] + amount);
-    }
-
-    const gymMessages = [
-        "Hanzi smider 3 sæt bænkpres! GAINS!",
-        "Bicep curls til failure. Armene pumper!",
-        "Leg day? Nej tak. Overkrop igen, bror.",
-        "Hanzi tager en selfie i spejlet midt i sættet.",
-        "Proteinshake drukket. Hanzi føler sig STOR.",
-        "Hanzi spotter sig selv. True alpha.",
-    ];
-
-    const styleMessages = [
-        "Ny trim fra barberen. Fresh fade!",
-        "Designer t-shirt købt. Drip activated.",
-        "Nye sko! Hanzi flexer i spejlet.",
-        "Hanzi får en guld-kæde. Bling bling!",
-        "Parfume påført. Hanzi dufter af succes.",
-        "Skincare routine. Hanzi glower op!",
-    ];
-
-    const charmMessages = [
-        "Hanzi øver sine bedste pick-up lines.",
-        "YouTube tutorial: 'Hvordan man er smooth'",
-        "Hanzi øver øjenkontakt i spejlet.",
-        "Wingman-strategi gennemgået med drengene.",
-        "Hanzi læser 'The Art of Rizz'",
-        "Smile-træning foran spejlet. Smil: aktiveret.",
-    ];
-
-    const workMessages = [
-        "Hanzi tager en vagt i Netto. Hårdt men ærligt.",
-        "Uber Eats levering. Tips var nice!",
-        "Hanzi sælger gamle ting på DBA.",
-        "Vagt på lageret. Ryg ødelagt men penge tjent.",
-        "Hanzi gør rent hjemme hos mormor. Hun betaler godt.",
-    ];
-
-    function doAction(action) {
-        AudioEngine.sfxClick();
-
-        switch(action) {
-            case 'gym':
-                if (game.energi < 20) return showMessage("Ingen energi! Hvil dig, bror.");
-                game.energi -= 20;
-                const gymGain = 5 + Math.floor(Math.random() * 8);
-                addStat('styrke', gymGain);
-                floatText(`+${gymGain} STYRKE`, '#ff006e');
-                showMessage(gymMessages[Math.floor(Math.random() * gymMessages.length)]);
-                AudioEngine.sfxGym();
-                break;
-
-            case 'style':
-                if (game.energi < 15 || game.money < 50) return showMessage("Ikke nok energi eller penge!");
-                game.energi -= 15;
-                game.money -= 50;
-                const styleGain = 5 + Math.floor(Math.random() * 8);
-                addStat('style', styleGain);
-                floatText(`+${styleGain} STYLE`, '#8b5cf6');
-                showMessage(styleMessages[Math.floor(Math.random() * styleMessages.length)]);
-                AudioEngine.sfxSuccess();
-                break;
-
-            case 'charm':
-                if (game.energi < 15) return showMessage("For træt til at være charmerende...");
-                game.energi -= 15;
-                const charmGain = 5 + Math.floor(Math.random() * 8);
-                addStat('charm', charmGain);
-                floatText(`+${charmGain} CHARM`, '#ffbe0b');
-                showMessage(charmMessages[Math.floor(Math.random() * charmMessages.length)]);
-                AudioEngine.sfxSuccess();
-                break;
-
-            case 'work':
-                if (game.energi < 30) return showMessage("For træt til at arbejde...");
-                game.energi -= 30;
-                const earned = 100 + Math.floor(Math.random() * 150);
-                game.money += earned;
-                floatText(`+${earned} KR`, '#00d4aa');
-                showMessage(workMessages[Math.floor(Math.random() * workMessages.length)]);
-                AudioEngine.sfxMoney();
-                break;
-
-            case 'rest':
-                game.day++;
-                game.energi = 100;
-                showMessage(`Dag ${game.day}. Hanzi vågner udhvilet og klar!`);
-                floatText('ZZZ... NY DAG!', '#60a5fa');
-                AudioEngine.sfxClick();
-                if (game.day > 30) {
-                    endGame();
-                    return;
-                }
-                break;
-
-            case 'club':
-                if (game.energi < 50 || game.money < 100) return showMessage("Brug for mere energi eller penge til klubben!");
-                game.energi -= 50;
-                game.money -= 100;
-                enterClub();
-                return;
-        }
-
-        updateUI();
-    }
-
-    // ===== CLUB SYSTEM =====
-    const girls = [
-        {
-            name: "Sofie",
-            desc: "Danser ved baren med sine veninder. Ser chill ud.",
-            threshold: { styrke: 20, style: 25, charm: 30 },
-            lines: [
-                { speaker: "SOFIE", text: "Hej! Fedt sted ikk? Kommer du her tit?", choices: [
-                    { text: "Ej, det er min første gang. Nogen der kan vise mig rundt? 😏", charm: 20, bonus: 8 },
-                    { text: "Ja, jeg er her hver weekend. Kender DJ'en.", charm: 30, bonus: 5 },
-                    { text: "*Flexer arme* Nej men jeg kan vise dig min gym...", styrke: 40, bonus: -5 },
-                ]},
-                { speaker: "SOFIE", text: "Haha du er sød. Hvad drikker du?", choices: [
-                    { text: "Bestiller en drink til os begge. Cheers! 🍹", money: 50, charm: 15, bonus: 10 },
-                    { text: "Vand. Jeg er på en strict kur.", bonus: -3 },
-                    { text: "Hvad end du vil ha'. Det er min aften.", charm: 25, bonus: 7 },
-                ]}
-            ],
-            winText: "Sofie griner og giver dig sit nummer. 'Du er sjov, Hanzi. Skriv til mig!' 📱",
-            loseText: "Sofie smiler høfligt og vender tilbage til sine veninder. Tough luck, bror."
-        },
-        {
-            name: "Jasmin",
-            desc: "Sidder i VIP med et glas champagne. Hun ser krævende ud.",
-            threshold: { styrke: 35, style: 50, charm: 40 },
-            lines: [
-                { speaker: "JASMIN", text: "*Kigger dig op og ned* ...og du er?", choices: [
-                    { text: "Hanzi. Og du ser ud som om du keder dig herinde.", charm: 40, bonus: 10 },
-                    { text: "Din fremtidige date. Bare rolig, du kan takke mig senere.", charm: 50, bonus: 8 },
-                    { text: "*Nervøst* Øh... hej... jeg hedder... Hanzi?", bonus: -8 },
-                ]},
-                { speaker: "JASMIN", text: "Hmm. Du har selvtillid. Kan du danse?", choices: [
-                    { text: "*Tager hendes hånd og fører hende ud på dansegulvet*", charm: 35, style: 40, bonus: 12 },
-                    { text: "Danse? Nej. Men jeg kan lave 100 pushups.", styrke: 60, bonus: -2 },
-                    { text: "Kun hvis du lærer mig. Jeg er mere en vibe-type.", charm: 30, bonus: 6 },
-                ]}
-            ],
-            winText: "Jasmin smiler for første gang. 'Du er anderledes. Jeg kan lide det.' Hun tager din arm. SCORE! 💎",
-            loseText: "Jasmin ruller med øjnene og vinker sikkerhedsvagten over. 'Denne her... nej.' Brutal."
-        },
-        {
-            name: "Nadia",
-            desc: "Chiller ved DJ-pulten. Viber helt vildt til musikken.",
-            threshold: { styrke: 15, style: 30, charm: 25 },
-            lines: [
-                { speaker: "NADIA", text: "YOOO dette beat er SYGT! Kan du føle det?!", choices: [
-                    { text: "*Danser med* JA BRO DETTE ER MIT JAM! 🔥", charm: 20, bonus: 10 },
-                    { text: "Musikken er aight. Men selskabet lige blev bedre 😎", charm: 30, bonus: 8 },
-                    { text: "*Står stille og nikker akavet*", bonus: -5 },
-                ]},
-                { speaker: "NADIA", text: "Du er vild! Hvad laver du til hverdag?", choices: [
-                    { text: "Gym, grind, repeat. Men i aften handler det om os.", charm: 25, bonus: 9 },
-                    { text: "Jeg arbejder på min drøm. Og lige nu drømmer jeg ikke.", charm: 35, bonus: 7 },
-                    { text: "Netto. Kassen. 8 timer.", bonus: 2 },
-                ]}
-            ],
-            winText: "Nadia tager din hånd! 'Kom, vi danser hele natten!' I viber til lukketid! 🎶",
-            loseText: "Nadia siger 'Du er sød!' og danser videre... alene. Friend-zoned."
-        }
-    ];
-
-    let currentGirl = null;
-    let currentLineIndex = 0;
-    let clubScore = 0;
-
-    function enterClub() {
-        game.clubVisits++;
-        document.getElementById('club-scene').style.display = 'block';
-        renderClubScene();
-        AudioEngine.startClubMusic();
-
-        // Pick random girl
-        const availableGirls = girls.filter(g => {
-            const meetsBasic = game.stats.styrke >= g.threshold.styrke * 0.5 ||
-                              game.stats.style >= g.threshold.style * 0.5 ||
-                              game.stats.charm >= g.threshold.charm * 0.5;
-            return meetsBasic;
-        });
-
-        currentGirl = availableGirls.length > 0
-            ? availableGirls[Math.floor(Math.random() * availableGirls.length)]
-            : girls[0];
-
-        currentLineIndex = 0;
-        clubScore = 0;
-
-        showClubDialogue(`Du træder ind på klubben. Lyset pulserer, bassen banker. Du ser ${currentGirl.name} - ${currentGirl.desc}`);
-        setTimeout(() => showClubLine(), 2000);
-    }
-
-    function showClubDialogue(text, speaker = 'FORTÆLLER') {
-        document.getElementById('club-speaker').textContent = speaker;
-        document.getElementById('club-text').textContent = text;
-        document.getElementById('club-choices').innerHTML = '';
-    }
-
-    function showClubLine() {
-        if (currentLineIndex >= currentGirl.lines.length) {
-            resolveClub();
-            return;
-        }
-
-        const line = currentGirl.lines[currentLineIndex];
-        document.getElementById('club-speaker').textContent = line.speaker;
-        document.getElementById('club-text').textContent = line.text;
-
-        const choicesEl = document.getElementById('club-choices');
-        choicesEl.innerHTML = '';
-
-        line.choices.forEach((choice, i) => {
-            const btn = document.createElement('button');
-            btn.className = 'club-choice';
-            btn.textContent = choice.text;
-            btn.onclick = () => {
-                AudioEngine.sfxClick();
-                let success = true;
-                if (choice.charm && game.stats.charm < choice.charm) success = Math.random() < 0.4;
-                if (choice.styrke && game.stats.styrke < choice.styrke) success = Math.random() < 0.3;
-                if (choice.style && game.stats.style < choice.style) success = Math.random() < 0.35;
-                if (choice.money) {
-                    if (game.money >= choice.money) game.money -= choice.money;
-                    else success = false;
-                }
-
-                const bonus = success ? Math.max(choice.bonus, 1) : Math.min(choice.bonus, -2);
-                clubScore += bonus;
-
-                if (success && bonus > 0) {
-                    AudioEngine.sfxSuccess();
-                    showClubDialogue(success ? "Smooth, Hanzi! Hun smiler." : "Hmm... det landede ikke helt.", 'FORTÆLLER');
-                } else {
-                    AudioEngine.sfxFail();
-                    showClubDialogue("Yikes... akavet stilhed.", 'FORTÆLLER');
-                }
-
-                currentLineIndex++;
-                setTimeout(() => showClubLine(), 1500);
-            };
-            choicesEl.appendChild(btn);
-        });
-    }
-
-    function resolveClub() {
-        const totalPower = game.stats.styrke + game.stats.style + game.stats.charm;
-        const threshold = currentGirl.threshold.styrke + currentGirl.threshold.style + currentGirl.threshold.charm;
-        const statBonus = totalPower / threshold;
-
-        const finalScore = clubScore + (statBonus * 5);
-
-        if (finalScore > 8) {
-            showClubDialogue(currentGirl.winText, '💖');
-            AudioEngine.sfxSuccess();
-            game.totalScore += 100;
-            game.girlsMet++;
-            setTimeout(() => {
-                AudioEngine.sfxSuccess();
-                floatText('+100 SCORE!', '#ff006e');
-            }, 500);
-        } else if (finalScore > 3) {
-            showClubDialogue("Hun siger 'Du er cute, men... nej.' Tæt på, Hanzi!", 'FORTÆLLER');
-            game.totalScore += 25;
-        } else {
-            showClubDialogue(currentGirl.loseText, '💔');
-            AudioEngine.sfxFail();
-        }
-
-        document.getElementById('club-choices').innerHTML = '';
-        setTimeout(() => {
-            leaveClub();
-        }, 3000);
-    }
-
-    function leaveClub() {
-        AudioEngine.stopClubMusic();
-        document.getElementById('club-scene').style.display = 'none';
-        showMessage("Hanzi er tilbage fra klubben. " + (game.girlsMet > 0 ? "Nummeret er i lommen! 😎" : "Næste gang, bror!"));
-        updateUI();
-    }
-
-    // ===== END GAME =====
-    function endGame() {
-        const screen = document.getElementById('result-screen');
-        screen.style.display = 'flex';
-
-        const total = game.stats.styrke + game.stats.style + game.stats.charm;
-
-        if (game.girlsMet >= 3) {
-            document.getElementById('result-icon').textContent = '👑';
-            document.getElementById('result-title').textContent = 'HANZI LEGENDEN!';
-            document.getElementById('result-title').style.color = '#ffbe0b';
-            document.getElementById('result-text').textContent = `${game.girlsMet} numre scoret! Hanzi er byens konge. Drengene bøjer sig. Legendestatus opnået!`;
-        } else if (game.girlsMet >= 1) {
-            document.getElementById('result-icon').textContent = '😎';
-            document.getElementById('result-title').textContent = 'HANZI HAR GAME!';
-            document.getElementById('result-title').style.color = '#00d4aa';
-            document.getElementById('result-text').textContent = `${game.girlsMet} nummer(e) scoret! Ikke værst, Hanzi. Der er potentiale!`;
-        } else if (total > 150) {
-            document.getElementById('result-icon').textContent = '💪';
-            document.getElementById('result-title').textContent = 'BUFFED MEN INGEN GAME';
-            document.getElementById('result-title').style.color = '#ff006e';
-            document.getElementById('result-text').textContent = 'Hanzi er jacked og stylet... men scorede ingen. Stats er ikke alt, bror. Charm is key!';
-        } else {
-            document.getElementById('result-icon').textContent = '😅';
-            document.getElementById('result-title').textContent = 'HANZI PRØVEDE...';
-            document.getElementById('result-title').style.color = '#aaa';
-            document.getElementById('result-text').textContent = 'Det blev ikke Hanzis måned. Men hey, der er altid næste måned! Træn hårdere!';
-        }
-
-        document.getElementById('result-score').textContent = `SCORE: ${game.totalScore} | STATS: ${total}/300 | DAMER: ${game.girlsMet}`;
-    }
-
-    function restartGame() {
-        game.day = 1;
-        game.money = 200;
-        game.energi = 100;
-        game.stats = { styrke: 10, style: 10, charm: 10 };
-        game.clubVisits = 0;
-        game.totalScore = 0;
-        game.girlsMet = 0;
-
-        document.getElementById('result-screen').style.display = 'none';
-        updateUI();
-        showMessage("Ny runde! Hanzi er klar til at grinde igen!");
-    }
-
-    // ===== START =====
-    function startGame() {
-        AudioEngine.init();
-        AudioEngine.sfxSuccess();
-
-        document.getElementById('title-screen').style.display = 'none';
-        document.getElementById('game-hud').style.display = 'block';
-
-        drawCharacter('character-canvas');
-        updateUI();
-        showMessage("Yo Hanzi! Du har 30 dage til at blive klar til at score på klubben. GRIND TIME! 💪");
-    }
-
-    // ===== INIT =====
-    window.addEventListener('load', () => {
-        initStarfield();
-        drawCharacter('title-character', { smile: true });
-
-        window.addEventListener('resize', () => {
-            const canvas = document.getElementById('starfield');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+};
+
+const statDefs=[
+    {k:'styrke',label:'STYRKE',color:'#ff006e'},
+    {k:'arms',label:'ARMS',color:'#ff4d8d'},
+    {k:'ben',label:'BEN',color:'#ff6b35'},
+    {k:'cardio',label:'CARDIO',color:'#00d4aa'},
+    {k:'style',label:'STYLE',color:'#8b5cf6'},
+    {k:'charm',label:'CHARM',color:'#ffbe0b'},
+];
+
+// ===== HELPERS =====
+function show(id){document.getElementById(id).style.display='flex';}
+function hide(id){document.getElementById(id).style.display='none';}
+function floatText(t,c='#fff'){const e=document.createElement('div');e.className='float-text';e.textContent=t;e.style.color=c;e.style.left=(window.innerWidth/2-50)+'px';e.style.top=(window.innerHeight/2-40)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1200);}
+let msgTimer;
+function mapMsg(t){const el=document.getElementById('map-msg');el.textContent=t;el.classList.add('show');clearTimeout(msgTimer);msgTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+
+// ===== HUD =====
+function updateHUD(){
+    const wrap=document.getElementById('hud-stats');
+    wrap.innerHTML='';
+    statDefs.forEach(s=>{
+        const lv=G.stats[s.k];const pct=Math.min(100,(G.xp[s.k]/G.xpNeed(lv))*100);
+        wrap.innerHTML+=`<div class="mini-stat"><label>${s.label}</label><div class="track"><div class="fill" style="width:${pct}%;background:${s.color};"></div></div><div class="val">LV${lv}</div></div>`;
     });
-    </script>
+    document.getElementById('hud-timer').textContent=G.daysUntilClub>0?`KLUB OM ${G.daysUntilClub} DAGE`:'🪩 KLUB I AFTEN!';
+    document.getElementById('hud-timer').style.color=G.daysUntilClub<=1?'#ffbe0b':'#ff006e';
+    document.getElementById('hud-money').textContent=G.money+' KR';
+    document.getElementById('hud-energi').textContent='ENERGI: '+G.energi+'/'+G.maxEnergi;
+}
+
+// ===== PHONE CALL =====
+const phoneScript=[
+    {type:'narrator',text:'📱 Indkommende opkald...'},
+    {type:'in',text:'Bror... BROR! Du er vågen?! 😭'},
+    {type:'out',text:'Leth...? Hvad skete der? Hvor er jeg?'},
+    {type:'in',text:'Du kørte galt på motorcyklen for 2 ÅR siden Hanzi. Du har ligget i koma.'},
+    {type:'out',text:'2 år?! Hvad f... Hvad med TBH? Hvad med drengene?'},
+    {type:'in',text:'Ja... det er det jeg ringer om. De har smidt dig ud af TBH, bror. De siger du er færdig.'},
+    {type:'out',text:'HVAD?! De kan ikke smide MIG ud! Jeg var NUMMER 1!'},
+    {type:'in',text:'Var, Hanzi. Du har mistet alt. Dine gains, din style, din charm. Du starter fra bunden.'},
+    {type:'out',text:'...'},
+    {type:'in',text:'MEN. Der er én måde du kan komme tilbage på. 👀'},
+    {type:'out',text:'Sig det.'},
+    {type:'in',text:'Hvis du scorer den HOTTESTE pige på klubben foran alle... så MÅ de give dig din plads tilbage. Sådan er reglerne.'},
+    {type:'out',text:'Sig ikke mere. Jeg er klar. 💪'},
+    {type:'in',text:'Easy tiger. Du er SVAG lige nu. Du skal bygge dig op først. Jeg er din træner fra nu af.'},
+    {type:'in',text:'Sådan fungerer det: Du har 7 DAGE til at træne inden klubben åbner. Brug dem klogt.'},
+    {type:'in',text:'💪 GYM - Træn styrke, arms, ben og cardio med mini-games\n👔 SHOP - Køb style og se godt ud\n🗣️ PARK - Træn din charm\n💰 ARBEJDE - Tjen penge\n😴 HVIL - Ny dag, refill energi'},
+    {type:'in',text:'Du har 5 energi om dagen. Hver aktivitet koster 1 energi. Når du hviler starter en ny dag.'},
+    {type:'in',text:'Og husk - på klubben har hver response en PROCENT chance for at virke. Jo højere dine skills, jo bedre odds! 📊'},
+    {type:'in',text:'Der er 4 runder med klubben. Hver runde bliver pigerne sværere. Scor dem alle og du er LEGENDEN igen! 👑'},
+    {type:'out',text:'Leth... du er den bedste bror. Lets f*cking GO! 🔥'},
+    {type:'in',text:'THATS THE SPIRIT! Nu kom ud af den seng og lad os GRINDE! 💪🔥'},
+];
+
+let phoneIdx=0;
+function initPhone(){
+    phoneIdx=0;
+    document.getElementById('phone-msgs').innerHTML='';
+    show('phone-scene');
+    S.ring();
+    advancePhone();
+}
+
+function advancePhone(){
+    if(phoneIdx>=phoneScript.length){
+        hide('phone-scene');
+        startMap();
+        return;
+    }
+    const line=phoneScript[phoneIdx];
+    const msgs=document.getElementById('phone-msgs');
+    const div=document.createElement('div');
+    div.className='msg-bubble msg-'+line.type;
+    div.textContent=line.text;
+    msgs.appendChild(div);
+    msgs.scrollTop=msgs.scrollHeight;
+    S.click();
+    phoneIdx++;
+}
+
+// ===== MAP =====
+const locations=[
+    {id:'gym',name:'GYM',icon:'💪',cost:'1 energi',glow:'#ff006e',desc:'Træn dine muskler'},
+    {id:'shop',name:'SHOP',icon:'👔',cost:'Penge',glow:'#8b5cf6',desc:'Køb fedt tøj'},
+    {id:'park',name:'CHARM',icon:'🗣️',cost:'1 energi',glow:'#ffbe0b',desc:'Øv din charm'},
+    {id:'work',name:'ARBEJDE',icon:'💰',cost:'1 energi',glow:'#00d4aa',desc:'Tjen penge'},
+    {id:'rest',name:'HVIL',icon:'😴',cost:'Ny dag',glow:'#60a5fa',desc:'Sov og refill energi'},
+    {id:'club',name:'KLUBBEN',icon:'🪩',cost:'100 kr',glow:'#ff006e',desc:'Score damer!'},
+];
+
+function startMap(){
+    G.scene='map';
+    show('map-screen');
+    buildMap();
+    updateHUD();
+    renderMapBG();
+    if(G.tutorial===0){
+        G.tutorial=1;
+        setTimeout(()=>lethTip('Velkommen til byen, Hanzi! Tryk på et sted for at gå derhen. Start med GYM og byg dine stats op! 💪'),500);
+    }
+}
+
+function buildMap(){
+    const cont=document.getElementById('map-locs');
+    cont.innerHTML='';
+    locations.forEach(loc=>{
+        const card=document.createElement('div');
+        card.className='loc-card';
+        if(loc.id==='club'&&G.daysUntilClub>0)card.className+=' locked';
+        card.style.setProperty('--glow',loc.glow);
+
+        let badge='';
+        if(loc.id==='club'&&G.daysUntilClub>0)badge=`<div class="loc-badge" style="background:rgba(255,0,110,0.2);color:#ff006e;">${G.daysUntilClub} DAGE</div>`;
+        if(loc.id==='club'&&G.daysUntilClub<=0)badge=`<div class="loc-badge" style="background:rgba(255,0,110,0.3);color:#ff006e;animation:pulse 1s infinite;">ÅBEN!</div>`;
+
+        card.innerHTML=`${badge}<div class="loc-icon">${loc.icon}</div><div class="loc-name" style="color:${loc.glow}">${loc.name}</div><div class="loc-cost">${loc.cost}</div>`;
+        card.onclick=()=>goTo(loc.id);
+        cont.appendChild(card);
+    });
+}
+
+function renderMapBG(){
+    const c=document.getElementById('map-canvas');
+    c.width=window.innerWidth;c.height=window.innerHeight;
+    const cx=c.getContext('2d');
+    let t=0;
+    function draw(){
+        if(G.scene!=='map')return;
+        cx.fillStyle='#0a0a12';cx.fillRect(0,0,c.width,c.height);t+=0.005;
+        for(let i=0;i<60;i++){
+            const x=(i*137+50)%(c.width);
+            const y=(i*73+20)%(c.height);
+            const br=0.15+Math.sin(t*2+i)*0.1;
+            cx.fillStyle=`rgba(255,255,255,${br})`;
+            cx.beginPath();cx.arc(x,y,0.8,0,Math.PI*2);cx.fill();
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+}
+
+function goTo(id){
+    S.click();
+    switch(id){
+        case'gym':
+            if(G.energi<1)return mapMsg('Ingen energi! Hvil dig først. 😴');
+            openGym();break;
+        case'shop':openShop();break;
+        case'park':
+            if(G.energi<1)return mapMsg('Ingen energi!');
+            doPark();break;
+        case'work':
+            if(G.energi<1)return mapMsg('Ingen energi!');
+            openWork();break;
+        case'rest':doRest();break;
+        case'club':
+            if(G.daysUntilClub>0)return;
+            if(G.money<100)return mapMsg('Brug for 100 kr til klubben!');
+            G.money-=100;
+            openClub();break;
+    }
+}
+
+function closeOv(){
+    S.click();
+    document.querySelectorAll('.overlay').forEach(o=>o.style.display='none');
+    G.scene='map';
+    buildMap();updateHUD();
+}
+
+// ===== LETH TIPS =====
+function lethTip(text){
+    const tip=document.getElementById('leth-tip');
+    document.getElementById('lt-text').textContent=text;
+    tip.style.display='block';
+}
+document.getElementById('lt-close').onclick=()=>{S.click();document.getElementById('leth-tip').style.display='none';};
+
+// ===== REST =====
+function doRest(){
+    G.day++;G.daysUntilClub--;G.energi=G.maxEnergi;
+    if(G.daysUntilClub<=0){
+        mapMsg(`Dag ${G.day}. KLUBBEN ER ÅBEN I AFTEN! 🪩🔥`);
+        lethTip('Hanzi! Klubben er åben i aften! Tryk på KLUBBEN når du er klar. Det er SHOWTIME! 🔥');
+    } else {
+        mapMsg(`Dag ${G.day}. ${G.daysUntilClub} dage til klubben. Energi refilled!`);
+    }
+    buildMap();updateHUD();
+}
+
+// ===== PARK =====
+const parkMsgs=["Hanzi øver pick-up lines. 'Er du parkeringsbøde? For du er...fine.' 😬","YouTube: 'RIZZ MASTEREN afslører ALT'","Hanzi øver øjenkontakt med en statue. Intense.","Wingman-strategi med drengene i parken.","Hanzi læser 'The Art of Charm' på en bænk.","Smile-træning foran spejlet i parkens toilet."];
+function doPark(){
+    G.energi--;
+    const gain=6+Math.floor(Math.random()*10);
+    G.addXP('charm',gain);
+    floatText('+'+gain+' CHARM XP','#ffbe0b');
+    mapMsg(parkMsgs[Math.floor(Math.random()*parkMsgs.length)]);
+    if(G.tutorial===1){G.tutorial=2;setTimeout(()=>lethTip('Nice! Charm er VIGTIGT på klubben. Jo højere charm, jo bedre procent-chance for at dine lines lander! 📊'),800);}
+    updateHUD();
+}
+
+// ===== WORK =====
+const jobs=[
+    {name:'Netto - Kassen',pay:[80,130],desc:'+80-130 kr'},
+    {name:'Uber Eats Levering',pay:[100,180],desc:'+100-180 kr'},
+    {name:'Lager Vagt',pay:[120,200],desc:'+120-200 kr'},
+];
+function openWork(){
+    const cont=document.getElementById('work-opts');
+    cont.innerHTML='';
+    jobs.forEach(j=>{
+        const d=document.createElement('div');d.className='work-card';
+        d.innerHTML=`<div class="wk-name">${j.name}</div><div class="wk-info">${j.desc} | -1 energi</div>`;
+        d.onclick=()=>{
+            if(G.energi<1){mapMsg('Ingen energi!');return;}
+            G.energi--;
+            const earn=j.pay[0]+Math.floor(Math.random()*(j.pay[1]-j.pay[0]));
+            G.money+=earn;
+            S.coin();floatText('+'+earn+' KR','#00d4aa');
+            mapMsg(j.name+' - tjente '+earn+' kr!');
+            closeOv();
+        };
+        cont.appendChild(d);
+    });
+    show('work-ov');G.scene='work';
+}
+
+// ===== GYM =====
+const exercises=[
+    {id:'bench',name:'BÆNKPRES',icon:'🏋️',stat:'styrke',desc:'Tryk ved toppen af baren!'},
+    {id:'curls',name:'CURLS',icon:'💪',stat:'arms',desc:'Ram targets når de rammer linjen!'},
+    {id:'squats',name:'SQUATS',icon:'🦵',stat:'ben',desc:'Tryk når cirklerne matcher!'},
+    {id:'treadmill',name:'LØBEBÅND',icon:'🏃',stat:'cardio',desc:'Tryk L og R skiftevis!'},
+];
+
+function openGym(){
+    const grid=document.getElementById('gym-grid');grid.innerHTML='';
+    exercises.forEach(ex=>{
+        const c=document.createElement('div');c.className='gym-card';
+        c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gs">${ex.stat.toUpperCase()}</div><div class="gl">LV ${G.stats[ex.stat]}</div>`;
+        c.onclick=()=>{
+            if(G.energi<1){mapMsg('Ingen energi!');return;}
+            G.energi--;
+            startTraining(ex);
+        };
+        grid.appendChild(c);
+    });
+    show('gym-ov');G.scene='gym';
+}
+
+// ===== TRAINING =====
+let tRAF=null,tState={};
+
+function startTraining(ex){
+    S.click();hide('gym-ov');show('train-ov');G.scene='training';
+    document.getElementById('t-title').textContent=ex.icon+' '+ex.name;
+    document.getElementById('t-score').textContent='';
+    document.getElementById('t-instr').textContent=ex.desc;
+    document.getElementById('t-result').innerHTML='';
+    const tc=document.getElementById('t-canvas');
+    tc.width=Math.min(360,window.innerWidth-30);
+    tc.height=Math.min(360,window.innerHeight*0.45);
+    tState={ex,score:0,reps:0,maxReps:6,phase:'active'};
+    switch(ex.id){
+        case'bench':trainBench(tc);break;
+        case'curls':trainCurls(tc);break;
+        case'squats':trainSquats(tc);break;
+        case'treadmill':tState.maxReps=20;trainTread(tc);break;
+    }
+}
+
+function endTraining(){
+    cancelAnimationFrame(tRAF);
+    const ex=tState.ex;
+    const maxS=tState.maxReps*(ex.id==='treadmill'?2:10);
+    const pct=tState.score/maxS;
+    const xpGain=Math.max(1,Math.floor(pct*18+4));
+    G.addXP(ex.stat,xpGain);
+    let grade,gc;
+    if(pct>0.85){grade='PERFEKT!';gc='#ffbe0b';S.perf();}
+    else if(pct>0.6){grade='GODT!';gc='#00d4aa';S.ok();}
+    else if(pct>0.3){grade='OK';gc='#ff6b35';S.click();}
+    else{grade='SVAGT...';gc='#ff006e';S.bad();}
+    document.getElementById('t-instr').textContent='';
+    document.getElementById('t-result').innerHTML=`<div class="train-result"><h2 style="color:${gc}">${grade}</h2><div class="xp-gain">+${xpGain} ${ex.stat.toUpperCase()} XP</div><div class="grade">${ex.name} → LV${G.stats[ex.stat]}</div><button class="btn btn-sm" onclick="hide('train-ov');openGym();updateHUD();">VIDERE</button></div>`;
+}
+
+// BENCH
+function trainBench(tc){
+    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let pos=0,dir=1,spd=0.022,wait=true;
+    const gz={min:0.7,max:0.9};
+    const tap=()=>{if(!wait||tState.phase!=='active')return;wait=false;
+        const inG=pos>=gz.min&&pos<=gz.max,inY=pos>=0.5&&pos<gz.min;
+        let p=inG?10:inY?5:1;
+        if(inG){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(inY){S.ok();floatText('GODT!','#00d4aa');}else{S.bad();floatText('MISS','#ff006e');}
+        tState.score+=p;tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
+        if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}
+        spd+=0.003;setTimeout(()=>{wait=true;},250);};
+    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
+    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
+        cx.clearRect(0,0,W,H);pos+=dir*spd;if(pos>=1||pos<=0)dir*=-1;pos=Math.max(0,Math.min(1,pos));
+        const tX=W/2-18,tW=36,tH=H-30,tY=15;
+        cx.fillStyle='rgba(255,255,255,0.06)';cx.fillRect(tX,tY,tW,tH);
+        const gy1=tY+tH*(1-gz.max),gy2=tY+tH*(1-gz.min);
+        cx.fillStyle='rgba(0,212,170,0.2)';cx.fillRect(tX,gy1,tW,gy2-gy1);
+        cx.fillStyle='rgba(255,190,11,0.1)';cx.fillRect(tX,gy2,tW,tH*0.2);
+        const iY=tY+tH*(1-pos);
+        cx.fillStyle='#ff006e';cx.shadowColor='#ff006e';cx.shadowBlur=12;
+        cx.fillRect(tX-4,iY-3,tW+8,6);cx.shadowBlur=0;
+        cx.fillStyle='#555';cx.font='bold 10px Orbitron';cx.textAlign='left';
+        cx.fillText('POWER',tX+tW+10,(gy1+gy2)/2+4);
+        cx.fillStyle='#fff';cx.font='bold 12px Orbitron';cx.textAlign='center';
+        cx.fillText('TAP!',W/2,H-4);
+        tRAF=requestAnimationFrame(draw);}
+    draw();
+}
+
+// CURLS
+function trainCurls(tc){
+    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let targets=[],hzY=H-50;
+    function spawn(){targets.push({x:W/2+(Math.random()-0.5)*100,y:0,spd:2+tState.reps*0.25,hit:false,miss:false});}
+    spawn();let st=0;
+    const tap=()=>{if(tState.phase!=='active')return;
+        const t=targets.find(t=>!t.hit&&!t.miss&&Math.abs(t.y-hzY)<22);
+        if(t){t.hit=true;const d=Math.abs(t.y-hzY);let p=d<7?10:d<16?6:3;tState.score+=p;
+            if(p>=10){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(p>=6){S.ok();floatText('GODT!','#00d4aa');}else{S.click();}
+            tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
+            if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}}else S.bad();};
+    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
+    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
+        cx.clearRect(0,0,W,H);
+        cx.strokeStyle='rgba(255,0,110,0.4)';cx.lineWidth=2;cx.beginPath();cx.moveTo(W/2-55,hzY);cx.lineTo(W/2+55,hzY);cx.stroke();
+        cx.fillStyle='rgba(255,0,110,0.06)';cx.fillRect(W/2-55,hzY-18,110,36);
+        targets.forEach(t=>{if(t.hit){cx.fillStyle='rgba(0,212,170,0.4)';cx.beginPath();cx.arc(t.x,t.y,16,0,Math.PI*2);cx.fill();}
+        else if(!t.miss){t.y+=t.spd;if(t.y>H+20)t.miss=true;
+        const d=Math.abs(t.y-hzY);const c=d<22?'#ff006e':'#8b5cf6';cx.fillStyle=c;cx.shadowColor=c;cx.shadowBlur=d<22?12:4;
+        cx.beginPath();cx.arc(t.x,t.y,12,0,Math.PI*2);cx.fill();cx.shadowBlur=0;}});
+        st++;if(st>55&&targets.filter(t=>!t.hit&&!t.miss).length===0&&tState.reps<tState.maxReps){spawn();st=0;}
+        cx.fillStyle='#fff';cx.font='bold 11px Orbitron';cx.textAlign='center';cx.fillText('TAP NÅR ● RAMMER LINJEN',W/2,H-4);
+        tRAF=requestAnimationFrame(draw);}
+    draw();
+}
+
+// SQUATS
+function trainSquats(tc){
+    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let ring=110,tgt=32,spd=0.7,wait=true;
+    const tap=()=>{if(!wait||tState.phase!=='active')return;wait=false;
+        const d=Math.abs(ring-tgt);let p=d<4?10:d<12?6:d<25?3:0;
+        if(p>=10){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(p>=6){S.ok();floatText('GODT!','#00d4aa');}else if(p>0){S.click();}else{S.bad();floatText('MISS','#ff006e');}
+        tState.score+=p;tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
+        if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}
+        ring=90+Math.random()*40;spd+=0.08;setTimeout(()=>{wait=true;},250);};
+    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
+    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
+        cx.clearRect(0,0,W,H);ring-=spd;if(ring<8)ring=90+Math.random()*40;
+        cx.strokeStyle='rgba(255,0,110,0.35)';cx.lineWidth=3;cx.beginPath();cx.arc(W/2,H/2,tgt,0,Math.PI*2);cx.stroke();
+        const d=Math.abs(ring-tgt);const c=d<4?'#ffbe0b':d<12?'#00d4aa':d<25?'#8b5cf6':'rgba(255,255,255,0.2)';
+        cx.strokeStyle=c;cx.lineWidth=3;if(d<12){cx.shadowColor=c;cx.shadowBlur=12;}
+        cx.beginPath();cx.arc(W/2,H/2,ring,0,Math.PI*2);cx.stroke();cx.shadowBlur=0;
+        cx.fillStyle='#fff';cx.font='bold 11px Orbitron';cx.textAlign='center';cx.fillText('TAP NÅR CIRKLERNE MATCHER',W/2,H-4);
+        tRAF=requestAnimationFrame(draw);}
+    draw();
+}
+
+// TREADMILL
+function trainTread(tc){
+    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let exp='left',timeLeft=10,last=Date.now(),streak=0;
+    const tap=(e)=>{if(tState.phase!=='active')return;let side=null;
+        if(e.type==='keydown'){if(e.key==='ArrowLeft'||e.key==='a')side='left';if(e.key==='ArrowRight'||e.key==='d')side='right';}
+        else{const r=tc.getBoundingClientRect();const tx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;side=tx<W/2?'left':'right';}
+        if(!side)return;
+        if(side===exp){tState.score+=2;streak++;if(streak>3)S.perf();else S.ok();tState.reps++;exp=exp==='left'?'right':'left';document.getElementById('t-score').textContent=tState.reps+'';}
+        else{streak=0;S.bad();}};
+    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
+    function draw(){const now=Date.now();timeLeft-=(now-last)/1000;last=now;
+        if(timeLeft<=0||tState.phase==='done'){tState.phase='done';document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);setTimeout(endTraining,200);return;}
+        cx.clearRect(0,0,W,H);
+        const la=exp==='left';
+        cx.fillStyle=la?'rgba(255,0,110,0.15)':'rgba(255,255,255,0.02)';cx.fillRect(0,0,W/2,H);
+        cx.fillStyle=!la?'rgba(255,0,110,0.15)':'rgba(255,255,255,0.02)';cx.fillRect(W/2,0,W/2,H);
+        cx.strokeStyle='rgba(255,255,255,0.08)';cx.lineWidth=2;cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
+        cx.font='36px sans-serif';cx.textAlign='center';
+        cx.fillStyle=la?'#ff006e':'rgba(255,255,255,0.12)';cx.fillText('👟',W/4,H/2);
+        cx.fillStyle=!la?'#ff006e':'rgba(255,255,255,0.12)';cx.fillText('👟',W*3/4,H/2);
+        cx.font='bold 13px Orbitron';cx.fillStyle='#fff';cx.fillText('L',W/4,H/2+40);cx.fillText('R',W*3/4,H/2+40);
+        cx.fillStyle='#ffbe0b';cx.font='bold 16px Orbitron';cx.fillText(Math.ceil(timeLeft)+'s',W/2,28);
+        if(streak>3){cx.fillStyle='#ff006e';cx.font='bold 11px Orbitron';cx.fillText('STREAK x'+streak+'!',W/2,H-10);}
+        tRAF=requestAnimationFrame(draw);}
+    draw();
+}
+
+// ===== SHOP =====
+const shopItems=[
+    {name:'Barbertrim',icon:'💈',price:50,stat:'style',xp:8},
+    {name:'Ny T-shirt',icon:'👕',price:80,stat:'style',xp:10},
+    {name:'Fresh Sneakers',icon:'👟',price:120,stat:'style',xp:14},
+    {name:'Guld-kæde',icon:'⛓️',price:200,stat:'style',xp:18},
+    {name:'Designer Jakke',icon:'🧥',price:300,stat:'style',xp:24},
+    {name:'Parfume',icon:'🧴',price:150,stat:'charm',xp:16},
+    {name:'Solbriller',icon:'🕶️',price:180,stat:'style',xp:20},
+    {name:'Diamant Øreringe',icon:'💎',price:400,stat:'style',xp:28},
+    {name:'Fake Rolex',icon:'⌚',price:250,stat:'style',xp:18},
+    {name:'Skincare Set',icon:'🧖',price:100,stat:'charm',xp:12},
+];
+
+function openShop(){
+    const cont=document.getElementById('shop-list');cont.innerHTML='';
+    shopItems.forEach((it,i)=>{
+        const bought=G.bought.includes(i);
+        const d=document.createElement('div');d.className='shop-row'+(bought?' bought':'');
+        d.innerHTML=`<div class="sr-left"><span class="sr-icon">${it.icon}</span><div><div class="sr-name">${it.name}</div><div class="sr-stat">+${it.xp} ${it.stat.toUpperCase()} XP</div></div></div><div class="sr-price">${bought?'KØBT':it.price+' KR'}</div>`;
+        if(!bought)d.onclick=()=>{
+            if(G.money<it.price){mapMsg('Ikke nok penge!');S.bad();return;}
+            G.money-=it.price;G.addXP(it.stat,it.xp);G.bought.push(i);
+            S.coin();floatText('+'+it.xp+' '+it.stat.toUpperCase()+' XP','#8b5cf6');
+            openShop();updateHUD();
+        };
+        cont.appendChild(d);
+    });
+    show('shop-ov');G.scene='shop';
+}
+
+// ===== CLUB =====
+const girlsByRound=[
+    [{name:"Sofie",icon:"👩‍🦰",diff:"BEGYNDER",threshold:{styrke:2,style:3,charm:3},
+      lines:[
+        {speaker:"SOFIE",text:"Hej! Fedt sted ikk? Kommer du her tit?",choices:[
+            {text:"Ej, min første gang. Nogen der kan vise mig rundt? 😏",stat:'charm',req:3,bonus:8},
+            {text:"Ja, jeg er stamgæst. Kender DJ'en.",stat:'charm',req:4,bonus:5},
+            {text:"*Flexer biceps* Nej men check mine gains...",stat:'styrke',req:5,bonus:-3},
+        ]},
+        {speaker:"SOFIE",text:"Haha du er sød. Hvad drikker du?",choices:[
+            {text:"Bestiller en drink til os begge 🍹",stat:'charm',req:2,bonus:10},
+            {text:"Vand. Strict kur. No cheat days.",stat:'charm',req:6,bonus:-2},
+            {text:"Hvad end du vil ha'. Min aften.",stat:'style',req:3,bonus:7},
+        ]}
+      ],win:"Sofie griner og giver dig sit nummer! 'Skriv til mig, Hanzi!' 📱",lose:"Sofie smiler høfligt og vender sig. Tough luck."},
+    ],
+    [{name:"Nadia",icon:"💃",diff:"MEDIUM",threshold:{styrke:4,style:5,charm:5},
+      lines:[
+        {speaker:"NADIA",text:"YOOO dette beat er SYGT! Kan du føle det?!",choices:[
+            {text:"*Danser med* JA BRO DETTE ER MIT JAM! 🔥",stat:'charm',req:5,bonus:10},
+            {text:"Musikken er aight. Selskabet blev bedre 😎",stat:'charm',req:6,bonus:8},
+            {text:"*Står stille og nikker akavet*",stat:'charm',req:10,bonus:-5},
+        ]},
+        {speaker:"NADIA",text:"Du er vild! Hvad laver du?",choices:[
+            {text:"Gym, grind, repeat. Men i aften er det os.",stat:'charm',req:4,bonus:9},
+            {text:"Arbejder på min drøm. Og nu drømmer jeg ikke.",stat:'charm',req:7,bonus:7},
+            {text:"Netto. Kassen. 8 timer.",stat:'charm',req:12,bonus:2},
+        ]}
+      ],win:"Nadia tager din hånd! 'Vi danser hele natten!' 🎶",lose:"'Du er sød!' siger hun og danser videre. Friendzoned."},
+    ],
+    [{name:"Jasmin",icon:"👸",diff:"SVÆR",threshold:{styrke:6,style:8,charm:8},
+      lines:[
+        {speaker:"JASMIN",text:"*Kigger dig op og ned* ...og du er?",choices:[
+            {text:"Hanzi. Og du keder dig tydeligvis herinde.",stat:'charm',req:8,bonus:10},
+            {text:"Din fremtidige date. Tak mig senere.",stat:'charm',req:10,bonus:8},
+            {text:"*Nervøst* Øh... hej... jeg hedder...",stat:'charm',req:15,bonus:-8},
+        ]},
+        {speaker:"JASMIN",text:"Hmm. Selvtillid. Kan du danse?",choices:[
+            {text:"*Tager hendes hånd ud på gulvet*",stat:'style',req:7,bonus:12},
+            {text:"Danse? Nej. Men 140kg bænk.",stat:'styrke',req:10,bonus:-2},
+            {text:"Kun hvis du lærer mig. Jeg viber.",stat:'charm',req:6,bonus:6},
+        ]}
+      ],win:"Jasmin smiler! 'Du er anderledes. Jeg kan lide det.' Hun tager din arm! 💎",lose:"Jasmin vinker vagten. 'Denne her... nej.' Brutal."},
+    ],
+    [{name:"Isabella",icon:"👑",diff:"BOSS - DEN LÆKRESTE",threshold:{styrke:8,style:12,charm:12},
+      lines:[
+        {speaker:"ISABELLA",text:"*Hele klubben kigger på hende. Hun ser på dig.* Hvorfor stirrer du?",choices:[
+            {text:"Fordi alle andre kigger, men ingen tør gå over. Det gør jeg.",stat:'charm',req:12,bonus:12},
+            {text:"Undskyld. Du er bare... wow.",stat:'charm',req:8,bonus:6},
+            {text:"*Prøver at kigge cool ud men snubler*",stat:'charm',req:20,bonus:-10},
+        ]},
+        {speaker:"ISABELLA",text:"*Smiler let* Du har noget de andre ikke har. Hvad er det?",choices:[
+            {text:"Autenticitet. Jeg er ikke her for at imponere. Bare for at møde dig.",stat:'charm',req:10,bonus:12},
+            {text:"Main character energy. Og du mangler en co-star. 😏",stat:'style',req:10,bonus:10},
+            {text:"Øh... gode sko?",stat:'style',req:15,bonus:-4},
+        ]},
+        {speaker:"ISABELLA",text:"Sidste test. Hvorfor dig og ikke nogen af de andre her?",choices:[
+            {text:"Fordi de andre prøver at være noget. Jeg ER det.",stat:'charm',req:11,bonus:15},
+            {text:"Det bestemmer du. Jeg ved bare at du ikke fortryder det.",stat:'charm',req:13,bonus:12},
+            {text:"Fordi... jeg har grinded i 4 uger for dette øjeblik? 😅",stat:'charm',req:9,bonus:8},
+        ]}
+      ],win:"Isabella tager din hånd. 'Du har bestået.' Hele klubben ser det. TBH DRENGENE SER DET. HANZI ER TILBAGE! 👑🔥",lose:"Isabella ryster på hovedet. 'Tæt på... men ikke nok.' Du er stadig ude af TBH."},
+    ],
+];
+
+let curGirl,curLine,clubScore;
+
+function openClub(){
+    G.scene='club';show('club-ov');
+    const cc=document.getElementById('club-canvas');
+    cc.width=window.innerWidth;cc.height=window.innerHeight;
+    renderClubBG(cc);S.startClub();
+
+    const roundGirls=girlsByRound[Math.min(G.round-1,girlsByRound.length-1)];
+    curGirl=roundGirls[Math.floor(Math.random()*roundGirls.length)];
+    curLine=0;clubScore=0;
+
+    document.getElementById('club-girl-info').innerHTML=`<div class="cg-icon">${curGirl.icon}</div><div class="cg-name">${curGirl.name}</div><div class="cg-diff">${curGirl.diff}</div>`;
+    clubDialog('FORTÆLLER',`Hanzi træder ind. Bassen banker. Du ser ${curGirl.name}...`);
+    document.getElementById('club-leave').style.display='none';
+    setTimeout(()=>showClubLine(),2000);
+}
+
+function renderClubBG(cc){
+    const cx=cc.getContext('2d');let t=0;
+    function draw(){if(G.scene!=='club')return;cx.fillStyle='#0a0010';cx.fillRect(0,0,cc.width,cc.height);t+=0.02;
+        const fY=cc.height*0.55;
+        for(let x=0;x<cc.width;x+=45)for(let y=fY;y<cc.height;y+=45){cx.fillStyle=`hsl(${(x+y+t*100)%360},65%,${15+Math.sin(t*2+x*0.04)*7}%)`;cx.fillRect(x+1,y+1,43,43);}
+        for(let i=0;i<5;i++){cx.strokeStyle=`hsla(${(t*50+i*70)%360},100%,55%,0.15)`;cx.lineWidth=2;cx.beginPath();cx.moveTo(cc.width*(0.1+i*0.18),0);cx.lineTo(cc.width*(0.1+i*0.18)+Math.sin(t+i)*cc.height*0.3,cc.height);cx.stroke();}
+        cx.fillStyle='#aaa';cx.beginPath();cx.arc(cc.width/2,45,16,0,Math.PI*2);cx.fill();
+        requestAnimationFrame(draw);}
+    draw();
+}
+
+function clubDialog(sp,txt){
+    document.getElementById('cb-speaker').textContent=sp;
+    document.getElementById('cb-text').textContent=txt;
+    document.getElementById('club-choices').innerHTML='';
+}
+
+function showClubLine(){
+    if(curLine>=curGirl.lines.length){resolveClub();return;}
+    const line=curGirl.lines[curLine];
+    clubDialog(line.speaker,line.text);
+    const ch=document.getElementById('club-choices');ch.innerHTML='';
+    line.choices.forEach(c=>{
+        const pct=G.chance(c.stat,c.req);
+        const pctClass=pct>=65?'pct-high':pct>=40?'pct-mid':'pct-low';
+        const btn=document.createElement('button');btn.className='club-ch';
+        btn.innerHTML=`<span>${c.text}</span><span class="ch-pct ${pctClass}">${pct}%</span>`;
+        btn.onclick=()=>{
+            S.click();
+            const roll=Math.random()*100;
+            const success=roll<pct;
+            const bonus=success?Math.max(c.bonus,1):Math.min(c.bonus,-2);
+            clubScore+=bonus;
+            if(success&&bonus>0){S.ok();clubDialog('✅','Smooth! Hun smiler. Det landede! 😏');floatText('+'+bonus,'#00d4aa');}
+            else{S.bad();clubDialog('❌','Yikes... akavet stilhed. 😬');floatText(bonus+'','#ff006e');}
+            curLine++;
+            setTimeout(()=>showClubLine(),1500);
+        };
+        ch.appendChild(btn);
+    });
+}
+
+function resolveClub(){
+    const tp=G.stats.styrke+G.stats.style+G.stats.charm+G.stats.arms;
+    const th=curGirl.threshold.styrke+curGirl.threshold.style+curGirl.threshold.charm;
+    const sb=tp/(th*2);
+    const fs=clubScore+sb*6;
+    if(fs>6){
+        clubDialog('💖',curGirl.win);S.perf();
+        G.totalScore+=100;G.girlsMet++;
+        floatText('+100 SCORE!','#ff006e');
+    }else if(fs>2){
+        clubDialog('😐',"'Du er cute, men... nej.' Tæt på!");
+        G.totalScore+=25;
+    }else{
+        clubDialog('💔',curGirl.lose);S.bad();
+    }
+    document.getElementById('club-choices').innerHTML='';
+    document.getElementById('club-leave').style.display='block';
+}
+
+function leaveClub(){
+    S.stopClub();hide('club-ov');G.scene='map';
+    G.round++;G.daysUntilClub=7;G.energi=G.maxEnergi;G.day++;
+
+    if(G.round>G.maxRounds){
+        endGame();return;
+    }
+
+    const girlScored=G.girlsMet>=G.round-1;
+    if(girlScored){
+        lethTip(`NICE Hanzi! Du scorede ${curGirl.name}! 🔥 Runde ${G.round} om 7 dage. Pigerne bliver SVÆRERE. Bliv stærkere!`);
+    }else{
+        lethTip(`Ah bror, ${curGirl.name} var ikke imponeret... Træn hårdere! Runde ${G.round} om 7 dage. Du kan stadig nå det! 💪`);
+    }
+    buildMap();updateHUD();
+}
+
+// ===== END GAME =====
+function endGame(){
+    G.scene='end';
+    hide('map-screen');show('result-ov');
+    const box=document.getElementById('result-box');
+    let icon,title,color,desc;
+    if(G.girlsMet>=4){icon='👑';title='HANZI ER LEGENDEN!';color='#ffbe0b';desc='ALLE 4 SCORET! Isabella tog din hånd foran hele klubben. TBH drengene bøjer sig. Du er NUMMER 1 IGEN! Leth græder af stolthed. 🔥👑';}
+    else if(G.girlsMet>=3){icon='😎';title='HANZI HAR GAME!';color='#00d4aa';desc=`${G.girlsMet} ud af 4 scoret! Stærkt comeback, men Isabella glippede. TBH overvejer at tage dig tilbage...`;}
+    else if(G.girlsMet>=1){icon='💪';title='DER ER POTENTIALE';color='#ff6b35';desc=`${G.girlsMet} scoret. Ikke nok til TBH, men Leth siger 'Vi prøver igen næste måned, bror.'`;}
+    else{icon='😅';title='HANZI PRØVEDE...';color='#aaa';desc='0 scoret. TBH er stadig ude af rækkevidde. Men hey... der er altid næste sæson!';}
+    box.innerHTML=`<div class="r-icon">${icon}</div><h2 style="color:${color}">${title}</h2><div class="r-desc">${desc}</div><div class="r-score">SCORE: ${G.totalScore} | LVL: ${G.totalLvl()} | DAMER: ${G.girlsMet}/4</div><button class="btn" onclick="restartGame()">PRØV IGEN</button>`;
+}
+
+function restartGame(){
+    G.day=1;G.daysUntilClub=7;G.money=200;G.energi=5;G.maxEnergi=5;G.round=1;
+    G.stats={styrke:1,arms:1,ben:1,cardio:1,style:1,charm:1};
+    G.xp={styrke:0,arms:0,ben:0,cardio:0,style:0,charm:0};
+    G.bought=[];G.girlsMet=0;G.totalScore=0;G.tutorial=0;
+    hide('result-ov');
+    hide('title');
+    initPhone();
+}
+
+// ===== START =====
+document.getElementById('start-btn').onclick=()=>{
+    S.init();S.ok();
+    hide('title');
+    initPhone();
+};
+document.getElementById('phone-next').onclick=()=>advancePhone();
+</script>
 </body>
 </html>
