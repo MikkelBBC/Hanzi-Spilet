@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanzi Lad Simulator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a0f;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ===== STARFIELD BACKGROUND ===== */
+        .stars {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ===== TITLE SCREEN ===== */
+        #title-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            background: radial-gradient(ellipse at center, #1a0030 0%, #0a0a0f 70%);
+        }
+
+        #title-screen h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff006e, #ff6b35, #ffbe0b, #ff006e);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 3s ease infinite, titlePulse 2s ease-in-out infinite;
+            text-shadow: 0 0 40px rgba(255, 0, 110, 0.5);
+            filter: drop-shadow(0 0 20px rgba(255, 0, 110, 0.5));
+            margin-bottom: 10px;
+        }
+
+        #title-screen .subtitle {
+            font-size: 1rem;
+            color: #ff6b35;
+            letter-spacing: 4px;
+            margin-bottom: 50px;
+            opacity: 0.8;
+        }
+
+        .start-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            padding: 15px 50px;
+            border: 2px solid #ff006e;
+            background: transparent;
+            color: #ff006e;
+            cursor: pointer;
+            letter-spacing: 3px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn:hover {
+            background: #ff006e;
+            color: #fff;
+            box-shadow: 0 0 30px rgba(255, 0, 110, 0.5), inset 0 0 30px rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        /* ===== GAME HUD ===== */
+        #game-hud {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 30px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+
+        .stat-bars {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-bar label {
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            opacity: 0.7;
+        }
+
+        .stat-bar .bar-container {
+            width: 120px;
+            height: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-bar .bar-fill {
+            height: 100%;
+            border-radius: 6px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.3), transparent);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .stat-bar .bar-value {
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .bar-styrke .bar-fill { background: linear-gradient(90deg, #ff006e, #ff4d8d); }
+        .bar-style .bar-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .bar-charm .bar-fill { background: linear-gradient(90deg, #ffbe0b, #ffd966); }
+        .bar-energi .bar-fill { background: linear-gradient(90deg, #00d4aa, #34ebc6); }
+
+        .day-counter {
+            text-align: right;
+        }
+
+        .day-counter .day {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #ff006e;
+        }
+
+        .day-counter .money {
+            font-size: 0.9rem;
+            color: #ffbe0b;
+            margin-top: 5px;
+        }
+
+        /* ===== MAIN AREA ===== */
+        .game-main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 100px);
+            padding: 20px;
+        }
+
+        /* ===== CHARACTER ===== */
+        .character-display {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        #character-canvas {
+            image-rendering: pixelated;
+        }
+
+        .character-name {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ff006e;
+            margin-top: 10px;
+            text-shadow: 0 0 10px rgba(255, 0, 110, 0.5);
+        }
+
+        .character-mood {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .action-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 20px 15px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            letter-spacing: 1px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-btn .icon {
+            font-size: 2rem;
+        }
+
+        .action-btn.gym:hover { border-color: #ff006e; background: rgba(255, 0, 110, 0.15); }
+        .action-btn.style:hover { border-color: #8b5cf6; background: rgba(139, 92, 246, 0.15); }
+        .action-btn.charm:hover { border-color: #ffbe0b; background: rgba(255, 190, 11, 0.15); }
+        .action-btn.work:hover { border-color: #00d4aa; background: rgba(0, 212, 170, 0.15); }
+        .action-btn.rest:hover { border-color: #60a5fa; background: rgba(96, 165, 250, 0.15); }
+        .action-btn.club:hover { border-color: #ff006e; background: rgba(255, 0, 110, 0.2); box-shadow: 0 0 40px rgba(255, 0, 110, 0.3); }
+
+        .action-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .action-btn .cost {
+            font-size: 0.55rem;
+            opacity: 0.5;
+        }
+
+        /* ===== EVENT LOG ===== */
+        .event-log {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .event-message {
+            font-size: 0.75rem;
+            padding: 12px 20px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.5s ease;
+            line-height: 1.5;
+        }
+
+        /* ===== CLUB SCENE ===== */
+        #club-scene {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 20;
+            background: #0a0010;
+            overflow: hidden;
+        }
+
+        .club-bg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        #club-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .club-ui {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 30px;
+            z-index: 2;
+        }
+
+        .club-dialogue {
+            max-width: 500px;
+            width: 90%;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+        }
+
+        .club-dialogue .speaker {
+            font-size: 0.7rem;
+            color: #ff006e;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .club-dialogue .text {
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: #ddd;
+        }
+
+        .club-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 500px;
+            width: 90%;
+            margin-bottom: 30px;
+        }
+
+        .club-choice {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            padding: 14px 20px;
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            background: rgba(255, 0, 110, 0.08);
+            color: #fff;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            text-align: left;
+            letter-spacing: 1px;
+        }
+
+        .club-choice:hover {
+            border-color: #ff006e;
+            background: rgba(255, 0, 110, 0.2);
+            transform: translateX(5px);
+        }
+
+        .club-back-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            padding: 10px 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #aaa;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        .club-back-btn:hover {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* ===== RESULT SCREEN ===== */
+        #result-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 30;
+            background: rgba(0,0,0,0.95);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-content {
+            text-align: center;
+        }
+
+        .result-content .result-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .result-content h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+        }
+
+        .result-content p {
+            font-size: 0.85rem;
+            color: #aaa;
+            max-width: 400px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .result-content .score-display {
+            font-size: 1.5rem;
+            color: #ffbe0b;
+            margin-bottom: 30px;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes neonFlicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.8; }
+            94% { opacity: 1; }
+            96% { opacity: 0.9; }
+            97% { opacity: 1; }
+        }
+
+        .float-text {
+            position: absolute;
+            font-size: 0.8rem;
+            font-weight: 700;
+            pointer-events: none;
+            animation: floatUp 1.5s ease forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+        }
+
+        /* ===== HANZI ENTRANCE ===== */
+        .hanzi-title-art {
+            margin-bottom: 30px;
+            animation: hanziFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes hanziFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            #title-screen h1 { font-size: 2.2rem; }
+            .action-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .stat-bars { flex-wrap: wrap; gap: 10px; }
+            .stat-bar .bar-container { width: 80px; }
+            .hud-top { padding: 10px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- STARFIELD -->
+        <canvas class="stars" id="starfield"></canvas>
+
+        <!-- TITLE SCREEN -->
+        <div id="title-screen">
+            <div class="hanzi-title-art">
+                <canvas id="title-character" width="160" height="200"></canvas>
+            </div>
+            <h1>HANZI LAD</h1>
+            <div class="subtitle">S I M U L A T O R</div>
+            <button class="start-btn" onclick="startGame()">START SPILLET</button>
+        </div>
+
+        <!-- GAME HUD -->
+        <div id="game-hud">
+            <div class="hud-top">
+                <div class="stat-bars">
+                    <div class="stat-bar bar-styrke">
+                        <label>STYRKE</label>
+                        <div class="bar-container"><div class="bar-fill" id="bar-styrke" style="width:10%"></div></div>
+                        <div class="bar-value" id="val-styrke">10</div>
+                    </div>
+                    <div class="stat-bar bar-style">
+                        <label>STYLE</label>
+                        <div class="bar-container"><div class="bar-fill" id="bar-style" style="width:10%"></div></div>
+                        <div class="bar-value" id="val-style">10</div>
+                    </div>
+                    <div class="stat-bar bar-charm">
+                        <label>CHARM</label>
+                        <div class="bar-container"><div class="bar-fill" id="bar-charm" style="width:10%"></div></div>
+                        <div class="bar-value" id="val-charm">10</div>
+                    </div>
+                    <div class="stat-bar bar-energi">
+                        <label>ENERGI</label>
+                        <div class="bar-container"><div class="bar-fill" id="bar-energi" style="width:100%"></div></div>
+                        <div class="bar-value" id="val-energi">100</div>
+                    </div>
+                </div>
+                <div class="day-counter">
+                    <div class="day">DAG <span id="day-num">1</span></div>
+                    <div class="money" id="money-display">0 KR</div>
+                </div>
+            </div>
+
+            <div class="game-main">
+                <div class="character-display">
+                    <canvas id="character-canvas" width="160" height="200"></canvas>
+                    <div class="character-name">HANZI</div>
+                    <div class="character-mood" id="char-mood">Klar til at grinde</div>
+                </div>
+
+                <div class="action-grid">
+                    <button class="action-btn gym" onclick="doAction('gym')">
+                        <span class="icon">💪</span>
+                        GYM
+                        <span class="cost">-20 energi</span>
+                    </button>
+                    <button class="action-btn style" onclick="doAction('style')">
+                        <span class="icon">👔</span>
+                        STYLE
+                        <span class="cost">-15 energi, -50 kr</span>
+                    </button>
+                    <button class="action-btn charm" onclick="doAction('charm')">
+                        <span class="icon">🗣️</span>
+                        CHARM
+                        <span class="cost">-15 energi</span>
+                    </button>
+                    <button class="action-btn work" onclick="doAction('work')">
+                        <span class="icon">💰</span>
+                        ARBEJDE
+                        <span class="cost">-30 energi</span>
+                    </button>
+                    <button class="action-btn rest" onclick="doAction('rest')">
+                        <span class="icon">😴</span>
+                        HVILE
+                        <span class="cost">Ny dag</span>
+                    </button>
+                    <button class="action-btn club" onclick="doAction('club')">
+                        <span class="icon">🪩</span>
+                        KLUBBEN
+                        <span class="cost">-50 energi, -100 kr</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="event-log">
+                <div class="event-message" id="event-msg">Yo Hanzi! Tid til at grinde og blive klar til klubben, bror!</div>
+            </div>
+        </div>
+
+        <!-- CLUB SCENE -->
+        <div id="club-scene">
+            <div class="club-bg">
+                <canvas id="club-canvas"></canvas>
+            </div>
+            <div class="club-ui">
+                <div class="club-dialogue">
+                    <div class="speaker" id="club-speaker">???</div>
+                    <div class="text" id="club-text"></div>
+                </div>
+                <div class="club-choices" id="club-choices"></div>
+                <button class="club-back-btn" onclick="leaveClub()">SMUT FRA KLUBBEN</button>
+            </div>
+        </div>
+
+        <!-- RESULT SCREEN -->
+        <div id="result-screen">
+            <div class="result-content">
+                <div class="result-icon" id="result-icon"></div>
+                <h2 id="result-title"></h2>
+                <p id="result-text"></p>
+                <div class="score-display" id="result-score"></div>
+                <button class="start-btn" onclick="restartGame()">PRØV IGEN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== AUDIO ENGINE =====
+    const AudioEngine = {
+        ctx: null,
+        masterGain: null,
+        musicGain: null,
+        sfxGain: null,
+        isPlaying: false,
+        currentOscs: [],
+
+        init() {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = 0.3;
+            this.masterGain.connect(this.ctx.destination);
+
+            this.musicGain = this.ctx.createGain();
+            this.musicGain.gain.value = 0.15;
+            this.musicGain.connect(this.masterGain);
+
+            this.sfxGain = this.ctx.createGain();
+            this.sfxGain.gain.value = 0.4;
+            this.sfxGain.connect(this.masterGain);
+        },
+
+        playNote(freq, duration, type = 'square', gainNode = this.sfxGain, volume = 0.3) {
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(gainNode);
+            osc.start();
+            osc.stop(this.ctx.currentTime + duration);
+        },
+
+        sfxClick() {
+            this.playNote(800, 0.08, 'square');
+            setTimeout(() => this.playNote(1200, 0.06, 'square'), 40);
+        },
+
+        sfxSuccess() {
+            this.playNote(523, 0.15, 'square');
+            setTimeout(() => this.playNote(659, 0.15, 'square'), 100);
+            setTimeout(() => this.playNote(784, 0.2, 'square'), 200);
+        },
+
+        sfxFail() {
+            this.playNote(400, 0.2, 'sawtooth');
+            setTimeout(() => this.playNote(300, 0.3, 'sawtooth'), 150);
+        },
+
+        sfxGym() {
+            this.playNote(200, 0.1, 'square');
+            setTimeout(() => this.playNote(250, 0.1, 'square'), 80);
+            setTimeout(() => this.playNote(300, 0.15, 'square'), 160);
+        },
+
+        sfxMoney() {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => this.playNote(1000 + i * 200, 0.08, 'sine'), i * 50);
+            }
+        },
+
+        startClubMusic() {
+            if (!this.ctx || this.isPlaying) return;
+            this.isPlaying = true;
+            this.playClubBeat();
+        },
+
+        playClubBeat() {
+            if (!this.isPlaying || !this.ctx) return;
+            const now = this.ctx.currentTime;
+            const bpm = 128;
+            const beatLen = 60 / bpm;
+
+            for (let i = 0; i < 8; i++) {
+                const t = now + i * beatLen;
+
+                // Kick
+                const kickOsc = this.ctx.createOscillator();
+                const kickGain = this.ctx.createGain();
+                kickOsc.type = 'sine';
+                kickOsc.frequency.setValueAtTime(150, t);
+                kickOsc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+                kickGain.gain.setValueAtTime(0.5, t);
+                kickGain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+                kickOsc.connect(kickGain);
+                kickGain.connect(this.musicGain);
+                kickOsc.start(t);
+                kickOsc.stop(t + 0.15);
+                this.currentOscs.push(kickOsc);
+
+                // Hi-hat on off-beats
+                if (i % 2 === 1) {
+                    const hatOsc = this.ctx.createOscillator();
+                    const hatGain = this.ctx.createGain();
+                    hatOsc.type = 'square';
+                    hatOsc.frequency.value = 6000;
+                    hatGain.gain.setValueAtTime(0.05, t);
+                    hatGain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+                    hatOsc.connect(hatGain);
+                    hatGain.connect(this.musicGain);
+                    hatOsc.start(t);
+                    hatOsc.stop(t + 0.05);
+                    this.currentOscs.push(hatOsc);
+                }
+
+                // Bass synth
+                if (i % 4 === 0) {
+                    const bassOsc = this.ctx.createOscillator();
+                    const bassGain = this.ctx.createGain();
+                    bassOsc.type = 'sawtooth';
+                    const bassNotes = [55, 65, 73, 55];
+                    bassOsc.frequency.value = bassNotes[Math.floor(i / 4) % 4] * 2;
+                    bassGain.gain.setValueAtTime(0.12, t);
+                    bassGain.gain.exponentialRampToValueAtTime(0.001, t + beatLen * 2);
+                    bassOsc.connect(bassGain);
+                    bassGain.connect(this.musicGain);
+                    bassOsc.start(t);
+                    bassOsc.stop(t + beatLen * 2);
+                    this.currentOscs.push(bassOsc);
+                }
+            }
+
+            setTimeout(() => this.playClubBeat(), (8 * beatLen) * 1000);
+        },
+
+        stopClubMusic() {
+            this.isPlaying = false;
+            this.currentOscs.forEach(o => { try { o.stop(); } catch(e) {} });
+            this.currentOscs = [];
+        },
+
+        startMenuMusic() {
+            if (!this.ctx) return;
+            const notes = [261, 329, 392, 523, 392, 329];
+            let i = 0;
+            const playNext = () => {
+                if (document.getElementById('title-screen').style.display === 'none') return;
+                this.playNote(notes[i % notes.length], 0.4, 'sine', this.musicGain, 0.08);
+                i++;
+                setTimeout(playNext, 500);
+            };
+            playNext();
+        }
+    };
+
+    // ===== GAME STATE =====
+    const game = {
+        day: 1,
+        money: 200,
+        energi: 100,
+        stats: { styrke: 10, style: 10, charm: 10 },
+        maxStat: 100,
+        clubVisits: 0,
+        totalScore: 0,
+        girlsMet: 0,
+        started: false,
+    };
+
+    // ===== CHARACTER RENDERER =====
+    function drawCharacter(canvasId, options = {}) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const scale = w / 160;
+        ctx.save();
+        ctx.scale(scale, scale);
+
+        const skinColor = '#c68642';
+        const hairColor = '#1a1a2e';
+        const shirtColor = options.clubMode ? '#ff006e' : (game.stats.style > 50 ? '#8b5cf6' : '#334155');
+        const pantsColor = options.clubMode ? '#1a1a2e' : '#1e293b';
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(80, 190, 25, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        ctx.fillStyle = pantsColor;
+        ctx.fillRect(62, 140, 14, 45);
+        ctx.fillRect(84, 140, 14, 45);
+
+        // Shoes
+        ctx.fillStyle = game.stats.style > 30 ? '#fff' : '#555';
+        ctx.fillRect(58, 180, 20, 8);
+        ctx.fillRect(82, 180, 20, 8);
+
+        // Body
+        ctx.fillStyle = shirtColor;
+        const bodyWidth = 36 + Math.min(game.stats.styrke / 3, 20);
+        ctx.fillRect(80 - bodyWidth/2, 90, bodyWidth, 55);
+
+        // Arms
+        const armWidth = 10 + Math.min(game.stats.styrke / 10, 8);
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(80 - bodyWidth/2 - armWidth, 92, armWidth, 35);
+        ctx.fillRect(80 + bodyWidth/2, 92, armWidth, 35);
+
+        // Bicep highlight
+        if (game.stats.styrke > 30) {
+            ctx.fillStyle = 'rgba(255,255,255,0.15)';
+            ctx.beginPath();
+            ctx.ellipse(80 - bodyWidth/2 - armWidth/2, 105, armWidth/2 - 1, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(80 + bodyWidth/2 + armWidth/2, 105, armWidth/2 - 1, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Neck
+        ctx.fillStyle = skinColor;
+        ctx.fillRect(73, 75, 14, 18);
+
+        // Head
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.ellipse(80, 55, 22, 26, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hair
+        ctx.fillStyle = hairColor;
+        ctx.beginPath();
+        ctx.ellipse(80, 42, 24, 18, 0, 0, Math.PI);
+        ctx.fill();
+        // Fade on sides
+        ctx.fillStyle = hairColor;
+        ctx.fillRect(58, 42, 5, 20);
+        ctx.fillRect(97, 42, 5, 20);
+
+        // Eyes
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(70, 50, 8, 6);
+        ctx.fillRect(82, 50, 8, 6);
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(74, 51, 4, 5);
+        ctx.fillRect(86, 51, 4, 5);
+
+        // Eyebrows
+        ctx.fillStyle = hairColor;
+        ctx.fillRect(69, 47, 10, 2);
+        ctx.fillRect(81, 47, 10, 2);
+
+        // Mouth
+        ctx.fillStyle = '#d4604a';
+        if (options.smile) {
+            ctx.beginPath();
+            ctx.arc(80, 65, 6, 0, Math.PI);
+            ctx.fill();
+        } else {
+            ctx.fillRect(75, 65, 10, 2);
+        }
+
+        // Chain
+        if (game.stats.style > 40) {
+            ctx.strokeStyle = '#ffbe0b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(80, 88, 8, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+        }
+
+        // Sunglasses
+        if (game.stats.style > 60 || options.clubMode) {
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillRect(67, 49, 12, 8);
+            ctx.fillRect(81, 49, 12, 8);
+            ctx.strokeStyle = '#ffbe0b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(67, 49, 12, 8);
+            ctx.strokeRect(81, 49, 12, 8);
+            ctx.beginPath();
+            ctx.moveTo(79, 53);
+            ctx.lineTo(81, 53);
+            ctx.stroke();
+        }
+
+        // Muscles glow
+        if (game.stats.styrke > 70) {
+            ctx.shadowColor = '#ff006e';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = 'rgba(255, 0, 110, 0.1)';
+            ctx.fillRect(80 - bodyWidth/2 - armWidth - 2, 90, armWidth + 4, 37);
+            ctx.fillRect(80 + bodyWidth/2 - 2, 90, armWidth + 4, 37);
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.restore();
+    }
+
+    // ===== STARFIELD =====
+    function initStarfield() {
+        const canvas = document.getElementById('starfield');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        const stars = [];
+        for (let i = 0; i < 150; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speed: Math.random() * 0.5 + 0.1,
+                opacity: Math.random()
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.opacity += (Math.random() - 0.5) * 0.02;
+                s.opacity = Math.max(0.1, Math.min(1, s.opacity));
+                ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // ===== CLUB SCENE RENDERER =====
+    function renderClubScene() {
+        const canvas = document.getElementById('club-canvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const ctx = canvas.getContext('2d');
+        let time = 0;
+
+        function animate() {
+            if (document.getElementById('club-scene').style.display === 'none') return;
+
+            ctx.fillStyle = '#0a0010';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            time += 0.02;
+
+            // Dance floor
+            const floorY = canvas.height * 0.6;
+            for (let x = 0; x < canvas.width; x += 60) {
+                for (let y = floorY; y < canvas.height; y += 60) {
+                    const hue = (x + y + time * 100) % 360;
+                    const brightness = 20 + Math.sin(time * 2 + x * 0.05) * 10;
+                    ctx.fillStyle = `hsl(${hue}, 80%, ${brightness}%)`;
+                    ctx.fillRect(x + 2, y + 2, 56, 56);
+                }
+            }
+
+            // Laser beams
+            for (let i = 0; i < 6; i++) {
+                const angle = Math.sin(time + i * 1.5) * 0.8;
+                const startX = canvas.width * (0.2 + i * 0.12);
+                ctx.strokeStyle = `hsla(${(time * 50 + i * 60) % 360}, 100%, 60%, 0.3)`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(startX, 0);
+                ctx.lineTo(startX + Math.sin(angle) * canvas.height, canvas.height);
+                ctx.stroke();
+            }
+
+            // Disco ball
+            const ballX = canvas.width / 2;
+            const ballY = 60;
+            ctx.fillStyle = '#ccc';
+            ctx.beginPath();
+            ctx.arc(ballX, ballY, 25, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Reflections from disco ball
+            for (let i = 0; i < 12; i++) {
+                const angle = time * 2 + (i / 12) * Math.PI * 2;
+                const dist = 80 + Math.sin(time + i) * 40;
+                const rx = ballX + Math.cos(angle) * dist;
+                const ry = ballY + Math.sin(angle) * dist * 0.5 + dist * 0.3;
+                ctx.fillStyle = `hsla(${i * 30}, 100%, 80%, ${0.3 + Math.sin(time * 3 + i) * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(rx, ry, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Crowd silhouettes
+            for (let i = 0; i < 15; i++) {
+                const cx = (canvas.width / 16) * (i + 1);
+                const cy = floorY - 10 + Math.sin(time * 3 + i * 0.7) * 5;
+                ctx.fillStyle = `rgba(0, 0, 0, 0.6)`;
+                ctx.beginPath();
+                ctx.ellipse(cx, cy - 25, 8, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(cx - 8, cy - 15, 16, 30);
+            }
+
+            // Fog
+            for (let i = 0; i < 3; i++) {
+                const fogY = canvas.height * 0.3 + i * 80;
+                const gradient = ctx.createLinearGradient(0, fogY - 30, 0, fogY + 30);
+                gradient.addColorStop(0, 'transparent');
+                gradient.addColorStop(0.5, `rgba(255, 0, 110, ${0.03 + Math.sin(time + i) * 0.02})`);
+                gradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, fogY - 30, canvas.width, 60);
+            }
+
+            // Neon sign "CLUB"
+            ctx.font = 'bold 40px Orbitron';
+            ctx.textAlign = 'center';
+            const neonOpacity = 0.7 + Math.sin(time * 4) * 0.3;
+            ctx.fillStyle = `rgba(255, 0, 110, ${neonOpacity})`;
+            ctx.shadowColor = '#ff006e';
+            ctx.shadowBlur = 20;
+            ctx.fillText('KLUBBEN', canvas.width / 2, 130);
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+
+    // ===== GAME LOGIC =====
+    function updateUI() {
+        ['styrke', 'style', 'charm'].forEach(stat => {
+            const val = game.stats[stat];
+            document.getElementById(`bar-${stat}`).style.width = `${val}%`;
+            document.getElementById(`val-${stat}`).textContent = val;
+        });
+        document.getElementById('bar-energi').style.width = `${game.energi}%`;
+        document.getElementById('val-energi').textContent = game.energi;
+        document.getElementById('day-num').textContent = game.day;
+        document.getElementById('money-display').textContent = `${game.money} KR`;
+
+        // Update button states
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            btn.classList.remove('disabled');
+        });
+        if (game.energi < 20) document.querySelector('.action-btn.gym').classList.add('disabled');
+        if (game.energi < 15 || game.money < 50) document.querySelector('.action-btn.style').classList.add('disabled');
+        if (game.energi < 15) document.querySelector('.action-btn.charm').classList.add('disabled');
+        if (game.energi < 30) document.querySelector('.action-btn.work').classList.add('disabled');
+        if (game.energi < 50 || game.money < 100) document.querySelector('.action-btn.club').classList.add('disabled');
+
+        drawCharacter('character-canvas');
+        updateMood();
+    }
+
+    function updateMood() {
+        const total = game.stats.styrke + game.stats.style + game.stats.charm;
+        const moods = [
+            [0, "Helt grøn... men motiveret"],
+            [50, "Begynder at føle det"],
+            [100, "Viberne er der, bror"],
+            [150, "Hanzi er ON FIRE"],
+            [200, "Absolut enhed. Legendestatus."],
+        ];
+        let mood = moods[0][1];
+        for (const [threshold, text] of moods) {
+            if (total >= threshold) mood = text;
+        }
+        document.getElementById('char-mood').textContent = mood;
+    }
+
+    function showMessage(text) {
+        const el = document.getElementById('event-msg');
+        el.textContent = text;
+        el.style.animation = 'none';
+        el.offsetHeight; // reflow
+        el.style.animation = 'fadeInUp 0.5s ease';
+    }
+
+    function floatText(text, color = '#fff') {
+        const el = document.createElement('div');
+        el.className = 'float-text';
+        el.textContent = text;
+        el.style.color = color;
+        el.style.left = (window.innerWidth / 2 - 30) + 'px';
+        el.style.top = (window.innerHeight / 2 - 50) + 'px';
+        document.getElementById('game-container').appendChild(el);
+        setTimeout(() => el.remove(), 1500);
+    }
+
+    function addStat(stat, amount) {
+        game.stats[stat] = Math.min(game.maxStat, game.stats[stat] + amount);
+    }
+
+    const gymMessages = [
+        "Hanzi smider 3 sæt bænkpres! GAINS!",
+        "Bicep curls til failure. Armene pumper!",
+        "Leg day? Nej tak. Overkrop igen, bror.",
+        "Hanzi tager en selfie i spejlet midt i sættet.",
+        "Proteinshake drukket. Hanzi føler sig STOR.",
+        "Hanzi spotter sig selv. True alpha.",
+    ];
+
+    const styleMessages = [
+        "Ny trim fra barberen. Fresh fade!",
+        "Designer t-shirt købt. Drip activated.",
+        "Nye sko! Hanzi flexer i spejlet.",
+        "Hanzi får en guld-kæde. Bling bling!",
+        "Parfume påført. Hanzi dufter af succes.",
+        "Skincare routine. Hanzi glower op!",
+    ];
+
+    const charmMessages = [
+        "Hanzi øver sine bedste pick-up lines.",
+        "YouTube tutorial: 'Hvordan man er smooth'",
+        "Hanzi øver øjenkontakt i spejlet.",
+        "Wingman-strategi gennemgået med drengene.",
+        "Hanzi læser 'The Art of Rizz'",
+        "Smile-træning foran spejlet. Smil: aktiveret.",
+    ];
+
+    const workMessages = [
+        "Hanzi tager en vagt i Netto. Hårdt men ærligt.",
+        "Uber Eats levering. Tips var nice!",
+        "Hanzi sælger gamle ting på DBA.",
+        "Vagt på lageret. Ryg ødelagt men penge tjent.",
+        "Hanzi gør rent hjemme hos mormor. Hun betaler godt.",
+    ];
+
+    function doAction(action) {
+        AudioEngine.sfxClick();
+
+        switch(action) {
+            case 'gym':
+                if (game.energi < 20) return showMessage("Ingen energi! Hvil dig, bror.");
+                game.energi -= 20;
+                const gymGain = 5 + Math.floor(Math.random() * 8);
+                addStat('styrke', gymGain);
+                floatText(`+${gymGain} STYRKE`, '#ff006e');
+                showMessage(gymMessages[Math.floor(Math.random() * gymMessages.length)]);
+                AudioEngine.sfxGym();
+                break;
+
+            case 'style':
+                if (game.energi < 15 || game.money < 50) return showMessage("Ikke nok energi eller penge!");
+                game.energi -= 15;
+                game.money -= 50;
+                const styleGain = 5 + Math.floor(Math.random() * 8);
+                addStat('style', styleGain);
+                floatText(`+${styleGain} STYLE`, '#8b5cf6');
+                showMessage(styleMessages[Math.floor(Math.random() * styleMessages.length)]);
+                AudioEngine.sfxSuccess();
+                break;
+
+            case 'charm':
+                if (game.energi < 15) return showMessage("For træt til at være charmerende...");
+                game.energi -= 15;
+                const charmGain = 5 + Math.floor(Math.random() * 8);
+                addStat('charm', charmGain);
+                floatText(`+${charmGain} CHARM`, '#ffbe0b');
+                showMessage(charmMessages[Math.floor(Math.random() * charmMessages.length)]);
+                AudioEngine.sfxSuccess();
+                break;
+
+            case 'work':
+                if (game.energi < 30) return showMessage("For træt til at arbejde...");
+                game.energi -= 30;
+                const earned = 100 + Math.floor(Math.random() * 150);
+                game.money += earned;
+                floatText(`+${earned} KR`, '#00d4aa');
+                showMessage(workMessages[Math.floor(Math.random() * workMessages.length)]);
+                AudioEngine.sfxMoney();
+                break;
+
+            case 'rest':
+                game.day++;
+                game.energi = 100;
+                showMessage(`Dag ${game.day}. Hanzi vågner udhvilet og klar!`);
+                floatText('ZZZ... NY DAG!', '#60a5fa');
+                AudioEngine.sfxClick();
+                if (game.day > 30) {
+                    endGame();
+                    return;
+                }
+                break;
+
+            case 'club':
+                if (game.energi < 50 || game.money < 100) return showMessage("Brug for mere energi eller penge til klubben!");
+                game.energi -= 50;
+                game.money -= 100;
+                enterClub();
+                return;
+        }
+
+        updateUI();
+    }
+
+    // ===== CLUB SYSTEM =====
+    const girls = [
+        {
+            name: "Sofie",
+            desc: "Danser ved baren med sine veninder. Ser chill ud.",
+            threshold: { styrke: 20, style: 25, charm: 30 },
+            lines: [
+                { speaker: "SOFIE", text: "Hej! Fedt sted ikk? Kommer du her tit?", choices: [
+                    { text: "Ej, det er min første gang. Nogen der kan vise mig rundt? 😏", charm: 20, bonus: 8 },
+                    { text: "Ja, jeg er her hver weekend. Kender DJ'en.", charm: 30, bonus: 5 },
+                    { text: "*Flexer arme* Nej men jeg kan vise dig min gym...", styrke: 40, bonus: -5 },
+                ]},
+                { speaker: "SOFIE", text: "Haha du er sød. Hvad drikker du?", choices: [
+                    { text: "Bestiller en drink til os begge. Cheers! 🍹", money: 50, charm: 15, bonus: 10 },
+                    { text: "Vand. Jeg er på en strict kur.", bonus: -3 },
+                    { text: "Hvad end du vil ha'. Det er min aften.", charm: 25, bonus: 7 },
+                ]}
+            ],
+            winText: "Sofie griner og giver dig sit nummer. 'Du er sjov, Hanzi. Skriv til mig!' 📱",
+            loseText: "Sofie smiler høfligt og vender tilbage til sine veninder. Tough luck, bror."
+        },
+        {
+            name: "Jasmin",
+            desc: "Sidder i VIP med et glas champagne. Hun ser krævende ud.",
+            threshold: { styrke: 35, style: 50, charm: 40 },
+            lines: [
+                { speaker: "JASMIN", text: "*Kigger dig op og ned* ...og du er?", choices: [
+                    { text: "Hanzi. Og du ser ud som om du keder dig herinde.", charm: 40, bonus: 10 },
+                    { text: "Din fremtidige date. Bare rolig, du kan takke mig senere.", charm: 50, bonus: 8 },
+                    { text: "*Nervøst* Øh... hej... jeg hedder... Hanzi?", bonus: -8 },
+                ]},
+                { speaker: "JASMIN", text: "Hmm. Du har selvtillid. Kan du danse?", choices: [
+                    { text: "*Tager hendes hånd og fører hende ud på dansegulvet*", charm: 35, style: 40, bonus: 12 },
+                    { text: "Danse? Nej. Men jeg kan lave 100 pushups.", styrke: 60, bonus: -2 },
+                    { text: "Kun hvis du lærer mig. Jeg er mere en vibe-type.", charm: 30, bonus: 6 },
+                ]}
+            ],
+            winText: "Jasmin smiler for første gang. 'Du er anderledes. Jeg kan lide det.' Hun tager din arm. SCORE! 💎",
+            loseText: "Jasmin ruller med øjnene og vinker sikkerhedsvagten over. 'Denne her... nej.' Brutal."
+        },
+        {
+            name: "Nadia",
+            desc: "Chiller ved DJ-pulten. Viber helt vildt til musikken.",
+            threshold: { styrke: 15, style: 30, charm: 25 },
+            lines: [
+                { speaker: "NADIA", text: "YOOO dette beat er SYGT! Kan du føle det?!", choices: [
+                    { text: "*Danser med* JA BRO DETTE ER MIT JAM! 🔥", charm: 20, bonus: 10 },
+                    { text: "Musikken er aight. Men selskabet lige blev bedre 😎", charm: 30, bonus: 8 },
+                    { text: "*Står stille og nikker akavet*", bonus: -5 },
+                ]},
+                { speaker: "NADIA", text: "Du er vild! Hvad laver du til hverdag?", choices: [
+                    { text: "Gym, grind, repeat. Men i aften handler det om os.", charm: 25, bonus: 9 },
+                    { text: "Jeg arbejder på min drøm. Og lige nu drømmer jeg ikke.", charm: 35, bonus: 7 },
+                    { text: "Netto. Kassen. 8 timer.", bonus: 2 },
+                ]}
+            ],
+            winText: "Nadia tager din hånd! 'Kom, vi danser hele natten!' I viber til lukketid! 🎶",
+            loseText: "Nadia siger 'Du er sød!' og danser videre... alene. Friend-zoned."
+        }
+    ];
+
+    let currentGirl = null;
+    let currentLineIndex = 0;
+    let clubScore = 0;
+
+    function enterClub() {
+        game.clubVisits++;
+        document.getElementById('club-scene').style.display = 'block';
+        renderClubScene();
+        AudioEngine.startClubMusic();
+
+        // Pick random girl
+        const availableGirls = girls.filter(g => {
+            const meetsBasic = game.stats.styrke >= g.threshold.styrke * 0.5 ||
+                              game.stats.style >= g.threshold.style * 0.5 ||
+                              game.stats.charm >= g.threshold.charm * 0.5;
+            return meetsBasic;
+        });
+
+        currentGirl = availableGirls.length > 0
+            ? availableGirls[Math.floor(Math.random() * availableGirls.length)]
+            : girls[0];
+
+        currentLineIndex = 0;
+        clubScore = 0;
+
+        showClubDialogue(`Du træder ind på klubben. Lyset pulserer, bassen banker. Du ser ${currentGirl.name} - ${currentGirl.desc}`);
+        setTimeout(() => showClubLine(), 2000);
+    }
+
+    function showClubDialogue(text, speaker = 'FORTÆLLER') {
+        document.getElementById('club-speaker').textContent = speaker;
+        document.getElementById('club-text').textContent = text;
+        document.getElementById('club-choices').innerHTML = '';
+    }
+
+    function showClubLine() {
+        if (currentLineIndex >= currentGirl.lines.length) {
+            resolveClub();
+            return;
+        }
+
+        const line = currentGirl.lines[currentLineIndex];
+        document.getElementById('club-speaker').textContent = line.speaker;
+        document.getElementById('club-text').textContent = line.text;
+
+        const choicesEl = document.getElementById('club-choices');
+        choicesEl.innerHTML = '';
+
+        line.choices.forEach((choice, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'club-choice';
+            btn.textContent = choice.text;
+            btn.onclick = () => {
+                AudioEngine.sfxClick();
+                let success = true;
+                if (choice.charm && game.stats.charm < choice.charm) success = Math.random() < 0.4;
+                if (choice.styrke && game.stats.styrke < choice.styrke) success = Math.random() < 0.3;
+                if (choice.style && game.stats.style < choice.style) success = Math.random() < 0.35;
+                if (choice.money) {
+                    if (game.money >= choice.money) game.money -= choice.money;
+                    else success = false;
+                }
+
+                const bonus = success ? Math.max(choice.bonus, 1) : Math.min(choice.bonus, -2);
+                clubScore += bonus;
+
+                if (success && bonus > 0) {
+                    AudioEngine.sfxSuccess();
+                    showClubDialogue(success ? "Smooth, Hanzi! Hun smiler." : "Hmm... det landede ikke helt.", 'FORTÆLLER');
+                } else {
+                    AudioEngine.sfxFail();
+                    showClubDialogue("Yikes... akavet stilhed.", 'FORTÆLLER');
+                }
+
+                currentLineIndex++;
+                setTimeout(() => showClubLine(), 1500);
+            };
+            choicesEl.appendChild(btn);
+        });
+    }
+
+    function resolveClub() {
+        const totalPower = game.stats.styrke + game.stats.style + game.stats.charm;
+        const threshold = currentGirl.threshold.styrke + currentGirl.threshold.style + currentGirl.threshold.charm;
+        const statBonus = totalPower / threshold;
+
+        const finalScore = clubScore + (statBonus * 5);
+
+        if (finalScore > 8) {
+            showClubDialogue(currentGirl.winText, '💖');
+            AudioEngine.sfxSuccess();
+            game.totalScore += 100;
+            game.girlsMet++;
+            setTimeout(() => {
+                AudioEngine.sfxSuccess();
+                floatText('+100 SCORE!', '#ff006e');
+            }, 500);
+        } else if (finalScore > 3) {
+            showClubDialogue("Hun siger 'Du er cute, men... nej.' Tæt på, Hanzi!", 'FORTÆLLER');
+            game.totalScore += 25;
+        } else {
+            showClubDialogue(currentGirl.loseText, '💔');
+            AudioEngine.sfxFail();
+        }
+
+        document.getElementById('club-choices').innerHTML = '';
+        setTimeout(() => {
+            leaveClub();
+        }, 3000);
+    }
+
+    function leaveClub() {
+        AudioEngine.stopClubMusic();
+        document.getElementById('club-scene').style.display = 'none';
+        showMessage("Hanzi er tilbage fra klubben. " + (game.girlsMet > 0 ? "Nummeret er i lommen! 😎" : "Næste gang, bror!"));
+        updateUI();
+    }
+
+    // ===== END GAME =====
+    function endGame() {
+        const screen = document.getElementById('result-screen');
+        screen.style.display = 'flex';
+
+        const total = game.stats.styrke + game.stats.style + game.stats.charm;
+
+        if (game.girlsMet >= 3) {
+            document.getElementById('result-icon').textContent = '👑';
+            document.getElementById('result-title').textContent = 'HANZI LEGENDEN!';
+            document.getElementById('result-title').style.color = '#ffbe0b';
+            document.getElementById('result-text').textContent = `${game.girlsMet} numre scoret! Hanzi er byens konge. Drengene bøjer sig. Legendestatus opnået!`;
+        } else if (game.girlsMet >= 1) {
+            document.getElementById('result-icon').textContent = '😎';
+            document.getElementById('result-title').textContent = 'HANZI HAR GAME!';
+            document.getElementById('result-title').style.color = '#00d4aa';
+            document.getElementById('result-text').textContent = `${game.girlsMet} nummer(e) scoret! Ikke værst, Hanzi. Der er potentiale!`;
+        } else if (total > 150) {
+            document.getElementById('result-icon').textContent = '💪';
+            document.getElementById('result-title').textContent = 'BUFFED MEN INGEN GAME';
+            document.getElementById('result-title').style.color = '#ff006e';
+            document.getElementById('result-text').textContent = 'Hanzi er jacked og stylet... men scorede ingen. Stats er ikke alt, bror. Charm is key!';
+        } else {
+            document.getElementById('result-icon').textContent = '😅';
+            document.getElementById('result-title').textContent = 'HANZI PRØVEDE...';
+            document.getElementById('result-title').style.color = '#aaa';
+            document.getElementById('result-text').textContent = 'Det blev ikke Hanzis måned. Men hey, der er altid næste måned! Træn hårdere!';
+        }
+
+        document.getElementById('result-score').textContent = `SCORE: ${game.totalScore} | STATS: ${total}/300 | DAMER: ${game.girlsMet}`;
+    }
+
+    function restartGame() {
+        game.day = 1;
+        game.money = 200;
+        game.energi = 100;
+        game.stats = { styrke: 10, style: 10, charm: 10 };
+        game.clubVisits = 0;
+        game.totalScore = 0;
+        game.girlsMet = 0;
+
+        document.getElementById('result-screen').style.display = 'none';
+        updateUI();
+        showMessage("Ny runde! Hanzi er klar til at grinde igen!");
+    }
+
+    // ===== START =====
+    function startGame() {
+        AudioEngine.init();
+        AudioEngine.sfxSuccess();
+
+        document.getElementById('title-screen').style.display = 'none';
+        document.getElementById('game-hud').style.display = 'block';
+
+        drawCharacter('character-canvas');
+        updateUI();
+        showMessage("Yo Hanzi! Du har 30 dage til at blive klar til at score på klubben. GRIND TIME! 💪");
+    }
+
+    // ===== INIT =====
+    window.addEventListener('load', () => {
+        initStarfield();
+        drawCharacter('title-character', { smile: true });
+
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('starfield');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    });
+    </script>
+</body>
+</html>
