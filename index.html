@@ -1,921 +1,1169 @@
 <!DOCTYPE html>
 <html lang="da">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hanzi Lad Simulator</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap');
-        *{margin:0;padding:0;box-sizing:border-box;}
-        body{background:#0a0a0f;color:#fff;font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:none;user-select:none;-webkit-user-select:none;}
-        #app{width:100vw;height:100vh;position:relative;overflow:hidden;}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Hanzi Lad Simulator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0f;color:#fff;font-family:'Inter',sans-serif;overflow:hidden;height:100vh;width:100vw;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
+.pix{font-family:'Press Start 2P',monospace}
 
-        /* ===== TITLE ===== */
-        #title{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,#1a0030,#0a0a0f 70%);z-index:10;}
-        #title h1{font-family:'Orbitron',sans-serif;font-size:clamp(2.5rem,9vw,5rem);font-weight:900;background:linear-gradient(135deg,#ff006e,#ff6b35,#ffbe0b,#ff006e);background-size:300% 300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:grad 3s ease infinite;filter:drop-shadow(0 0 25px rgba(255,0,110,0.4));margin-bottom:6px;}
-        #title .sub{font-family:'Orbitron',sans-serif;font-size:clamp(0.5rem,2vw,0.9rem);color:#ff6b35;letter-spacing:6px;margin-bottom:15px;opacity:0.7;}
-        #title .tagline{font-size:clamp(0.6rem,1.8vw,0.8rem);color:#aaa;margin-bottom:35px;text-align:center;max-width:80%;line-height:1.6;}
-        .btn{font-family:'Orbitron',sans-serif;font-size:clamp(0.75rem,2vw,1rem);font-weight:700;padding:14px 40px;border:2px solid #ff006e;background:transparent;color:#ff006e;cursor:pointer;letter-spacing:3px;transition:all 0.3s;border-radius:6px;-webkit-tap-highlight-color:transparent;}
-        .btn:active{background:#ff006e;color:#fff;transform:scale(0.96);}
-        .btn-sm{font-size:clamp(0.6rem,1.5vw,0.75rem);padding:10px 24px;letter-spacing:2px;}
-        .btn-green{border-color:#00d4aa;color:#00d4aa;}
-        .btn-green:active{background:#00d4aa;color:#000;}
-        .btn-purple{border-color:#8b5cf6;color:#8b5cf6;}
-        .btn-purple:active{background:#8b5cf6;color:#fff;}
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:10;display:none;padding:5px 8px;background:linear-gradient(180deg,rgba(0,0,0,.88),rgba(0,0,0,.3) 85%,transparent);pointer-events:none}
+#hud.show{display:block}
+.hr{display:flex;justify-content:space-between;align-items:flex-start}
+.hl{display:flex;flex-direction:column;gap:2px}
+.hb{display:flex;align-items:center;gap:3px}
+.hb .l{font-family:'Press Start 2P';font-size:clamp(4px,1vw,6px);width:24px;text-align:right}
+.hb .t{width:clamp(44px,10vw,80px);height:6px;background:rgba(255,255,255,.08);overflow:hidden}
+.hb .f{height:100%;transition:width .4s}
+.hb .v{font-family:'Press Start 2P';font-size:clamp(3px,.8vw,5px);min-width:18px}
+.hstats{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.hs{display:flex;align-items:center;gap:2px}
+.hs .si{font-size:clamp(7px,1.5vw,10px)}
+.hs .sl{font-family:'Press Start 2P';font-size:clamp(3px,.7vw,4px);opacity:.4}
+.hs .sv{font-family:'Press Start 2P';font-size:clamp(4px,.9vw,6px);font-weight:700}
+.hright{text-align:right;display:flex;flex-direction:column;gap:1px}
+.hright .ck{font-family:'Press Start 2P';font-size:clamp(6px,1.5vw,9px);color:#ffbe0b}
+.hright .dy{font-family:'Press Start 2P';font-size:clamp(4px,1.1vw,7px);color:#ff006e}
+.hright .mn{font-family:'Press Start 2P';font-size:clamp(4px,1.1vw,7px);color:#00d4aa}
 
-        /* ===== PHONE CALL ===== */
-        #phone-scene{position:absolute;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:#0a0a0f;z-index:10;}
-        .phone{width:min(340px,88vw);height:min(620px,85vh);background:#1a1a2e;border-radius:30px;border:3px solid #2a2a3e;position:relative;overflow:hidden;display:flex;flex-direction:column;}
-        .phone-top{background:#111;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2a2a3e;}
-        .phone-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff006e,#ff6b35);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;}
-        .phone-name{font-weight:700;font-size:0.85rem;}
-        .phone-status{font-size:0.6rem;color:#00d4aa;}
-        .phone-msgs{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
-        .msg-bubble{max-width:82%;padding:10px 14px;border-radius:16px;font-size:clamp(0.7rem,1.8vw,0.82rem);line-height:1.5;animation:msgIn 0.3s ease;word-wrap:break-word;}
-        .msg-in{background:#2a2a3e;border-bottom-left-radius:4px;align-self:flex-start;color:#ddd;}
-        .msg-out{background:#ff006e;border-bottom-right-radius:4px;align-self:flex-end;color:#fff;}
-        .msg-narrator{background:transparent;align-self:center;color:#666;font-size:0.65rem;font-style:italic;text-align:center;}
-        .phone-bottom{padding:12px 16px;border-top:1px solid #2a2a3e;display:flex;justify-content:center;}
-        .phone-continue{font-family:'Inter',sans-serif;font-size:0.75rem;font-weight:700;padding:10px 28px;border:1px solid #ff006e;background:rgba(255,0,110,0.1);color:#ff006e;cursor:pointer;border-radius:20px;transition:all 0.2s;-webkit-tap-highlight-color:transparent;letter-spacing:0.5px;}
-        .phone-continue:active{background:#ff006e;color:#fff;}
-        @keyframes msgIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+/* MSG */
+.msg-bar{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);max-width:420px;width:90%;z-index:12;text-align:center;pointer-events:none;opacity:0;transition:opacity .3s}
+.msg-bar.show{opacity:1}
+.msg-bar .msg{font-family:'Press Start 2P';font-size:clamp(4px,1vw,6px);padding:7px 12px;background:rgba(0,0,0,.92);border:1px solid rgba(255,255,255,.08);line-height:1.8}
 
-        /* ===== MAP ===== */
-        #map-screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;background:#0a0a12;z-index:10;}
-        .map-hud{padding:10px 15px;background:rgba(0,0,0,0.6);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;border-bottom:1px solid rgba(255,255,255,0.06);}
-        .stats-wrap{display:flex;gap:8px;flex-wrap:wrap;}
-        .mini-stat{display:flex;flex-direction:column;align-items:center;gap:2px;}
-        .mini-stat label{font-family:'Orbitron',sans-serif;font-size:0.4rem;letter-spacing:1px;opacity:0.5;}
-        .mini-stat .track{width:clamp(44px,10vw,75px);height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;}
-        .mini-stat .fill{height:100%;border-radius:4px;transition:width 0.5s;}
-        .mini-stat .val{font-family:'Orbitron',sans-serif;font-size:0.45rem;font-weight:700;color:#ddd;}
-        .hud-info{text-align:right;font-family:'Orbitron',sans-serif;}
-        .hud-info .day-timer{font-size:clamp(0.65rem,1.8vw,0.85rem);font-weight:900;color:#ff006e;}
-        .hud-info .money{font-size:clamp(0.55rem,1.5vw,0.75rem);color:#ffbe0b;margin-top:2px;}
-        .hud-info .energi{font-size:0.5rem;color:#00d4aa;margin-top:2px;}
+/* OVERLAYS */
+.ov{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px;background:rgba(5,5,15,.96)}
+.ov.active{display:flex}
+.ov-t{font-family:'Press Start 2P';font-size:clamp(8px,2vw,11px);margin:8px 0 3px;letter-spacing:1px}
+.ov-s{font-family:'Press Start 2P';font-size:clamp(3.5px,.85vw,5px);color:#aaa;margin-bottom:10px;text-align:center;line-height:1.8}
 
-        .map-area{flex:1;position:relative;overflow:hidden;}
-        .map-bg{position:absolute;top:0;left:0;width:100%;height:100%;}
-        .map-bg canvas{width:100%;height:100%;}
+/* BTNS */
+.btn{font-family:'Press Start 2P';font-size:clamp(5px,1.2vw,7px);padding:9px 18px;border:2px solid #ff006e;background:transparent;color:#ff006e;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.btn:active{background:#ff006e;color:#fff;transform:scale(.95)}
+.btn-s{font-size:clamp(4px,1vw,6px);padding:6px 12px}
 
-        .map-locations{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:12px;padding:15px;}
-        .loc-card{width:clamp(120px,28vw,155px);height:clamp(130px,22vh,160px);background:rgba(15,15,30,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:all 0.3s;backdrop-filter:blur(10px);-webkit-tap-highlight-color:transparent;position:relative;overflow:hidden;}
-        .loc-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(circle at 50% 30%,var(--glow) 0%,transparent 70%);opacity:0.08;transition:opacity 0.3s;}
-        .loc-card:active{transform:scale(0.95);border-color:var(--glow);}
-        .loc-card:active::before{opacity:0.2;}
-        .loc-card .loc-icon{font-size:2.2rem;}
-        .loc-card .loc-name{font-family:'Orbitron',sans-serif;font-size:clamp(0.5rem,1.3vw,0.65rem);font-weight:700;letter-spacing:1px;}
-        .loc-card .loc-cost{font-size:0.5rem;opacity:0.4;}
-        .loc-card.locked{opacity:0.3;pointer-events:none;}
-        .loc-card .loc-badge{position:absolute;top:8px;right:8px;font-size:0.45rem;font-family:'Orbitron',sans-serif;padding:2px 6px;border-radius:8px;font-weight:700;}
+/* GYM GRID */
+.gym-g{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;max-width:340px;width:100%}
+.gym-c{padding:10px 6px;border:2px solid rgba(255,255,255,.08);background:rgba(0,0,0,.5);cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.gym-c:active{border-color:#ff006e;transform:scale(.96)}
+.gym-c .gi{font-size:1.4rem}.gym-c .gn{font-family:'Press Start 2P';font-size:clamp(4px,1vw,6px)}
+.gym-c .gd{font-family:'Press Start 2P';font-size:clamp(3px,.7vw,4px);color:#aaa;line-height:1.6}
+.gym-c .gl{font-family:'Press Start 2P';font-size:clamp(3.5px,.8vw,5px);color:#ffbe0b}
 
-        .map-msg{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);max-width:90%;text-align:center;font-size:clamp(0.6rem,1.5vw,0.72rem);padding:10px 18px;background:rgba(0,0,0,0.8);border-radius:12px;border:1px solid rgba(255,255,255,0.06);backdrop-filter:blur(10px);opacity:0;transition:opacity 0.4s;pointer-events:none;line-height:1.5;}
-        .map-msg.show{opacity:1;}
+/* SHOP */
+.stabs{display:flex;gap:3px;margin-bottom:8px}
+.stab{font-family:'Press Start 2P';font-size:clamp(4px,.9vw,5.5px);padding:5px 10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#888;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.stab.act{border-color:#ffbe0b;color:#ffbe0b;background:rgba(255,190,11,.06)}
+.slist{display:flex;flex-direction:column;gap:5px;max-width:360px;width:100%;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.si{padding:8px 10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.si:active{border-color:#ffbe0b;transform:scale(.98)}
+.si.dis{opacity:.18;pointer-events:none}
+.si-l{display:flex;align-items:center;gap:6px}
+.si-i{font-size:1rem}.si-n{font-size:clamp(5px,1.1vw,6.5px);font-weight:700}
+.si-d{font-family:'Press Start 2P';font-size:clamp(3px,.65vw,4px);color:#888;margin-top:1px}
+.si-p{font-family:'Press Start 2P';font-size:clamp(4px,.9vw,5.5px);color:#ffbe0b}
 
-        /* ===== LOCATION OVERLAYS ===== */
-        .overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;align-items:center;justify-content:flex-start;z-index:20;background:rgba(5,5,15,0.97);padding:15px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-        .ov-title{font-family:'Orbitron',sans-serif;font-size:clamp(1rem,3vw,1.4rem);font-weight:900;letter-spacing:3px;margin:10px 0 5px;}
-        .ov-sub{font-size:0.6rem;color:#aaa;margin-bottom:15px;text-align:center;}
+/* SKILL TREE */
+.tree{max-width:380px;width:100%;max-height:55vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tree-row{display:flex;justify-content:center;gap:6px;margin-bottom:4px}
+.tree-con{display:flex;justify-content:center;margin-bottom:4px}
+.tree-line{width:2px;height:10px;background:rgba(255,190,11,.15)}
+.tree-split{display:flex;gap:40px;justify-content:center;align-items:flex-start}
+.tree-split .tree-line{width:2px;height:10px}
+.tn{padding:8px 10px;border:2px solid rgba(255,190,11,.12);background:rgba(255,190,11,.02);cursor:pointer;text-align:center;min-width:clamp(80px,22vw,110px);transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tn.on{border-color:#ffbe0b;background:rgba(255,190,11,.1)}
+.tn.off{opacity:.3;cursor:default}
+.tn:active:not(.off):not(.on){border-color:#ff006e;transform:scale(.97)}
+.tn .ti{font-size:1.1rem}.tn .tt{font-family:'Press Start 2P';font-size:clamp(3px,.7vw,4px);margin-top:2px}
+.tn .td{font-family:'Press Start 2P';font-size:clamp(2.5px,.55vw,3.5px);color:#888;margin-top:2px;line-height:1.5}
+.tn .tc{font-family:'Press Start 2P';font-size:clamp(3px,.65vw,4px);margin-top:3px}
 
-        /* GYM */
-        .gym-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:400px;width:100%;}
-        .gym-card{padding:16px 12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);border-radius:14px;cursor:pointer;transition:all 0.25s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;-webkit-tap-highlight-color:transparent;}
-        .gym-card:active{transform:scale(0.96);border-color:#ff006e;background:rgba(255,0,110,0.1);}
-        .gym-card .gi{font-size:2rem;}
-        .gym-card .gn{font-family:'Orbitron',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:1px;}
-        .gym-card .gs{font-size:0.5rem;opacity:0.4;}
-        .gym-card .gl{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#ffbe0b;margin-top:2px;}
+/* COMBAT */
+.cui{position:fixed;inset:0;z-index:22;display:none;flex-direction:column}
+.cui.active{display:flex}
+.ctop{display:flex;justify-content:space-between;padding:6px 8px;background:rgba(0,0,0,.75);z-index:2}
+.cbars{display:flex;flex-direction:column;gap:1px}
+.cname{font-family:'Press Start 2P';font-size:clamp(4px,1vw,6px);margin-bottom:1px}
+.crow{display:flex;align-items:center;gap:3px}
+.crow label{font-family:'Press Start 2P';font-size:clamp(3px,.7vw,4.5px);width:14px}
+.ctrk{width:clamp(50px,12vw,90px);height:5px;background:rgba(255,255,255,.08);overflow:hidden}
+.ctrk .cf{height:100%;transition:width .3s}
+.crow .cv{font-family:'Press Start 2P';font-size:clamp(3px,.7vw,4.5px)}
+.cmid{flex:1;position:relative;overflow:hidden}
+.cact{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Press Start 2P';font-size:clamp(9px,2.8vw,16px);text-shadow:0 0 12px currentColor;opacity:0;transition:opacity .3s;pointer-events:none;z-index:3}
+.cact.show{opacity:1}
+/* Speech bubble */
+.cspeech{position:absolute;top:15%;left:50%;transform:translateX(-50%);max-width:85%;padding:10px 16px;background:rgba(0,0,0,.85);border:2px solid #ff006e;border-radius:12px;font-family:'Press Start 2P';font-size:clamp(5px,1.3vw,8px);line-height:2;text-align:center;z-index:3;opacity:0;transition:opacity .3s;pointer-events:none}
+.cspeech.show{opacity:1}
+.cspeech::after{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #ff006e}
+.cbot{padding:6px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);display:flex;flex-direction:column;align-items:center;gap:5px;z-index:2}
+.ctiming{max-width:260px;width:78%;height:18px;background:rgba(255,255,255,.06);position:relative;display:none;margin-bottom:4px}
+.ctiming .zone{position:absolute;height:100%;background:rgba(0,212,170,.22)}
+.ctiming .needle{position:absolute;top:0;width:3px;height:100%;background:#fff;box-shadow:0 0 6px #fff}
+.cmenu{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;max-width:340px;width:100%}
+.cbtn{font-family:'Press Start 2P';font-size:clamp(3.5px,.85vw,5.5px);padding:8px 4px;border:2px solid;background:rgba(0,0,0,.5);cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.cbtn:active{transform:scale(.95)}
+.cbtn .ci{font-size:1.1rem}.cbtn .cc{font-size:clamp(2.5px,.6vw,3.5px);opacity:.4}
+.citems{display:flex;gap:3px;max-width:340px;width:100%;overflow-x:auto;display:none}
+.citem{font-family:'Press Start 2P';font-size:clamp(3.5px,.8vw,5px);padding:5px 8px;border:1px solid rgba(255,190,11,.25);background:rgba(255,190,11,.04);cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.citem.dis{opacity:.25;pointer-events:none}
 
-        /* TRAINING */
-        #train-ov .train-area{display:flex;flex-direction:column;align-items:center;width:100%;}
-        #train-ov canvas{max-width:100%;border-radius:12px;margin:10px 0;}
-        .train-info{display:flex;justify-content:space-between;width:100%;max-width:380px;margin-bottom:5px;}
-        .train-info span{font-family:'Orbitron',sans-serif;font-size:0.65rem;}
-        .train-instr{font-size:0.6rem;color:#aaa;text-align:center;margin-top:8px;letter-spacing:0.5px;}
-        .train-result{text-align:center;margin-top:20px;}
-        .train-result h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.3rem,4vw,2rem);margin-bottom:8px;}
-        .train-result .xp-gain{font-family:'Orbitron',sans-serif;font-size:clamp(0.9rem,2.5vw,1.2rem);color:#ffbe0b;margin-bottom:6px;}
-        .train-result .grade{font-size:0.7rem;color:#aaa;margin-bottom:20px;}
+/* PHONE */
+.phone-ov{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;background:#0a0a0f}
+.phone-ov.active{display:flex}
+.phone{width:min(300px,84vw);height:min(540px,80vh);background:#111;border-radius:20px;border:2px solid #222;overflow:hidden;display:flex;flex-direction:column}
+.phtop{background:#0a0a0a;padding:8px 12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #222}
+.phavi{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.phname{font-weight:700;font-size:.7rem}.phst{font-size:.45rem;color:#00d4aa}
+.phmsgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:5px;scroll-behavior:smooth}
+.mb{max-width:80%;padding:6px 10px;border-radius:12px;font-size:clamp(.58rem,1.5vw,.7rem);line-height:1.5;animation:mIn .3s ease;word-wrap:break-word;white-space:pre-line}
+.mb-in{background:#1a1a2e;border-bottom-left-radius:2px;align-self:flex-start;color:#ddd}
+.mb-out{background:#ff006e;border-bottom-right-radius:2px;align-self:flex-end;color:#fff}
+.mb-nar{background:transparent;align-self:center;color:#555;font-size:.5rem;font-style:italic}
+.phbot{padding:8px;border-top:1px solid #222;display:flex;justify-content:center}
+.phcont{font-family:'Press Start 2P';font-size:clamp(4px,1vw,6px);padding:7px 16px;border:1px solid #ff006e;background:rgba(255,0,110,.08);color:#ff006e;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.phcont:active{background:#ff006e;color:#fff}
 
-        /* SHOP */
-        .shop-list{display:flex;flex-direction:column;gap:8px;max-width:400px;width:100%;max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:5px;}
-        .shop-row{padding:12px 14px;border:1px solid rgba(139,92,246,0.2);background:rgba(139,92,246,0.04);border-radius:12px;cursor:pointer;transition:all 0.25s;display:flex;justify-content:space-between;align-items:center;-webkit-tap-highlight-color:transparent;}
-        .shop-row:active{border-color:#8b5cf6;background:rgba(139,92,246,0.12);transform:scale(0.98);}
-        .shop-row.bought{opacity:0.25;pointer-events:none;}
-        .sr-left{display:flex;align-items:center;gap:10px;}
-        .sr-icon{font-size:1.3rem;}
-        .sr-name{font-size:0.7rem;font-weight:700;}
-        .sr-stat{font-size:0.5rem;color:#8b5cf6;}
-        .sr-price{font-family:'Orbitron',sans-serif;font-size:0.65rem;color:#ffbe0b;font-weight:700;}
+/* TITLE */
+.title-ov{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,12,.95)}
+.title-ov h1{font-family:'Press Start 2P';font-size:clamp(14px,4.5vw,28px);color:#ff006e;text-shadow:0 0 18px rgba(255,0,110,.4),0 2px 0 #aa0048;margin-bottom:3px;letter-spacing:2px}
+.title-ov .sub{font-family:'Press Start 2P';font-size:clamp(4px,1.2vw,8px);color:#ffbe0b;letter-spacing:4px;margin-bottom:24px}
 
-        /* CLUB */
-        #club-ov{background:rgba(10,0,16,0.98);}
-        #club-ov canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:0;}
-        .club-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:100%;height:100%;padding:15px;}
-        .club-girl-card{text-align:center;margin-bottom:10px;}
-        .club-girl-card .cg-icon{font-size:3rem;}
-        .club-girl-card .cg-name{font-family:'Orbitron',sans-serif;font-size:0.85rem;font-weight:900;color:#ff006e;margin-top:4px;}
-        .club-girl-card .cg-diff{font-size:0.5rem;color:#aaa;letter-spacing:1px;}
-        .club-box{max-width:460px;width:95%;background:rgba(0,0,0,0.85);border:1px solid rgba(255,0,110,0.2);border-radius:14px;padding:16px;backdrop-filter:blur(15px);margin-bottom:10px;}
-        .club-box .cb-speaker{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#ff006e;letter-spacing:2px;margin-bottom:6px;}
-        .club-box .cb-text{font-size:clamp(0.65rem,1.7vw,0.78rem);line-height:1.6;color:#ddd;}
-        .club-choices{display:flex;flex-direction:column;gap:8px;max-width:460px;width:95%;margin-bottom:12px;}
-        .club-ch{font-family:'Inter',sans-serif;font-size:clamp(0.6rem,1.5vw,0.7rem);padding:12px 14px;border:1px solid rgba(255,0,110,0.2);background:rgba(255,0,110,0.05);color:#ddd;cursor:pointer;border-radius:10px;transition:all 0.25s;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent;}
-        .club-ch:active{border-color:#ff006e;background:rgba(255,0,110,0.15);transform:scale(0.98);}
-        .club-ch .ch-pct{font-family:'Orbitron',sans-serif;font-size:0.55rem;font-weight:700;white-space:nowrap;padding:3px 8px;border-radius:6px;}
-        .pct-high{color:#00d4aa;background:rgba(0,212,170,0.12);}
-        .pct-mid{color:#ffbe0b;background:rgba(255,190,11,0.12);}
-        .pct-low{color:#ff006e;background:rgba(255,0,110,0.12);}
+/* VIDEO */
+#intro-vid{position:fixed;inset:0;z-index:40;width:100%;height:100%;object-fit:cover;display:none;background:#000}
+#vid-skip{position:fixed;bottom:20px;right:20px;z-index:41;display:none}
 
-        /* WORK */
-        .work-options{display:flex;flex-direction:column;gap:10px;max-width:400px;width:100%;margin-top:10px;}
-        .work-card{padding:16px;border:1px solid rgba(0,212,170,0.2);background:rgba(0,212,170,0.04);border-radius:12px;cursor:pointer;transition:all 0.25s;-webkit-tap-highlight-color:transparent;}
-        .work-card:active{border-color:#00d4aa;background:rgba(0,212,170,0.12);transform:scale(0.98);}
-        .work-card .wk-name{font-weight:700;font-size:0.75rem;margin-bottom:4px;}
-        .work-card .wk-info{font-size:0.55rem;color:#aaa;}
-
-        /* RESULT */
-        #result-ov{justify-content:center;}
-        .result-box{text-align:center;}
-        .result-box .r-icon{font-size:4rem;margin-bottom:15px;}
-        .result-box h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,5vw,2.5rem);margin-bottom:10px;}
-        .result-box .r-desc{font-size:0.75rem;color:#aaa;max-width:360px;line-height:1.6;margin:0 auto 20px;}
-        .result-box .r-score{font-family:'Orbitron',sans-serif;font-size:clamp(0.8rem,2vw,1rem);color:#ffbe0b;margin-bottom:25px;}
-
-        /* LETH TIPS */
-        .leth-tip{display:none;position:absolute;bottom:60px;left:50%;transform:translateX(-50%);max-width:90%;width:380px;background:rgba(0,0,0,0.9);border:1px solid rgba(0,212,170,0.3);border-radius:14px;padding:14px 16px;z-index:25;animation:msgIn 0.3s ease;}
-        .leth-tip .lt-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-        .leth-tip .lt-avi{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#00d4aa,#047857);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;}
-        .leth-tip .lt-name{font-family:'Orbitron',sans-serif;font-size:0.55rem;color:#00d4aa;letter-spacing:1px;}
-        .leth-tip .lt-text{font-size:0.7rem;line-height:1.5;color:#ccc;}
-        .leth-tip .lt-close{font-family:'Orbitron',sans-serif;font-size:0.5rem;padding:6px 16px;border:1px solid rgba(0,212,170,0.3);background:transparent;color:#00d4aa;cursor:pointer;border-radius:8px;margin-top:10px;-webkit-tap-highlight-color:transparent;}
-
-        /* FLOAT TEXT */
-        .float-text{position:fixed;font-family:'Orbitron',sans-serif;font-size:clamp(0.8rem,2.2vw,1.1rem);font-weight:900;pointer-events:none;z-index:100;animation:floatUp 1.2s ease forwards;text-shadow:0 0 10px currentColor;}
-        @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-50px) scale(1.3);}}
-        @keyframes grad{0%,100%{background-position:0% 50%;}50%{background-position:100% 50%;}}
-        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
-    </style>
+/* FLOATS */
+.float{position:fixed;font-family:'Press Start 2P';font-size:clamp(5px,1.4vw,8px);pointer-events:none;z-index:100;animation:fUp 1s ease forwards;text-shadow:0 0 8px currentColor}
+@keyframes fUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-35px)}}
+@keyframes mIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+</style>
 </head>
 <body>
-<div id="app">
+<canvas id="cv"></canvas>
+<div id="hud"></div>
+<div class="msg-bar" id="msg-bar"><div class="msg" id="msg-text"></div></div>
 
-    <!-- TITLE -->
-    <div id="title">
-        <h1>HANZI LAD</h1>
-        <div class="sub">S I M U L A T O R</div>
-        <div class="tagline">Hanzi var engang nummer 1. Nu starter comebacket.</div>
-        <button class="btn" id="start-btn">START</button>
-    </div>
+<!-- VIDEO -->
+<video id="intro-vid" playsinline></video>
+<button class="btn" id="vid-skip" onclick="skipVid()">SKIP ▶</button>
 
-    <!-- PHONE SCENE -->
-    <div id="phone-scene">
-        <div class="phone">
-            <div class="phone-top">
-                <div class="phone-avatar">L</div>
-                <div><div class="phone-name">Leth 💪</div><div class="phone-status">Online</div></div>
-            </div>
-            <div class="phone-msgs" id="phone-msgs"></div>
-            <div class="phone-bottom">
-                <button class="phone-continue" id="phone-next">Fortsæt ▶</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAP -->
-    <div id="map-screen">
-        <div class="map-hud">
-            <div class="stats-wrap" id="hud-stats"></div>
-            <div class="hud-info">
-                <div class="day-timer" id="hud-timer">KLUB OM 7 DAGE</div>
-                <div class="money" id="hud-money">200 KR</div>
-                <div class="energi" id="hud-energi">ENERGI: 5/5</div>
-            </div>
-        </div>
-        <div class="map-area">
-            <div class="map-bg"><canvas id="map-canvas"></canvas></div>
-            <div class="map-locations" id="map-locs"></div>
-            <div class="map-msg" id="map-msg"></div>
-            <div class="leth-tip" id="leth-tip">
-                <div class="lt-header"><div class="lt-avi">L</div><div class="lt-name">LETH</div></div>
-                <div class="lt-text" id="lt-text"></div>
-                <button class="lt-close" id="lt-close">OK 👊</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- GYM -->
-    <div class="overlay" id="gym-ov">
-        <div class="ov-title" style="color:#ff006e;">💪 FITNESSCENTER</div>
-        <div class="ov-sub">Vælg en øvelse (-1 energi)</div>
-        <div class="gym-grid" id="gym-grid"></div>
-        <button class="btn btn-sm" style="margin-top:18px;" onclick="closeOv()">GÅ UD</button>
-    </div>
-
-    <!-- TRAINING -->
-    <div class="overlay" id="train-ov">
-        <div class="train-area">
-            <div class="train-info"><span id="t-title" style="color:#ff006e;"></span><span id="t-score" style="color:#ffbe0b;"></span></div>
-            <canvas id="t-canvas" width="360" height="360"></canvas>
-            <div class="train-instr" id="t-instr"></div>
-            <div id="t-result"></div>
-        </div>
-    </div>
-
-    <!-- SHOP -->
-    <div class="overlay" id="shop-ov">
-        <div class="ov-title" style="color:#8b5cf6;">👔 STYLE SHOP</div>
-        <div class="ov-sub">Upgrade din look</div>
-        <div class="shop-list" id="shop-list"></div>
-        <button class="btn btn-sm btn-purple" style="margin-top:15px;" onclick="closeOv()">GÅ UD</button>
-    </div>
-
-    <!-- WORK -->
-    <div class="overlay" id="work-ov">
-        <div class="ov-title" style="color:#00d4aa;">💰 ARBEJDE</div>
-        <div class="ov-sub">Tjen penge (-1 energi)</div>
-        <div class="work-options" id="work-opts"></div>
-        <button class="btn btn-sm btn-green" style="margin-top:18px;" onclick="closeOv()">GÅ HJEM</button>
-    </div>
-
-    <!-- CLUB -->
-    <div class="overlay" id="club-ov">
-        <canvas id="club-canvas"></canvas>
-        <div class="club-content">
-            <div class="club-girl-card" id="club-girl-info"></div>
-            <div class="club-box"><div class="cb-speaker" id="cb-speaker"></div><div class="cb-text" id="cb-text"></div></div>
-            <div class="club-choices" id="club-choices"></div>
-            <button class="btn btn-sm" id="club-leave" style="display:none;" onclick="leaveClub()">SMUT HJEM</button>
-        </div>
-    </div>
-
-    <!-- RESULT -->
-    <div class="overlay" id="result-ov">
-        <div class="result-box" id="result-box"></div>
-    </div>
+<!-- LETH BRIEFING -->
+<div class="ov" id="brief-ov" style="justify-content:center;background:rgba(5,5,12,.98)">
+<canvas id="brief-cv" width="380" height="220" style="max-width:92%;margin-bottom:8px;border:1px solid rgba(255,255,255,.04)"></canvas>
+<div class="pix" id="brief-name" style="font-size:clamp(7px,1.8vw,10px);color:#00d4aa;margin-bottom:4px"></div>
+<div class="pix" id="brief-text" style="font-size:clamp(4px,1vw,6px);color:#ddd;max-width:340px;text-align:center;line-height:2;margin-bottom:10px"></div>
+<div id="brief-girl" style="display:none;text-align:center;margin-bottom:10px">
+<div class="pix" id="bg-icon" style="font-size:2.5rem;margin-bottom:4px"></div>
+<div class="pix" id="bg-name" style="font-size:clamp(7px,1.8vw,10px);color:#ff006e;margin-bottom:3px"></div>
+<div class="pix" id="bg-rating" style="font-size:clamp(10px,3vw,16px);color:#ffbe0b;margin-bottom:4px"></div>
+<div class="pix" id="bg-stats" style="font-size:clamp(3.5px,.85vw,5px);color:#aaa;line-height:2"></div>
+</div>
+<button class="btn btn-s" id="brief-btn" onclick="advBrief()">FORTSÆT ▶</button>
 </div>
 
+<!-- TITLE -->
+<div class="title-ov" id="title-ov">
+<h1>HANZI LAD</h1>
+<div class="sub">SIMULATOR</div>
+<button class="btn" id="start-btn">▶ START</button>
+</div>
+
+<!-- PHONE -->
+<div class="phone-ov" id="phone-ov">
+<div class="phone"><div class="phtop"><div class="phavi" style="background:#00d4aa;">L</div><div><div class="phname">Leth 💪</div><div class="phst">Online</div></div></div>
+<div class="phmsgs" id="ph-msgs"></div>
+<div class="phbot"><button class="phcont" id="ph-next">FORTSÆT ▶</button></div></div>
+</div>
+
+<!-- GYM -->
+<div class="ov" id="gym-ov">
+<canvas id="gym-bg" width="400" height="160" style="max-width:100%;margin-bottom:4px;"></canvas>
+<div class="ov-t" style="color:#ff006e">💪 LETH'S GYM</div>
+<div class="ov-s" id="gym-sub">Leth: "Vælg øvelse! Koster 20 sult."</div>
+<div class="gym-g" id="gym-g"></div>
+<button class="btn btn-s" style="margin-top:10px" onclick="closeOv()">← TILBAGE</button>
+</div>
+
+<!-- TRAINING -->
+<div class="ov" id="train-ov" style="justify-content:center;">
+<div style="display:flex;justify-content:space-between;width:100%;max-width:340px;margin-bottom:4px;"><span class="pix" id="tt" style="font-size:clamp(5px,1.2vw,7px);color:#ff006e"></span><span class="pix" id="ts" style="font-size:clamp(5px,1.2vw,7px);color:#ffbe0b"></span></div>
+<canvas id="tc" width="340" height="300" style="max-width:100%;border:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.4);"></canvas>
+<div id="ti" class="pix" style="font-size:clamp(3.5px,.85vw,5px);color:#888;text-align:center;margin-top:4px"></div>
+<div id="tr"></div>
+</div>
+
+<!-- SHOP -->
+<div class="ov" id="shop-ov">
+<canvas id="shop-bg" width="400" height="140" style="max-width:100%;margin-bottom:4px;"></canvas>
+<div class="ov-t" style="color:#8b5cf6">GULLE'S SHOP</div>
+<div class="ov-s">Gulle: "Alt er ægte... mostly." 🕶️</div>
+<div class="stabs" id="shop-tabs"></div>
+<div class="slist" id="shop-list"></div>
+<button class="btn btn-s" style="margin-top:10px;border-color:#8b5cf6;color:#8b5cf6" onclick="closeOv()">← TILBAGE</button>
+</div>
+
+<!-- WORK -->
+<div class="ov" id="work-ov">
+<canvas id="work-bg" width="400" height="140" style="max-width:100%;margin-bottom:4px;"></canvas>
+<div class="ov-t" style="color:#00d4aa">RITARDO'S JOBS</div>
+<div class="ov-s" id="work-sub"></div>
+<div class="slist" id="work-list"></div>
+<button class="btn btn-s" style="margin-top:10px;border-color:#00d4aa;color:#00d4aa" onclick="closeOv()">← TILBAGE</button>
+</div>
+
+<!-- SKILL TREE -->
+<div class="ov" id="tree-ov">
+<div class="ov-t" style="color:#ffbe0b">🌟 CHARM SKILL TREE</div>
+<div class="ov-s" id="tree-sub"></div>
+<div class="tree" id="tree-w"></div>
+<button class="btn btn-s" style="margin-top:10px;border-color:#ffbe0b;color:#ffbe0b" onclick="closeOv()">← TILBAGE</button>
+</div>
+
+<!-- COMBAT -->
+<div class="cui" id="combat-ui">
+<div class="ctop"><div class="cbars" id="c-hanzi"></div><div class="cbars" id="c-girl"></div></div>
+<div class="cmid" id="c-mid"><div class="cspeech" id="c-speech"></div><div class="cact" id="c-act"></div><canvas id="c-cv" style="position:absolute;inset:0;width:100%;height:100%;"></canvas></div>
+<div class="cbot"><div class="ctiming" id="c-timing"><div class="zone" id="c-zone"></div><div class="needle" id="c-needle"></div></div><div class="cmenu" id="c-menu"></div><div class="citems" id="c-items"></div></div>
+</div>
+
+<!-- RESULT -->
+<div class="ov" id="result-ov" style="justify-content:center;background:rgba(5,5,12,.97)"></div>
+
 <script>
+// ===== CANVAS =====
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');
+function rsz(){cv.width=innerWidth;cv.height=innerHeight;
+const cc=document.getElementById('c-cv');if(cc){cc.width=cc.parentElement.clientWidth;cc.height=cc.parentElement.clientHeight;}}
+addEventListener('resize',rsz);rsz();
+
 // ===== AUDIO =====
-const S={ctx:null,mg:null,oscs:[],playing:false,
-init(){this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.mg=this.ctx.createGain();this.mg.gain.value=0.25;this.mg.connect(this.ctx.destination);},
-n(f,d,t='square',v=0.3){if(!this.ctx)return;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d);o.connect(g);g.connect(this.mg);o.start();o.stop(this.ctx.currentTime+d);},
-click(){this.n(800,0.06);setTimeout(()=>this.n(1200,0.05),30);},
-ok(){this.n(523,0.12);setTimeout(()=>this.n(659,0.12),80);setTimeout(()=>this.n(784,0.15),160);},
-bad(){this.n(350,0.15,'sawtooth');setTimeout(()=>this.n(260,0.2,'sawtooth'),120);},
-perf(){this.n(784,0.1);setTimeout(()=>this.n(988,0.1),60);setTimeout(()=>this.n(1175,0.15),120);},
-coin(){for(let i=0;i<4;i++)setTimeout(()=>this.n(900+i*200,0.06,'sine'),i*40);},
-ring(){for(let i=0;i<3;i++)setTimeout(()=>{this.n(880,0.15,'sine',0.2);setTimeout(()=>this.n(1100,0.1,'sine',0.15),100);},i*400);},
-startClub(){if(this.playing)return;this.playing=true;this._cl();},
-_cl(){if(!this.playing||!this.ctx)return;const n=this.ctx.currentTime,b=60/128;for(let i=0;i<8;i++){const t=n+i*b;const ko=this.ctx.createOscillator(),kg=this.ctx.createGain();ko.type='sine';ko.frequency.setValueAtTime(150,t);ko.frequency.exponentialRampToValueAtTime(40,t+0.1);kg.gain.setValueAtTime(0.35,t);kg.gain.exponentialRampToValueAtTime(0.001,t+0.15);ko.connect(kg);kg.connect(this.mg);ko.start(t);ko.stop(t+0.15);this.oscs.push(ko);if(i%2===1){const h=this.ctx.createOscillator(),hg=this.ctx.createGain();h.type='square';h.frequency.value=5500;hg.gain.setValueAtTime(0.03,t);hg.gain.exponentialRampToValueAtTime(0.001,t+0.04);h.connect(hg);hg.connect(this.mg);h.start(t);h.stop(t+0.04);this.oscs.push(h);}if(i%4===0){const bs=this.ctx.createOscillator(),bg=this.ctx.createGain();bs.type='sawtooth';bs.frequency.value=[110,130,146,110][(i/4)%4];bg.gain.setValueAtTime(0.07,t);bg.gain.exponentialRampToValueAtTime(0.001,t+b*2);bs.connect(bg);bg.connect(this.mg);bs.start(t);bs.stop(t+b*2);this.oscs.push(bs);}}setTimeout(()=>this._cl(),(8*b)*1000);},
-stopClub(){this.playing=false;this.oscs.forEach(o=>{try{o.stop();}catch(e){}});this.oscs=[];}};
+const Mus={t:{},cur:null,init(){['map','fight','gym'].forEach(k=>{const a=new Audio('music/'+k+'.mp3');a.loop=true;a.volume=.22;a.preload='auto';this.t[k]=a;});},
+play(k){if(this.cur===k)return;this.stop();this.cur=k;const t=this.t[k];if(t){t.currentTime=0;t.play().catch(()=>{});}},
+stop(){Object.values(this.t).forEach(t=>{t.pause();t.currentTime=0;});this.cur=null;}};
+
+const S={c:null,g:null,init(){this.c=new(window.AudioContext||window.webkitAudioContext)();this.g=this.c.createGain();this.g.gain.value=.18;this.g.connect(this.c.destination);},
+n(f,d,t='square',v=.3){if(!this.c)return;const o=this.c.createOscillator(),g=this.c.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,this.c.currentTime);g.gain.exponentialRampToValueAtTime(.001,this.c.currentTime+d);o.connect(g);g.connect(this.g);o.start();o.stop(this.c.currentTime+d);},
+click(){this.n(800,.04);setTimeout(()=>this.n(1100,.03),20);},
+ok(){this.n(523,.08);setTimeout(()=>this.n(659,.08),60);setTimeout(()=>this.n(784,.1),120);},
+bad(){this.n(300,.1,'sawtooth');setTimeout(()=>this.n(220,.12,'sawtooth'),80);},
+perf(){this.n(784,.06);setTimeout(()=>this.n(988,.06),40);setTimeout(()=>this.n(1175,.1),80);},
+coin(){for(let i=0;i<3;i++)setTimeout(()=>this.n(800+i*250,.04,'sine'),i*30);},
+hit(){this.n(180,.07,'sawtooth',.25);},heal(){this.n(440,.06,'sine');setTimeout(()=>this.n(660,.06,'sine'),50);setTimeout(()=>this.n(880,.08,'sine'),100);},
+eat(){this.n(300,.05,'sine');setTimeout(()=>this.n(500,.05,'sine'),40);}};
 
 // ===== GAME STATE =====
-const G={
-    day:1, daysUntilClub:7, money:200, energi:5, maxEnergi:5,
-    round:1, maxRounds:4,
-    stats:{styrke:1,arms:1,ben:1,cardio:1,style:1,charm:1},
-    xp:{styrke:0,arms:0,ben:0,cardio:0,style:0,charm:0},
-    xpNeed(lv){return 20+lv*18;},
-    bought:[],
-    girlsMet:0,totalScore:0,
-    scene:'title',
-    tutorial:0,
-    addXP(stat,amt){
-        this.xp[stat]+=amt;
-        while(this.xp[stat]>=this.xpNeed(this.stats[stat])){
-            this.xp[stat]-=this.xpNeed(this.stats[stat]);
-            this.stats[stat]++;
-            floatText('LEVEL UP! '+stat.toUpperCase()+' LV'+this.stats[stat],'#ffbe0b');
-        }
-    },
-    totalLvl(){return Object.values(this.stats).reduce((a,b)=>a+b,0);},
-    chance(stat,req){
-        const lv=this.stats[stat]||1;
-        const pct=Math.min(95,Math.max(10, 30+(lv-req)*12 ));
-        return pct;
-    }
-};
-
-const statDefs=[
-    {k:'styrke',label:'STYRKE',color:'#ff006e'},
-    {k:'arms',label:'ARMS',color:'#ff4d8d'},
-    {k:'ben',label:'BEN',color:'#ff6b35'},
-    {k:'cardio',label:'CARDIO',color:'#00d4aa'},
-    {k:'style',label:'STYLE',color:'#8b5cf6'},
-    {k:'charm',label:'CHARM',color:'#ffbe0b'},
-];
+const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:4,
+styrke:0,cardio:0,smalltalk:0,reflex:0,
+get dmg(){return 5+this.styrke*2},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*3},
+get blockChance(){return Math.min(50,5+this.reflex*3)},get hitBonus(){return this.reflex*2},
+charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
+inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,
+px:.5,py:.5,tx:.5,ty:.5,walking:false};
 
 // ===== HELPERS =====
-function show(id){document.getElementById(id).style.display='flex';}
-function hide(id){document.getElementById(id).style.display='none';}
-function floatText(t,c='#fff'){const e=document.createElement('div');e.className='float-text';e.textContent=t;e.style.color=c;e.style.left=(window.innerWidth/2-50)+'px';e.style.top=(window.innerHeight/2-40)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1200);}
-let msgTimer;
-function mapMsg(t){const el=document.getElementById('map-msg');el.textContent=t;el.classList.add('show');clearTimeout(msgTimer);msgTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+function float(t,c='#fff'){const e=document.createElement('div');e.className='float';e.textContent=t;e.style.color=c;e.style.left=(innerWidth/2-30)+'px';e.style.top=(innerHeight/2-30)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1000);}
+let mt;function msg(t){const b=document.getElementById('msg-bar');document.getElementById('msg-text').textContent=t;b.classList.add('show');clearTimeout(mt);mt=setTimeout(()=>b.classList.remove('show'),4000);}
 
-// ===== HUD =====
-function updateHUD(){
-    const wrap=document.getElementById('hud-stats');
-    wrap.innerHTML='';
-    statDefs.forEach(s=>{
-        const lv=G.stats[s.k];const pct=Math.min(100,(G.xp[s.k]/G.xpNeed(lv))*100);
-        wrap.innerHTML+=`<div class="mini-stat"><label>${s.label}</label><div class="track"><div class="fill" style="width:${pct}%;background:${s.color};"></div></div><div class="val">LV${lv}</div></div>`;
-    });
-    document.getElementById('hud-timer').textContent=G.daysUntilClub>0?`KLUB OM ${G.daysUntilClub} DAGE`:'🪩 KLUB I AFTEN!';
-    document.getElementById('hud-timer').style.color=G.daysUntilClub<=1?'#ffbe0b':'#ff006e';
-    document.getElementById('hud-money').textContent=G.money+' KR';
-    document.getElementById('hud-energi').textContent='ENERGI: '+G.energi+'/'+G.maxEnergi;
-}
+// ===== VIDEO =====
+let vidCb=null;
+function playVid(src,cb){
+    const v=document.getElementById('intro-vid');
+    vidCb=cb;v.onerror=()=>skipVid();v.onended=skipVid;
+    v.src=src;v.load();
+    const to=setTimeout(()=>skipVid(),2000);
+    v.oncanplay=()=>{clearTimeout(to);v.style.display='block';document.getElementById('vid-skip').style.display='block';v.play().catch(()=>skipVid());};
+    v.onerror=()=>{clearTimeout(to);skipVid();};}
+function skipVid(){
+    const v=document.getElementById('intro-vid');v.pause();v.style.display='none';document.getElementById('vid-skip').style.display='none';
+    if(vidCb){const c=vidCb;vidCb=null;c();}}
 
-// ===== PHONE CALL =====
-const phoneScript=[
-    {type:'narrator',text:'📱 Indkommende opkald...'},
-    {type:'in',text:'Bror... BROR! Du er vågen?! 😭'},
-    {type:'out',text:'Leth...? Hvad skete der? Hvor er jeg?'},
-    {type:'in',text:'Du kørte galt på motorcyklen for 2 ÅR siden Hanzi. Du har ligget i koma.'},
-    {type:'out',text:'2 år?! Hvad f... Hvad med TBH? Hvad med drengene?'},
-    {type:'in',text:'Ja... det er det jeg ringer om. De har smidt dig ud af TBH, bror. De siger du er færdig.'},
-    {type:'out',text:'HVAD?! De kan ikke smide MIG ud! Jeg var NUMMER 1!'},
-    {type:'in',text:'Var, Hanzi. Du har mistet alt. Dine gains, din style, din charm. Du starter fra bunden.'},
-    {type:'out',text:'...'},
-    {type:'in',text:'MEN. Der er én måde du kan komme tilbage på. 👀'},
-    {type:'out',text:'Sig det.'},
-    {type:'in',text:'Hvis du scorer den HOTTESTE pige på klubben foran alle... så MÅ de give dig din plads tilbage. Sådan er reglerne.'},
-    {type:'out',text:'Sig ikke mere. Jeg er klar. 💪'},
-    {type:'in',text:'Easy tiger. Du er SVAG lige nu. Du skal bygge dig op først. Jeg er din træner fra nu af.'},
-    {type:'in',text:'Sådan fungerer det: Du har 7 DAGE til at træne inden klubben åbner. Brug dem klogt.'},
-    {type:'in',text:'💪 GYM - Træn styrke, arms, ben og cardio med mini-games\n👔 SHOP - Køb style og se godt ud\n🗣️ PARK - Træn din charm\n💰 ARBEJDE - Tjen penge\n😴 HVIL - Ny dag, refill energi'},
-    {type:'in',text:'Du har 5 energi om dagen. Hver aktivitet koster 1 energi. Når du hviler starter en ny dag.'},
-    {type:'in',text:'Og husk - på klubben har hver response en PROCENT chance for at virke. Jo højere dine skills, jo bedre odds! 📊'},
-    {type:'in',text:'Der er 4 runder med klubben. Hver runde bliver pigerne sværere. Scor dem alle og du er LEGENDEN igen! 👑'},
-    {type:'out',text:'Leth... du er den bedste bror. Lets f*cking GO! 🔥'},
-    {type:'in',text:'THATS THE SPIRIT! Nu kom ud af den seng og lad os GRINDE! 💪🔥'},
+// ===== BUILDINGS (top-down positions 0-1) =====
+const blds=[
+    {id:'gym',x:.18,y:.22,w:.18,h:.16,name:'GYM',icon:'💪',col:'#7f1d1d',roof:'#a02020'},
+    {id:'shop',x:.64,y:.22,w:.18,h:.16,name:'SHOP',col:'#4c1d95',roof:'#6d28d9',icon:'👔'},
+    {id:'tree',x:.18,y:.55,w:.18,h:.16,name:'SKILLS',col:'#78350f',roof:'#a16207',icon:'🌟'},
+    {id:'work',x:.64,y:.55,w:.18,h:.16,name:'ARBEJDE',col:'#064e3b',roof:'#059669',icon:'💰'},
+    {id:'rest',x:.18,y:.82,w:.18,h:.12,name:'HVIL',col:'#1e3a5f',roof:'#2563eb',icon:'😴'},
+    {id:'club',x:.64,y:.82,w:.18,h:.12,name:'KLUB',col:'#2d0050',roof:'#7c3aed',icon:'🪩'},
 ];
 
-let phoneIdx=0;
-function initPhone(){
-    phoneIdx=0;
-    document.getElementById('phone-msgs').innerHTML='';
-    show('phone-scene');
-    S.ring();
-    advancePhone();
-}
+// ===== TOP-DOWN MAP =====
+let mapT=0;
+const cars=[];for(let i=0;i<5;i++)cars.push({x:Math.random(),y:Math.random(),dx:(Math.random()-.5)*.001,dy:(Math.random()-.5)*.001,c:['#ff006e','#ffbe0b','#00d4aa','#3b82f6','#f97316'][i]});
+const peds=[];for(let i=0;i<8;i++)peds.push({x:.1+Math.random()*.8,y:.1+Math.random()*.8,dx:(Math.random()-.5)*.0003,dy:(Math.random()-.5)*.0003});
 
-function advancePhone(){
-    if(phoneIdx>=phoneScript.length){
-        hide('phone-scene');
-        startMap();
-        return;
+function drawMap(){
+    mapT+=.005;const W=cv.width,H=cv.height;
+    // Grass base
+    cx.fillStyle='#1a2a1a';cx.fillRect(0,0,W,H);
+    // Road grid
+    cx.fillStyle='#2a2a30';
+    cx.fillRect(W*.42,0,W*.16,H); // vertical road
+    cx.fillRect(0,H*.40,W,H*.12); // horizontal road
+    // Road lines
+    cx.strokeStyle='rgba(255,255,0,.08)';cx.lineWidth=2;cx.setLineDash([8,8]);
+    cx.beginPath();cx.moveTo(W*.5,0);cx.lineTo(W*.5,H);cx.stroke();
+    cx.beginPath();cx.moveTo(0,H*.46);cx.lineTo(W,H*.46);cx.stroke();
+    cx.setLineDash([]);
+    // Sidewalks
+    cx.fillStyle='#333340';
+    cx.fillRect(W*.40,0,W*.02,H);cx.fillRect(W*.58,0,W*.02,H);
+    cx.fillRect(0,H*.38,W,H*.02);cx.fillRect(0,H*.52,W,H*.02);
+    // Trees
+    for(let i=0;i<12;i++){
+        const tx2=((i*137+50)%90)/100,ty2=((i*89+20)%90)/100;
+        let onRoad=tx2>.38&&tx2<.62&&true||ty2>.36&&ty2<.54;
+        let onBld=false;blds.forEach(b=>{if(tx2>b.x-.02&&tx2<b.x+b.w+.02&&ty2>b.y-.02&&ty2<b.y+b.h+.02)onBld=true;});
+        if(onRoad||onBld)continue;
+        const sw=Math.sin(mapT*2+i)*1.5;
+        cx.fillStyle='#1a4a1a';cx.beginPath();cx.arc(tx2*W+sw,ty2*H,8,0,Math.PI*2);cx.fill();
+        cx.fillStyle='#2a6a2a';cx.beginPath();cx.arc(tx2*W+sw,ty2*H-3,6,0,Math.PI*2);cx.fill();
     }
-    const line=phoneScript[phoneIdx];
-    const msgs=document.getElementById('phone-msgs');
-    const div=document.createElement('div');
-    div.className='msg-bubble msg-'+line.type;
-    div.textContent=line.text;
-    msgs.appendChild(div);
-    msgs.scrollTop=msgs.scrollHeight;
-    S.click();
-    phoneIdx++;
-}
-
-// ===== MAP =====
-const locations=[
-    {id:'gym',name:'GYM',icon:'💪',cost:'1 energi',glow:'#ff006e',desc:'Træn dine muskler'},
-    {id:'shop',name:'SHOP',icon:'👔',cost:'Penge',glow:'#8b5cf6',desc:'Køb fedt tøj'},
-    {id:'park',name:'CHARM',icon:'🗣️',cost:'1 energi',glow:'#ffbe0b',desc:'Øv din charm'},
-    {id:'work',name:'ARBEJDE',icon:'💰',cost:'1 energi',glow:'#00d4aa',desc:'Tjen penge'},
-    {id:'rest',name:'HVIL',icon:'😴',cost:'Ny dag',glow:'#60a5fa',desc:'Sov og refill energi'},
-    {id:'club',name:'KLUBBEN',icon:'🪩',cost:'100 kr',glow:'#ff006e',desc:'Score damer!'},
-];
-
-function startMap(){
-    G.scene='map';
-    show('map-screen');
-    buildMap();
-    updateHUD();
-    renderMapBG();
-    if(G.tutorial===0){
-        G.tutorial=1;
-        setTimeout(()=>lethTip('Velkommen til byen, Hanzi! Tryk på et sted for at gå derhen. Start med GYM og byg dine stats op! 💪'),500);
-    }
-}
-
-function buildMap(){
-    const cont=document.getElementById('map-locs');
-    cont.innerHTML='';
-    locations.forEach(loc=>{
-        const card=document.createElement('div');
-        card.className='loc-card';
-        if(loc.id==='club'&&G.daysUntilClub>0)card.className+=' locked';
-        card.style.setProperty('--glow',loc.glow);
-
-        let badge='';
-        if(loc.id==='club'&&G.daysUntilClub>0)badge=`<div class="loc-badge" style="background:rgba(255,0,110,0.2);color:#ff006e;">${G.daysUntilClub} DAGE</div>`;
-        if(loc.id==='club'&&G.daysUntilClub<=0)badge=`<div class="loc-badge" style="background:rgba(255,0,110,0.3);color:#ff006e;animation:pulse 1s infinite;">ÅBEN!</div>`;
-
-        card.innerHTML=`${badge}<div class="loc-icon">${loc.icon}</div><div class="loc-name" style="color:${loc.glow}">${loc.name}</div><div class="loc-cost">${loc.cost}</div>`;
-        card.onclick=()=>goTo(loc.id);
-        cont.appendChild(card);
+    // Animated cars
+    cars.forEach(c=>{
+        c.x+=c.dx;c.y+=c.dy;
+        if(c.x<0||c.x>1)c.dx*=-1;if(c.y<0||c.y>1)c.dy*=-1;
+        // Keep on roads
+        const onH=c.y>.38&&c.y<.54,onV=c.x>.40&&c.x<.60;
+        if(!onH&&!onV){c.y=.46;c.dy=0;c.dx=(Math.random()-.5)*.002;}
+        cx.fillStyle=c.c;cx.fillRect(c.x*W-4,c.y*H-3,8,6);
+        cx.fillStyle='rgba(255,255,255,.3)';cx.fillRect(c.x*W-2,c.y*H-3,2,2);
     });
+    // Peds
+    peds.forEach(p=>{
+        p.x+=p.dx;p.y+=p.dy;
+        if(Math.random()<.005){p.dx=(Math.random()-.5)*.0004;p.dy=(Math.random()-.5)*.0004;}
+        if(p.x<.05||p.x>.95)p.dx*=-1;if(p.y<.05||p.y>.95)p.dy*=-1;
+        cx.fillStyle='#888';cx.beginPath();cx.arc(p.x*W,p.y*H,2.5,0,Math.PI*2);cx.fill();
+    });
+    // Buildings
+    blds.forEach(b=>{
+        const bx=b.x*W,by=b.y*H,bw=b.w*W,bh=b.h*H;
+        // Shadow
+        cx.fillStyle='rgba(0,0,0,.25)';cx.fillRect(bx+4,by+4,bw,bh);
+        // Building
+        cx.fillStyle=b.col;cx.fillRect(bx,by,bw,bh);
+        // Roof highlight
+        cx.fillStyle=b.roof;cx.fillRect(bx,by,bw,4);cx.fillRect(bx,by,4,bh);
+        // Windows
+        for(let wy=by+10;wy<by+bh-6;wy+=12){for(let wx=bx+8;wx<bx+bw-8;wx+=14){
+            const lit=Math.sin(wx*3+wy*7+mapT*3)>.3;
+            cx.fillStyle=lit?'rgba(255,220,100,.35)':'rgba(0,0,0,.25)';cx.fillRect(wx,wy,6,5);}}
+        // Label
+        cx.font="12px serif";cx.textAlign='center';cx.fillText(b.icon,bx+bw/2,by+bh/2-2);
+        cx.font=`bold ${Math.max(5,W*.009)}px 'Press Start 2P'`;cx.fillStyle='#fff';
+        cx.fillText(b.name,bx+bw/2,by+bh/2+10);
+        // Neon glow for club
+        if(b.id==='club'){cx.shadowColor='#7c3aed';cx.shadowBlur=6+Math.sin(mapT*4)*3;cx.strokeStyle='#7c3aed';cx.lineWidth=1;cx.strokeRect(bx-1,by-1,bw+2,bh+2);cx.shadowBlur=0;}
+    });
+    // Hanzi (top-down)
+    const hx=G.px*W,hy=G.py*H;
+    const bob=G.walking?Math.sin(Date.now()*.015)*2:0;
+    cx.fillStyle='rgba(0,0,0,.3)';cx.beginPath();cx.ellipse(hx,hy+6,6,3,0,0,Math.PI*2);cx.fill();
+    // Body circle
+    cx.fillStyle='#475569';cx.beginPath();cx.arc(hx,hy+bob,7,0,Math.PI*2);cx.fill();
+    // Head
+    cx.fillStyle='#c68642';cx.beginPath();cx.arc(hx,hy-6+bob,5,0,Math.PI*2);cx.fill();
+    // Hair
+    cx.fillStyle='#111';cx.beginPath();cx.arc(hx,hy-9+bob,5,Math.PI,Math.PI*2);cx.fill();
+    // Direction indicator
+    if(G.walking){cx.fillStyle='rgba(255,0,110,.4)';cx.beginPath();cx.arc(G.tx*W,G.ty*H,4,0,Math.PI*2);cx.fill();}
+    // Street lamps glow
+    const lampPos=[[.41,.2],[.59,.35],[.41,.6],[.59,.8],[.2,.39],[.8,.53]];
+    lampPos.forEach(l=>{
+        cx.fillStyle='#555';cx.fillRect(l[0]*W-1,l[1]*H-1,3,3);
+        const gl=.05+Math.sin(mapT*2+l[0]*10)*.02;
+        cx.fillStyle=`rgba(255,220,100,${gl})`;cx.beginPath();cx.arc(l[0]*W,l[1]*H,12,0,Math.PI*2);cx.fill();
+    });
+    // Walk
+    if(G.walking){
+        const dx=G.tx-G.px,dy=G.ty-G.py,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<.015){G.walking=false;G.px=G.tx;G.py=G.ty;onArrived();}
+        else{const spd=.006;G.px+=dx/dist*spd;G.py+=dy/dist*spd;}
+    }
 }
 
-function renderMapBG(){
-    const c=document.getElementById('map-canvas');
-    c.width=window.innerWidth;c.height=window.innerHeight;
-    const cx=c.getContext('2d');
-    let t=0;
-    function draw(){
-        if(G.scene!=='map')return;
-        cx.fillStyle='#0a0a12';cx.fillRect(0,0,c.width,c.height);t+=0.005;
-        for(let i=0;i<60;i++){
-            const x=(i*137+50)%(c.width);
-            const y=(i*73+20)%(c.height);
-            const br=0.15+Math.sin(t*2+i)*0.1;
-            cx.fillStyle=`rgba(255,255,255,${br})`;
-            cx.beginPath();cx.arc(x,y,0.8,0,Math.PI*2);cx.fill();
+// ===== CLICK MAP =====
+cv.addEventListener('click',e=>{
+    if(G.scene!=='map'||G.walking)return;
+    const rx=e.clientX/cv.width,ry=e.clientY/cv.height;
+    // Check building click
+    for(const b of blds){
+        if(rx>=b.x-.02&&rx<=b.x+b.w+.02&&ry>=b.y-.02&&ry<=b.y+b.h+.02){
+            S.click();goTo(b);return;
         }
-        requestAnimationFrame(draw);
     }
-    draw();
+});
+
+let arriveId=null;
+function goTo(b){
+    arriveId=b.id;G.tx=b.x+b.w/2;G.ty=b.y+b.h+.04;G.walking=true;
 }
 
-function goTo(id){
-    S.click();
+function onArrived(){
+    const id=arriveId;arriveId=null;
     switch(id){
-        case'gym':
-            if(G.energi<1)return mapMsg('Ingen energi! Hvil dig først. 😴');
-            openGym();break;
+        case'gym':if(G.hunger<20){msg('For sulten til at træne! Spis noget.');return;}openGym();break;
         case'shop':openShop();break;
-        case'park':
-            if(G.energi<1)return mapMsg('Ingen energi!');
-            doPark();break;
-        case'work':
-            if(G.energi<1)return mapMsg('Ingen energi!');
-            openWork();break;
+        case'tree':openTree();break;
+        case'work':openWork();break;
         case'rest':doRest();break;
         case'club':
-            if(G.daysUntilClub>0)return;
-            if(G.money<100)return mapMsg('Brug for 100 kr til klubben!');
-            G.money-=100;
-            openClub();break;
+            if(G.daysLeft>0){msg('Klubben åbner om '+G.daysLeft+' dage!');return;}
+            goClub();break;
     }
 }
 
-function closeOv(){
-    S.click();
-    document.querySelectorAll('.overlay').forEach(o=>o.style.display='none');
-    G.scene='map';
-    buildMap();updateHUD();
-}
+function advTime(h){G.hour+=h;if(G.hour>=24){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);if(G.daysLeft===0)forceClub();}}
+function closeOv(){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));G.scene='map';Mus.play('map');updHUD();}
 
-// ===== LETH TIPS =====
-function lethTip(text){
-    const tip=document.getElementById('leth-tip');
-    document.getElementById('lt-text').textContent=text;
-    tip.style.display='block';
+// ===== FORCE CLUB =====
+function forceClub(){
+    msg('⚠️ KLUBBEN ER ÅBEN! DU SKAL DERUD! 🪩');
+    setTimeout(()=>{
+        if(G.scene==='map'){goClub();}
+        else{document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));G.scene='map';setTimeout(()=>goClub(),500);}
+    },1500);
 }
-document.getElementById('lt-close').onclick=()=>{S.click();document.getElementById('leth-tip').style.display='none';};
+// ===== LETH BRIEFING + CLUB =====
+let briefStep=0,briefGirl=null;
+function goClub(){
+    document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));
+    G.scene='brief';
+    const rg=girlsByRound[Math.min(G.round-1,3)];
+    briefGirl=rg[Math.floor(Math.random()*rg.length)];
+    briefStep=0;
+    document.getElementById('brief-girl').style.display='none';
+    document.getElementById('brief-ov').classList.add('active');
+    drawBriefLeth();advBrief();
+}
+function drawBriefLeth(){
+    const c=document.getElementById('brief-cv'),x=c.getContext('2d'),W=c.width,H=c.height;
+    x.fillStyle='#0a0a12';x.fillRect(0,0,W,H);
+    // Leth close-up
+    const t=Date.now()*.001,cx2=W/2,cy=H*.55;
+    // Body
+    x.fillStyle='#dc2626';x.fillRect(cx2-30,cy-10,60,50);
+    // Big arms
+    x.fillStyle='#c68642';x.fillRect(cx2-44,cy-6,16,35);x.fillRect(cx2+28,cy-6,16,35);
+    // Neck
+    x.fillStyle='#c68642';x.fillRect(cx2-8,cy-22,16,14);
+    // Head
+    x.fillStyle='#c68642';x.beginPath();x.arc(cx2,cy-34,22,0,Math.PI*2);x.fill();
+    // Hair
+    x.fillStyle='#222';x.beginPath();x.arc(cx2,cy-44,22,Math.PI,.02);x.fill();
+    // Eyes
+    x.fillStyle='#fff';x.fillRect(cx2-10,cy-38,7,6);x.fillRect(cx2+3,cy-38,7,6);
+    x.fillStyle='#111';x.fillRect(cx2-8,cy-37,4,5);x.fillRect(cx2+5,cy-37,4,5);
+    // Smile
+    x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.arc(cx2,cy-26,8,0,Math.PI);x.stroke();
+    // Label
+    x.font="bold 10px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#00d4aa';x.fillText('LETH 💪',cx2,H-8);
+}
+const briefScript=[
+    ()=>{setBrief('Leth 💪','Yo bror! Tiden er inde. Klubben venter! 🪩');},
+    ()=>{setBrief('Leth 💪','Lad mig hjælpe dig med at blive klar til byen...');},
+    ()=>{
+        // Play club video
+        document.getElementById('brief-ov').classList.remove('active');
+        playVid('video/club.mp4',()=>{
+            document.getElementById('brief-ov').classList.add('active');
+            advBrief();
+        });
+    },
+    ()=>{drawBriefLeth();setBrief('Leth 💪','NU er du klar til byen! Du ser SKARP ud! 🔥');},
+    ()=>{
+        // Show girl info
+        const g=briefGirl;
+        setBrief('Leth 💪',`Scor hende her i aften. Held og lykke, bror!`);
+        document.getElementById('brief-girl').style.display='block';
+        document.getElementById('bg-icon').textContent=g.icon;
+        document.getElementById('bg-name').textContent=g.name;
+        document.getElementById('bg-rating').textContent='⭐'.repeat(Math.ceil(g.rating/2))+' '+g.rating+'/10';
+        document.getElementById('bg-stats').innerHTML=
+            `❤️ HP: ${g.hp} | ⚔️ ATK: ${g.atk}\n`+
+            `💀 Abilities: ${g.abilities.join(', ')}\n`+
+            `${g.rating>=8?'⚠️ SVÆR MODSTANDER!':g.rating>=6?'💪 Middel sværhed':'✅ Begynder-niveau'}`;
+    },
+    ()=>{
+        // Start combat
+        document.getElementById('brief-ov').classList.remove('active');
+        startCombatWithGirl(briefGirl);
+    },
+];
+function advBrief(){
+    if(briefStep>=briefScript.length)return;
+    S.click();briefScript[briefStep]();briefStep++;
+}
+function setBrief(name,text){
+    document.getElementById('brief-name').textContent=name;
+    document.getElementById('brief-text').textContent=text;
+}
 
 // ===== REST =====
 function doRest(){
-    G.day++;G.daysUntilClub--;G.energi=G.maxEnergi;
-    if(G.daysUntilClub<=0){
-        mapMsg(`Dag ${G.day}. KLUBBEN ER ÅBEN I AFTEN! 🪩🔥`);
-        lethTip('Hanzi! Klubben er åben i aften! Tryk på KLUBBEN når du er klar. Det er SHOWTIME! 🔥');
-    } else {
-        mapMsg(`Dag ${G.day}. ${G.daysUntilClub} dage til klubben. Energi refilled!`);
+    G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);G.hour=8;G.hunger=Math.min(G.maxHunger,G.hunger+20);
+    if(G.daysLeft<=0){forceClub();return;}
+    msg(`Dag ${G.day}. ${G.daysLeft} dage til klubben. +20 sult.`);updHUD();
+}
+
+// ===== HUD =====
+function updHUD(){
+    const h=document.getElementById('hud');h.className='show';
+    h.innerHTML=`<div class="hr"><div class="hl">
+        <div class="hb"><span class="l" style="color:#ff006e">SULT</span><div class="t"><div class="f" style="width:${G.hunger/G.maxHunger*100}%;background:#ff006e"></div></div><span class="v">${G.hunger}</span></div>
+        <div class="hstats">
+            <div class="hs"><span class="si">⚔️</span><span class="sl">STR</span><span class="sv" style="color:#ff006e">${G.styrke}</span></div>
+            <div class="hs"><span class="si">❤️</span><span class="sl">CRD</span><span class="sv" style="color:#ff4d8d">${G.cardio}</span></div>
+            <div class="hs"><span class="si">💬</span><span class="sl">TLK</span><span class="sv" style="color:#3b82f6">${G.smalltalk}</span></div>
+            <div class="hs"><span class="si">🛡️</span><span class="sl">REF</span><span class="sv" style="color:#00d4aa">${G.reflex}</span></div>
+            <div class="hs"><span class="si">🌟</span><span class="sl">CHR</span><span class="sv" style="color:#ffbe0b">${G.charmPts}</span></div>
+        </div></div><div class="hright">
+        <div class="ck">${String(G.hour).padStart(2,'0')}:00</div>
+        <div class="dy">DAG ${G.day} ${G.daysLeft>0?'(KLUB: '+G.daysLeft+'D)':'⚠️ KLUB NU!'}</div>
+        <div class="mn">${G.money} KR</div>
+    </div></div>`;
+}
+
+// ===== NPC DRAWING =====
+function drawNPC(ctx,x,y,type,t){
+    const s=1;ctx.save();ctx.translate(x,y);
+    const bob=Math.sin(t*3)*1.5;
+    if(type==='leth'){
+        // Muscular guy
+        ctx.fillStyle='#c68642';ctx.beginPath();ctx.arc(0,-22+bob,8,0,Math.PI*2);ctx.fill();// head
+        ctx.fillStyle='#222';ctx.beginPath();ctx.arc(0,-28+bob,8,Math.PI,Math.PI*2);ctx.fill();// hair
+        ctx.fillStyle='#dc2626';ctx.fillRect(-10,-14+bob,20,18);// red tank top
+        ctx.fillStyle='#c68642';ctx.fillRect(-14,-12+bob,5,14);ctx.fillRect(9,-12+bob,5,14);// big arms
+        ctx.fillStyle='#1e293b';ctx.fillRect(-6,4+bob,5,12);ctx.fillRect(1,4+bob,5,12);// legs
+    } else if(type==='gulle'){
+        ctx.fillStyle='#c68642';ctx.beginPath();ctx.arc(0,-20+bob,7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#333';ctx.fillRect(-8,-28+bob,16,6);// hat
+        ctx.fillStyle='#8b5cf6';ctx.fillRect(-8,-13+bob,16,16);// purple jacket
+        ctx.fillStyle='#1e293b';ctx.fillRect(-5,3+bob,4,10);ctx.fillRect(1,3+bob,4,10);
+        // sunglasses
+        ctx.fillStyle='#000';ctx.fillRect(-5,-22+bob,4,3);ctx.fillRect(1,-22+bob,4,3);
+    } else if(type==='ritardo'){
+        ctx.fillStyle='#c68642';ctx.beginPath();ctx.arc(0,-20+bob,7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#555';ctx.beginPath();ctx.arc(0,-24+bob,7,Math.PI,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#059669';ctx.fillRect(-7,-13+bob,14,15);// green shirt
+        ctx.fillStyle='#1e293b';ctx.fillRect(-5,2+bob,4,10);ctx.fillRect(1,2+bob,4,10);
+        // clipboard
+        const cb=Math.sin(t*2)*2;
+        ctx.fillStyle='#a0855c';ctx.fillRect(8,-8+bob+cb,6,8);
+    } else if(type==='girl'){
+        ctx.fillStyle='#f0c8a0';ctx.beginPath();ctx.arc(0,-20+bob,7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#a0522d';ctx.beginPath();ctx.arc(0,-24+bob,8,Math.PI,.05);ctx.fill();// hair
+        ctx.fillStyle='#ff006e';ctx.fillRect(-6,-13+bob,12,14);// dress
+        ctx.fillStyle='#f0c8a0';ctx.fillRect(-3,1+bob,3,10);ctx.fillRect(0,1+bob,3,10);
     }
-    buildMap();updateHUD();
+    ctx.restore();
 }
 
-// ===== PARK =====
-const parkMsgs=["Hanzi øver pick-up lines. 'Er du parkeringsbøde? For du er...fine.' 😬","YouTube: 'RIZZ MASTEREN afslører ALT'","Hanzi øver øjenkontakt med en statue. Intense.","Wingman-strategi med drengene i parken.","Hanzi læser 'The Art of Charm' på en bænk.","Smile-træning foran spejlet i parkens toilet."];
-function doPark(){
-    G.energi--;
-    const gain=6+Math.floor(Math.random()*10);
-    G.addXP('charm',gain);
-    floatText('+'+gain+' CHARM XP','#ffbe0b');
-    mapMsg(parkMsgs[Math.floor(Math.random()*parkMsgs.length)]);
-    if(G.tutorial===1){G.tutorial=2;setTimeout(()=>lethTip('Nice! Charm er VIGTIGT på klubben. Jo højere charm, jo bedre procent-chance for at dine lines lander! 📊'),800);}
-    updateHUD();
+// ===== LOCATION BACKGROUNDS =====
+function drawGymBg(){
+    const c=document.getElementById('gym-bg'),x=c.getContext('2d'),W=c.width,H=c.height,t=Date.now()*.001;
+    x.fillStyle='#1a0a0a';x.fillRect(0,0,W,H);
+    // Floor
+    x.fillStyle='#2a1515';x.fillRect(0,H*.7,W,H*.3);
+    // Equipment
+    x.fillStyle='#444';x.fillRect(20,H*.4,15,H*.3);x.fillRect(15,H*.4,25,5);// rack
+    x.fillStyle='#555';x.fillRect(W-50,H*.45,30,8);x.fillRect(W-55,H*.5,5,H*.2);x.fillRect(W-25,H*.5,5,H*.2);// bench
+    // Leth
+    drawNPC(x,W*.3,H*.75,'leth',t);
+    // Weights on floor
+    x.fillStyle='#333';x.beginPath();x.arc(60,H*.8,6,0,Math.PI*2);x.fill();
+    x.beginPath();x.arc(70,H*.82,5,0,Math.PI*2);x.fill();
+    // Mirror
+    x.fillStyle='rgba(100,150,200,.06)';x.fillRect(100,H*.2,80,H*.45);x.strokeStyle='rgba(255,255,255,.08)';x.strokeRect(100,H*.2,80,H*.45);
 }
 
-// ===== WORK =====
-const jobs=[
-    {name:'Netto - Kassen',pay:[80,130],desc:'+80-130 kr'},
-    {name:'Uber Eats Levering',pay:[100,180],desc:'+100-180 kr'},
-    {name:'Lager Vagt',pay:[120,200],desc:'+120-200 kr'},
-];
-function openWork(){
-    const cont=document.getElementById('work-opts');
-    cont.innerHTML='';
-    jobs.forEach(j=>{
-        const d=document.createElement('div');d.className='work-card';
-        d.innerHTML=`<div class="wk-name">${j.name}</div><div class="wk-info">${j.desc} | -1 energi</div>`;
-        d.onclick=()=>{
-            if(G.energi<1){mapMsg('Ingen energi!');return;}
-            G.energi--;
-            const earn=j.pay[0]+Math.floor(Math.random()*(j.pay[1]-j.pay[0]));
-            G.money+=earn;
-            S.coin();floatText('+'+earn+' KR','#00d4aa');
-            mapMsg(j.name+' - tjente '+earn+' kr!');
-            closeOv();
-        };
-        cont.appendChild(d);
-    });
-    show('work-ov');G.scene='work';
+function drawShopBg(){
+    const c=document.getElementById('shop-bg'),x=c.getContext('2d'),W=c.width,H=c.height,t=Date.now()*.001;
+    x.fillStyle='#0f0520';x.fillRect(0,0,W,H);
+    x.fillStyle='#1a0a30';x.fillRect(0,H*.7,W,H*.3);
+    // Shelves
+    for(let i=0;i<3;i++){x.fillStyle='#2a1a40';x.fillRect(20+i*120,H*.2,80,5);x.fillRect(20+i*120,H*.45,80,5);
+        for(let j=0;j<4;j++){x.fillStyle=`hsl(${(i*80+j*60)%360},40%,30%)`;x.fillRect(28+i*120+j*18,H*.25,12,18);}}
+    // Gulle
+    drawNPC(x,W*.75,H*.75,'gulle',t);
+    // Counter
+    x.fillStyle='#3a2a50';x.fillRect(W*.6,H*.6,W*.35,8);
+}
+
+function drawWorkBg(){
+    const c=document.getElementById('work-bg'),x=c.getContext('2d'),W=c.width,H=c.height,t=Date.now()*.001;
+    x.fillStyle='#0a1510';x.fillRect(0,0,W,H);
+    x.fillStyle='#152520';x.fillRect(0,H*.7,W,H*.3);
+    // Desk
+    x.fillStyle='#3a3020';x.fillRect(50,H*.5,100,8);
+    x.fillStyle='#2a2015';x.fillRect(55,H*.58,5,H*.2);x.fillRect(140,H*.58,5,H*.2);
+    // Boxes
+    x.fillStyle='#5a4020';x.fillRect(W-80,H*.5,25,20);x.fillRect(W-50,H*.45,20,25);x.fillRect(W-70,H*.35,15,15);
+    // Ritardo
+    drawNPC(x,W*.5,H*.75,'ritardo',t);
 }
 
 // ===== GYM =====
 const exercises=[
-    {id:'bench',name:'BÆNKPRES',icon:'🏋️',stat:'styrke',desc:'Tryk ved toppen af baren!'},
-    {id:'curls',name:'CURLS',icon:'💪',stat:'arms',desc:'Ram targets når de rammer linjen!'},
-    {id:'squats',name:'SQUATS',icon:'🦵',stat:'ben',desc:'Tryk når cirklerne matcher!'},
-    {id:'treadmill',name:'LØBEBÅND',icon:'🏃',stat:'cardio',desc:'Tryk L og R skiftevis!'},
+    {id:'str',name:'STYRKE',icon:'🏋️',desc:'⚔️ +Skade',stat:'styrke',game:'mash'},
+    {id:'crd',name:'CARDIO',icon:'🏃',desc:'❤️ +Max HP',stat:'cardio',game:'runner'},
+    {id:'tlk',name:'SMALL TALK',icon:'💬',desc:'💬 +Max Mana',stat:'smalltalk',game:'memory'},
+    {id:'ref',name:'REFLEX',icon:'🛡️',desc:'🛡️ +Block/Hit',stat:'reflex',game:'reaction'},
 ];
-
 function openGym(){
-    const grid=document.getElementById('gym-grid');grid.innerHTML='';
+    G.scene='gym';Mus.play('gym');drawGymBg();
+    document.getElementById('gym-sub').textContent=`Leth: "Vælg øvelse! Koster 20 sult." | Sult: ${G.hunger}`;
+    const g=document.getElementById('gym-g');g.innerHTML='';
     exercises.forEach(ex=>{
-        const c=document.createElement('div');c.className='gym-card';
-        c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gs">${ex.stat.toUpperCase()}</div><div class="gl">LV ${G.stats[ex.stat]}</div>`;
-        c.onclick=()=>{
-            if(G.energi<1){mapMsg('Ingen energi!');return;}
-            G.energi--;
-            startTraining(ex);
-        };
-        grid.appendChild(c);
+        const c=document.createElement('div');c.className='gym-c';
+        c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gd">${ex.desc}</div><div class="gl">${G[ex.stat]} pts</div>`;
+        c.onclick=()=>{if(G.hunger<20){msg('For sulten!');return;}G.hunger-=20;advTime(2);startTrain(ex);};
+        g.appendChild(c);
     });
-    show('gym-ov');G.scene='gym';
+    document.getElementById('gym-ov').classList.add('active');
 }
 
-// ===== TRAINING =====
-let tRAF=null,tState={};
-
-function startTraining(ex){
-    S.click();hide('gym-ov');show('train-ov');G.scene='training';
-    document.getElementById('t-title').textContent=ex.icon+' '+ex.name;
-    document.getElementById('t-score').textContent='';
-    document.getElementById('t-instr').textContent=ex.desc;
-    document.getElementById('t-result').innerHTML='';
-    const tc=document.getElementById('t-canvas');
-    tc.width=Math.min(360,window.innerWidth-30);
-    tc.height=Math.min(360,window.innerHeight*0.45);
-    tState={ex,score:0,reps:0,maxReps:6,phase:'active'};
-    switch(ex.id){
-        case'bench':trainBench(tc);break;
-        case'curls':trainCurls(tc);break;
-        case'squats':trainSquats(tc);break;
-        case'treadmill':tState.maxReps=20;trainTread(tc);break;
+// ===== 4 UNIQUE MINI-GAMES =====
+let tAF=null,tState={};
+function startTrain(ex){
+    S.click();document.getElementById('gym-ov').classList.remove('active');
+    document.getElementById('train-ov').classList.add('active');G.scene='train';
+    document.getElementById('tt').textContent=ex.icon+' '+ex.name;
+    document.getElementById('ts').textContent='';document.getElementById('tr').innerHTML='';
+    const tc=document.getElementById('tc');tc.width=Math.min(340,innerWidth-20);tc.height=Math.min(300,innerHeight*.38);
+    tState={ex,score:0,max:0,phase:'go',done:false};
+    switch(ex.game){
+        case'mash':trainMash(tc);break;
+        case'runner':trainRunner(tc);break;
+        case'memory':trainMemory(tc);break;
+        case'reaction':trainReaction(tc);break;
     }
 }
 
-function endTraining(){
-    cancelAnimationFrame(tRAF);
-    const ex=tState.ex;
-    const maxS=tState.maxReps*(ex.id==='treadmill'?2:10);
-    const pct=tState.score/maxS;
-    const xpGain=Math.max(1,Math.floor(pct*18+4));
-    G.addXP(ex.stat,xpGain);
-    let grade,gc;
-    if(pct>0.85){grade='PERFEKT!';gc='#ffbe0b';S.perf();}
-    else if(pct>0.6){grade='GODT!';gc='#00d4aa';S.ok();}
-    else if(pct>0.3){grade='OK';gc='#ff6b35';S.click();}
-    else{grade='SVAGT...';gc='#ff006e';S.bad();}
-    document.getElementById('t-instr').textContent='';
-    document.getElementById('t-result').innerHTML=`<div class="train-result"><h2 style="color:${gc}">${grade}</h2><div class="xp-gain">+${xpGain} ${ex.stat.toUpperCase()} XP</div><div class="grade">${ex.name} → LV${G.stats[ex.stat]}</div><button class="btn btn-sm" onclick="hide('train-ov');openGym();updateHUD();">VIDERE</button></div>`;
+function endTrain(){
+    cancelAnimationFrame(tAF);tState.done=true;
+    const ex=tState.ex,sc=tState.score,mx=tState.max||1;
+    const p=Math.min(1,sc/mx);const gain=Math.max(1,Math.floor(p*3+1));
+    G[ex.stat]+=gain;G.charmPts+=1;G.charmTotal+=1;
+    float('+'+gain+' '+ex.name,'#ffbe0b');
+    let gr,gc;if(p>.8){gr='PERFEKT!';gc='#ffbe0b';S.perf();}else if(p>.5){gr='GODT!';gc='#00d4aa';S.ok();}else{gr='OK';gc='#ff6b35';S.click();}
+    document.getElementById('ti').textContent='';
+    document.getElementById('tr').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:${gc};margin-bottom:5px">${gr}</div><div class="pix" style="font-size:clamp(5px,1.2vw,8px);color:#ffbe0b;margin-bottom:3px">+${gain} ${ex.stat.toUpperCase()}</div><div class="pix" style="font-size:clamp(3px,.8vw,5px);color:#888;margin-bottom:10px">DMG:${G.dmg} HP:${G.maxHP} MP:${G.maxMP} BLK:${G.blockChance}%</div><button class="btn btn-s" onclick="document.getElementById('train-ov').classList.remove('active');openGym();updHUD();">VIDERE</button></div>`;
 }
 
-// BENCH
-function trainBench(tc){
-    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
-    let pos=0,dir=1,spd=0.022,wait=true;
-    const gz={min:0.7,max:0.9};
-    const tap=()=>{if(!wait||tState.phase!=='active')return;wait=false;
-        const inG=pos>=gz.min&&pos<=gz.max,inY=pos>=0.5&&pos<gz.min;
-        let p=inG?10:inY?5:1;
-        if(inG){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(inY){S.ok();floatText('GODT!','#00d4aa');}else{S.bad();floatText('MISS','#ff006e');}
-        tState.score+=p;tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
-        if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}
-        spd+=0.003;setTimeout(()=>{wait=true;},250);};
-    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
-    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
-        cx.clearRect(0,0,W,H);pos+=dir*spd;if(pos>=1||pos<=0)dir*=-1;pos=Math.max(0,Math.min(1,pos));
-        const tX=W/2-18,tW=36,tH=H-30,tY=15;
-        cx.fillStyle='rgba(255,255,255,0.06)';cx.fillRect(tX,tY,tW,tH);
-        const gy1=tY+tH*(1-gz.max),gy2=tY+tH*(1-gz.min);
-        cx.fillStyle='rgba(0,212,170,0.2)';cx.fillRect(tX,gy1,tW,gy2-gy1);
-        cx.fillStyle='rgba(255,190,11,0.1)';cx.fillRect(tX,gy2,tW,tH*0.2);
-        const iY=tY+tH*(1-pos);
-        cx.fillStyle='#ff006e';cx.shadowColor='#ff006e';cx.shadowBlur=12;
-        cx.fillRect(tX-4,iY-3,tW+8,6);cx.shadowBlur=0;
-        cx.fillStyle='#555';cx.font='bold 10px Orbitron';cx.textAlign='left';
-        cx.fillText('POWER',tX+tW+10,(gy1+gy2)/2+4);
-        cx.fillStyle='#fff';cx.font='bold 12px Orbitron';cx.textAlign='center';
-        cx.fillText('TAP!',W/2,H-4);
-        tRAF=requestAnimationFrame(draw);}
-    draw();
+// GAME 1: BUTTON MASH (styrke)
+function trainMash(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    tState.max=40;let count=0,timeLeft=5,started=false,lastT=Date.now();
+    document.getElementById('ti').textContent='TAP SÅ HURTIGT DU KAN! 💪';
+    const tap=()=>{if(tState.done)return;if(!started){started=true;lastT=Date.now();}count++;tState.score=count;S.click();};
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);document.addEventListener('keydown',tap);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);document.removeEventListener('keydown',tap);return;}
+        if(started){timeLeft=5-(Date.now()-lastT)/1000;if(timeLeft<=0){tState.score=count;endTrain();return;}}
+        x.clearRect(0,0,W,H);
+        // Bar
+        const pct=count/tState.max;
+        x.fillStyle='rgba(255,255,255,.05)';x.fillRect(W*.1,H*.4,W*.8,30);
+        x.fillStyle='#ff006e';x.fillRect(W*.1,H*.4,W*.8*Math.min(1,pct),30);
+        // Count
+        x.font="bold 28px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#fff';x.fillText(count,W/2,H*.32);
+        x.font="10px 'Press Start 2P'";x.fillStyle='#ffbe0b';x.fillText(started?timeLeft.toFixed(1)+'s':'TAP FOR AT STARTE!',W/2,H*.58);
+        // Animated fist
+        const fs=count%2===0?1:.9;
+        x.font=`${30*fs}px serif`;x.fillText('👊',W/2,H*.78);
+        document.getElementById('ts').textContent=count+'/'+tState.max;
+        tAF=requestAnimationFrame(draw);
+    })();
 }
 
-// CURLS
-function trainCurls(tc){
-    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
-    let targets=[],hzY=H-50;
-    function spawn(){targets.push({x:W/2+(Math.random()-0.5)*100,y:0,spd:2+tState.reps*0.25,hit:false,miss:false});}
-    spawn();let st=0;
-    const tap=()=>{if(tState.phase!=='active')return;
-        const t=targets.find(t=>!t.hit&&!t.miss&&Math.abs(t.y-hzY)<22);
-        if(t){t.hit=true;const d=Math.abs(t.y-hzY);let p=d<7?10:d<16?6:3;tState.score+=p;
-            if(p>=10){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(p>=6){S.ok();floatText('GODT!','#00d4aa');}else{S.click();}
-            tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
-            if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}}else S.bad();};
-    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
-    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
-        cx.clearRect(0,0,W,H);
-        cx.strokeStyle='rgba(255,0,110,0.4)';cx.lineWidth=2;cx.beginPath();cx.moveTo(W/2-55,hzY);cx.lineTo(W/2+55,hzY);cx.stroke();
-        cx.fillStyle='rgba(255,0,110,0.06)';cx.fillRect(W/2-55,hzY-18,110,36);
-        targets.forEach(t=>{if(t.hit){cx.fillStyle='rgba(0,212,170,0.4)';cx.beginPath();cx.arc(t.x,t.y,16,0,Math.PI*2);cx.fill();}
-        else if(!t.miss){t.y+=t.spd;if(t.y>H+20)t.miss=true;
-        const d=Math.abs(t.y-hzY);const c=d<22?'#ff006e':'#8b5cf6';cx.fillStyle=c;cx.shadowColor=c;cx.shadowBlur=d<22?12:4;
-        cx.beginPath();cx.arc(t.x,t.y,12,0,Math.PI*2);cx.fill();cx.shadowBlur=0;}});
-        st++;if(st>55&&targets.filter(t=>!t.hit&&!t.miss).length===0&&tState.reps<tState.maxReps){spawn();st=0;}
-        cx.fillStyle='#fff';cx.font='bold 11px Orbitron';cx.textAlign='center';cx.fillText('TAP NÅR ● RAMMER LINJEN',W/2,H-4);
-        tRAF=requestAnimationFrame(draw);}
-    draw();
+// GAME 2: RUNNER (cardio)
+function trainRunner(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    tState.max=10;let py=H*.7,vy=0,onG=true,obs=[],score=0,dist=0,spd=2,alive=true;
+    document.getElementById('ti').textContent='TAP FOR AT HOPPE! 🏃';
+    for(let i=0;i<10;i++)obs.push({x:W+i*100+Math.random()*60,h:15+Math.random()*15});
+    const jump=()=>{if(!alive||tState.done)return;if(onG){vy=-8;onG=false;S.click();}};
+    tc.addEventListener('mousedown',jump);tc.addEventListener('touchstart',jump);document.addEventListener('keydown',jump);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',jump);tc.removeEventListener('touchstart',jump);document.removeEventListener('keydown',jump);return;}
+        x.clearRect(0,0,W,H);
+        // Ground
+        const gY=H*.78;x.fillStyle='#2a2a2a';x.fillRect(0,gY,W,H-gY);
+        x.strokeStyle='rgba(255,255,255,.06)';for(let i=0;i<W;i+=20){x.beginPath();x.moveTo((i-dist*2)%W,gY);x.lineTo((i-dist*2)%W,gY+3);x.stroke();}
+        // Player
+        vy+=.4;py+=vy;if(py>=gY-16){py=gY-16;vy=0;onG=true;}
+        const legOff=Math.sin(dist*.1)*4;
+        x.fillStyle='#ff006e';x.fillRect(50,py,12,16);// body
+        x.fillStyle='#c68642';x.beginPath();x.arc(56,py-5,6,0,Math.PI*2);x.fill();// head
+        x.fillStyle='#1e293b';x.fillRect(50,py+16+legOff,5,6);x.fillRect(57,py+16-legOff,5,6);// legs
+        // Obstacles
+        obs.forEach(o=>{
+            o.x-=spd;if(o.x<-20){o.x=W+50+Math.random()*80;o.h=15+Math.random()*20;score++;tState.score=score;}
+            x.fillStyle='#ffbe0b';x.fillRect(o.x,gY-o.h,12,o.h);
+            // Collision
+            if(alive&&o.x>40&&o.x<70&&py+16>gY-o.h){alive=false;S.bad();tState.score=score;setTimeout(endTrain,500);}
+        });
+        dist+=spd;spd=2+dist*.001;
+        // Score
+        x.font="bold 10px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#00d4aa';x.fillText('SCORE: '+score,W-10,20);
+        document.getElementById('ts').textContent=score+'/'+tState.max;
+        if(score>=tState.max&&alive){tState.score=score;endTrain();return;}
+        tAF=requestAnimationFrame(draw);
+    })();
 }
 
-// SQUATS
-function trainSquats(tc){
-    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
-    let ring=110,tgt=32,spd=0.7,wait=true;
-    const tap=()=>{if(!wait||tState.phase!=='active')return;wait=false;
-        const d=Math.abs(ring-tgt);let p=d<4?10:d<12?6:d<25?3:0;
-        if(p>=10){S.perf();floatText('PERFEKT!','#ffbe0b');}else if(p>=6){S.ok();floatText('GODT!','#00d4aa');}else if(p>0){S.click();}else{S.bad();floatText('MISS','#ff006e');}
-        tState.score+=p;tState.reps++;document.getElementById('t-score').textContent=tState.reps+'/'+tState.maxReps;
-        if(tState.reps>=tState.maxReps){tState.phase='done';setTimeout(endTraining,300);return;}
-        ring=90+Math.random()*40;spd+=0.08;setTimeout(()=>{wait=true;},250);};
-    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
-    function draw(){if(tState.phase==='done'){document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);return;}
-        cx.clearRect(0,0,W,H);ring-=spd;if(ring<8)ring=90+Math.random()*40;
-        cx.strokeStyle='rgba(255,0,110,0.35)';cx.lineWidth=3;cx.beginPath();cx.arc(W/2,H/2,tgt,0,Math.PI*2);cx.stroke();
-        const d=Math.abs(ring-tgt);const c=d<4?'#ffbe0b':d<12?'#00d4aa':d<25?'#8b5cf6':'rgba(255,255,255,0.2)';
-        cx.strokeStyle=c;cx.lineWidth=3;if(d<12){cx.shadowColor=c;cx.shadowBlur=12;}
-        cx.beginPath();cx.arc(W/2,H/2,ring,0,Math.PI*2);cx.stroke();cx.shadowBlur=0;
-        cx.fillStyle='#fff';cx.font='bold 11px Orbitron';cx.textAlign='center';cx.fillText('TAP NÅR CIRKLERNE MATCHER',W/2,H-4);
-        tRAF=requestAnimationFrame(draw);}
-    draw();
+// GAME 3: MEMORY SEQUENCE (small talk)
+function trainMemory(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    tState.max=6;
+    const colors=['#ff006e','#ffbe0b','#00d4aa','#3b82f6'];
+    const emojis=['😎','🗣️','💬','🤙'];
+    const positions=[[W*.25,H*.35],[W*.75,H*.35],[W*.25,H*.7],[W*.75,H*.7]];
+    const btnR=Math.min(30,W*.1);
+    let seq=[],pIdx=0,round=0,showPhase=true,showIdx=0,lastShow=0,canTap=false,wrong=false;
+
+    function nextRound(){round++;seq.push(Math.floor(Math.random()*4));showPhase=true;showIdx=0;canTap=false;pIdx=0;lastShow=Date.now();
+        document.getElementById('ti').textContent='Husk sekvensen! 🧠';}
+    nextRound();
+
+    function drawBtns(lit){
+        x.clearRect(0,0,W,H);
+        x.font="bold 8px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#888';x.fillText('RUNDE '+round+'/'+tState.max,W/2,20);
+        positions.forEach((p,i)=>{
+            const isLit=lit===i;
+            x.fillStyle=isLit?colors[i]:'rgba(255,255,255,.06)';
+            x.beginPath();x.arc(p[0],p[1],btnR,0,Math.PI*2);x.fill();
+            if(isLit){x.shadowColor=colors[i];x.shadowBlur=12;x.beginPath();x.arc(p[0],p[1],btnR,0,Math.PI*2);x.fill();x.shadowBlur=0;}
+            x.font="18px serif";x.fillText(emojis[i],p[0],p[1]+6);
+        });
+    }
+
+    const tap=e=>{if(!canTap||tState.done||wrong)return;
+        const rect=tc.getBoundingClientRect();
+        const mx=(e.clientX||e.touches[0].clientX)-rect.left,my=(e.clientY||e.touches[0].clientY)-rect.top;
+        const sx=tc.width/rect.width,sy=tc.height/rect.height;
+        const cx2=mx*sx,cy=my*sy;
+        let hit=-1;positions.forEach((p,i)=>{if(Math.hypot(cx2-p[0],cy-p[1])<btnR+5)hit=i;});
+        if(hit<0)return;
+        drawBtns(hit);S.click();
+        if(hit===seq[pIdx]){pIdx++;
+            if(pIdx>=seq.length){tState.score=round;S.ok();
+                if(round>=tState.max){setTimeout(endTrain,400);return;}
+                setTimeout(()=>nextRound(),600);}
+        } else{wrong=true;S.bad();tState.score=Math.max(0,round-1);setTimeout(endTrain,600);}
+    };
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);
+
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);return;}
+        if(showPhase){const now=Date.now();
+            if(now-lastShow>600){drawBtns(seq[showIdx]);lastShow=now;showIdx++;
+                if(showIdx>seq.length){showPhase=false;canTap=true;drawBtns(-1);document.getElementById('ti').textContent='Din tur! Gentag sekvensen! 👆';}
+            } else if(now-lastShow>400){drawBtns(-1);}
+        }
+        document.getElementById('ts').textContent=round+'/'+tState.max;
+        tAF=requestAnimationFrame(draw);
+    })();
 }
 
-// TREADMILL
-function trainTread(tc){
-    const cx=tc.getContext('2d'),W=tc.width,H=tc.height;
-    let exp='left',timeLeft=10,last=Date.now(),streak=0;
-    const tap=(e)=>{if(tState.phase!=='active')return;let side=null;
-        if(e.type==='keydown'){if(e.key==='ArrowLeft'||e.key==='a')side='left';if(e.key==='ArrowRight'||e.key==='d')side='right';}
-        else{const r=tc.getBoundingClientRect();const tx=(e.touches?e.touches[0].clientX:e.clientX)-r.left;side=tx<W/2?'left':'right';}
-        if(!side)return;
-        if(side===exp){tState.score+=2;streak++;if(streak>3)S.perf();else S.ok();tState.reps++;exp=exp==='left'?'right':'left';document.getElementById('t-score').textContent=tState.reps+'';}
-        else{streak=0;S.bad();}};
-    document.addEventListener('keydown',tap);tc.addEventListener('touchstart',tap);tc.addEventListener('mousedown',tap);
-    function draw(){const now=Date.now();timeLeft-=(now-last)/1000;last=now;
-        if(timeLeft<=0||tState.phase==='done'){tState.phase='done';document.removeEventListener('keydown',tap);tc.removeEventListener('touchstart',tap);tc.removeEventListener('mousedown',tap);setTimeout(endTraining,200);return;}
-        cx.clearRect(0,0,W,H);
-        const la=exp==='left';
-        cx.fillStyle=la?'rgba(255,0,110,0.15)':'rgba(255,255,255,0.02)';cx.fillRect(0,0,W/2,H);
-        cx.fillStyle=!la?'rgba(255,0,110,0.15)':'rgba(255,255,255,0.02)';cx.fillRect(W/2,0,W/2,H);
-        cx.strokeStyle='rgba(255,255,255,0.08)';cx.lineWidth=2;cx.beginPath();cx.moveTo(W/2,0);cx.lineTo(W/2,H);cx.stroke();
-        cx.font='36px sans-serif';cx.textAlign='center';
-        cx.fillStyle=la?'#ff006e':'rgba(255,255,255,0.12)';cx.fillText('👟',W/4,H/2);
-        cx.fillStyle=!la?'#ff006e':'rgba(255,255,255,0.12)';cx.fillText('👟',W*3/4,H/2);
-        cx.font='bold 13px Orbitron';cx.fillStyle='#fff';cx.fillText('L',W/4,H/2+40);cx.fillText('R',W*3/4,H/2+40);
-        cx.fillStyle='#ffbe0b';cx.font='bold 16px Orbitron';cx.fillText(Math.ceil(timeLeft)+'s',W/2,28);
-        if(streak>3){cx.fillStyle='#ff006e';cx.font='bold 11px Orbitron';cx.fillText('STREAK x'+streak+'!',W/2,H-10);}
-        tRAF=requestAnimationFrame(draw);}
-    draw();
+// GAME 4: REACTION (reflex)
+function trainReaction(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    tState.max=12;let targets=[],score=0,spawned=0,spawnT=0;
+    document.getElementById('ti').textContent='TAP cirklerne hurtigt! ⚡';
+
+    function spawn(){if(spawned>=18)return;targets.push({x:30+Math.random()*(W-60),y:30+Math.random()*(H-60),r:18,life:1,born:Date.now()});spawned++;}
+
+    const tap=e=>{if(tState.done)return;
+        const rect=tc.getBoundingClientRect();
+        const mx=((e.clientX||e.touches[0].clientX)-rect.left)*(tc.width/rect.width);
+        const my=((e.clientY||e.touches[0].clientY)-rect.top)*(tc.height/rect.height);
+        for(let i=targets.length-1;i>=0;i--){
+            if(Math.hypot(mx-targets[i].x,my-targets[i].y)<targets[i].r+5){
+                targets.splice(i,1);score++;tState.score=score;S.click();float('HIT!','#00d4aa');
+                if(score>=tState.max){endTrain();return;}break;
+            }
+        }
+    };
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);
+
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);return;}
+        x.clearRect(0,0,W,H);
+        const now=Date.now();if(now-spawnT>800&&spawned<18){spawn();spawnT=now;}
+        targets=targets.filter(t=>{
+            t.life=1-Math.min(1,(now-t.born)/2000);
+            if(t.life<=0){S.bad();return false;}
+            x.globalAlpha=t.life;x.fillStyle='#ff006e';x.shadowColor='#ff006e';x.shadowBlur=8;
+            x.beginPath();x.arc(t.x,t.y,t.r*t.life,0,Math.PI*2);x.fill();
+            x.fillStyle='#fff';x.font='12px serif';x.textAlign='center';x.fillText('🎯',t.x,t.y+4);
+            x.shadowBlur=0;x.globalAlpha=1;return true;
+        });
+        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText(score+'/'+tState.max,W-8,16);
+        document.getElementById('ts').textContent=score+'/'+tState.max;
+        tAF=requestAnimationFrame(draw);
+    })();
 }
 
 // ===== SHOP =====
-const shopItems=[
-    {name:'Barbertrim',icon:'💈',price:50,stat:'style',xp:8},
-    {name:'Ny T-shirt',icon:'👕',price:80,stat:'style',xp:10},
-    {name:'Fresh Sneakers',icon:'👟',price:120,stat:'style',xp:14},
-    {name:'Guld-kæde',icon:'⛓️',price:200,stat:'style',xp:18},
-    {name:'Designer Jakke',icon:'🧥',price:300,stat:'style',xp:24},
-    {name:'Parfume',icon:'🧴',price:150,stat:'charm',xp:16},
-    {name:'Solbriller',icon:'🕶️',price:180,stat:'style',xp:20},
-    {name:'Diamant Øreringe',icon:'💎',price:400,stat:'style',xp:28},
-    {name:'Fake Rolex',icon:'⌚',price:250,stat:'style',xp:18},
-    {name:'Skincare Set',icon:'🧖',price:100,stat:'charm',xp:12},
-];
-
-function openShop(){
-    const cont=document.getElementById('shop-list');cont.innerHTML='';
-    shopItems.forEach((it,i)=>{
-        const bought=G.bought.includes(i);
-        const d=document.createElement('div');d.className='shop-row'+(bought?' bought':'');
-        d.innerHTML=`<div class="sr-left"><span class="sr-icon">${it.icon}</span><div><div class="sr-name">${it.name}</div><div class="sr-stat">+${it.xp} ${it.stat.toUpperCase()} XP</div></div></div><div class="sr-price">${bought?'KØBT':it.price+' KR'}</div>`;
-        if(!bought)d.onclick=()=>{
-            if(G.money<it.price){mapMsg('Ikke nok penge!');S.bad();return;}
-            G.money-=it.price;G.addXP(it.stat,it.xp);G.bought.push(i);
-            S.coin();floatText('+'+it.xp+' '+it.stat.toUpperCase()+' XP','#8b5cf6');
-            openShop();updateHUD();
-        };
-        cont.appendChild(d);
-    });
-    show('shop-ov');G.scene='shop';
-}
-
-// ===== CLUB =====
-const girlsByRound=[
-    [{name:"Sofie",icon:"👩‍🦰",diff:"BEGYNDER",threshold:{styrke:2,style:3,charm:3},
-      lines:[
-        {speaker:"SOFIE",text:"Hej! Fedt sted ikk? Kommer du her tit?",choices:[
-            {text:"Ej, min første gang. Nogen der kan vise mig rundt? 😏",stat:'charm',req:3,bonus:8},
-            {text:"Ja, jeg er stamgæst. Kender DJ'en.",stat:'charm',req:4,bonus:5},
-            {text:"*Flexer biceps* Nej men check mine gains...",stat:'styrke',req:5,bonus:-3},
-        ]},
-        {speaker:"SOFIE",text:"Haha du er sød. Hvad drikker du?",choices:[
-            {text:"Bestiller en drink til os begge 🍹",stat:'charm',req:2,bonus:10},
-            {text:"Vand. Strict kur. No cheat days.",stat:'charm',req:6,bonus:-2},
-            {text:"Hvad end du vil ha'. Min aften.",stat:'style',req:3,bonus:7},
-        ]}
-      ],win:"Sofie griner og giver dig sit nummer! 'Skriv til mig, Hanzi!' 📱",lose:"Sofie smiler høfligt og vender sig. Tough luck."},
-    ],
-    [{name:"Nadia",icon:"💃",diff:"MEDIUM",threshold:{styrke:4,style:5,charm:5},
-      lines:[
-        {speaker:"NADIA",text:"YOOO dette beat er SYGT! Kan du føle det?!",choices:[
-            {text:"*Danser med* JA BRO DETTE ER MIT JAM! 🔥",stat:'charm',req:5,bonus:10},
-            {text:"Musikken er aight. Selskabet blev bedre 😎",stat:'charm',req:6,bonus:8},
-            {text:"*Står stille og nikker akavet*",stat:'charm',req:10,bonus:-5},
-        ]},
-        {speaker:"NADIA",text:"Du er vild! Hvad laver du?",choices:[
-            {text:"Gym, grind, repeat. Men i aften er det os.",stat:'charm',req:4,bonus:9},
-            {text:"Arbejder på min drøm. Og nu drømmer jeg ikke.",stat:'charm',req:7,bonus:7},
-            {text:"Netto. Kassen. 8 timer.",stat:'charm',req:12,bonus:2},
-        ]}
-      ],win:"Nadia tager din hånd! 'Vi danser hele natten!' 🎶",lose:"'Du er sød!' siger hun og danser videre. Friendzoned."},
-    ],
-    [{name:"Jasmin",icon:"👸",diff:"SVÆR",threshold:{styrke:6,style:8,charm:8},
-      lines:[
-        {speaker:"JASMIN",text:"*Kigger dig op og ned* ...og du er?",choices:[
-            {text:"Hanzi. Og du keder dig tydeligvis herinde.",stat:'charm',req:8,bonus:10},
-            {text:"Din fremtidige date. Tak mig senere.",stat:'charm',req:10,bonus:8},
-            {text:"*Nervøst* Øh... hej... jeg hedder...",stat:'charm',req:15,bonus:-8},
-        ]},
-        {speaker:"JASMIN",text:"Hmm. Selvtillid. Kan du danse?",choices:[
-            {text:"*Tager hendes hånd ud på gulvet*",stat:'style',req:7,bonus:12},
-            {text:"Danse? Nej. Men 140kg bænk.",stat:'styrke',req:10,bonus:-2},
-            {text:"Kun hvis du lærer mig. Jeg viber.",stat:'charm',req:6,bonus:6},
-        ]}
-      ],win:"Jasmin smiler! 'Du er anderledes. Jeg kan lide det.' Hun tager din arm! 💎",lose:"Jasmin vinker vagten. 'Denne her... nej.' Brutal."},
-    ],
-    [{name:"Isabella",icon:"👑",diff:"BOSS - DEN LÆKRESTE",threshold:{styrke:8,style:12,charm:12},
-      lines:[
-        {speaker:"ISABELLA",text:"*Hele klubben kigger på hende. Hun ser på dig.* Hvorfor stirrer du?",choices:[
-            {text:"Fordi alle andre kigger, men ingen tør gå over. Det gør jeg.",stat:'charm',req:12,bonus:12},
-            {text:"Undskyld. Du er bare... wow.",stat:'charm',req:8,bonus:6},
-            {text:"*Prøver at kigge cool ud men snubler*",stat:'charm',req:20,bonus:-10},
-        ]},
-        {speaker:"ISABELLA",text:"*Smiler let* Du har noget de andre ikke har. Hvad er det?",choices:[
-            {text:"Autenticitet. Jeg er ikke her for at imponere. Bare for at møde dig.",stat:'charm',req:10,bonus:12},
-            {text:"Main character energy. Og du mangler en co-star. 😏",stat:'style',req:10,bonus:10},
-            {text:"Øh... gode sko?",stat:'style',req:15,bonus:-4},
-        ]},
-        {speaker:"ISABELLA",text:"Sidste test. Hvorfor dig og ikke nogen af de andre her?",choices:[
-            {text:"Fordi de andre prøver at være noget. Jeg ER det.",stat:'charm',req:11,bonus:15},
-            {text:"Det bestemmer du. Jeg ved bare at du ikke fortryder det.",stat:'charm',req:13,bonus:12},
-            {text:"Fordi... jeg har grinded i 4 uger for dette øjeblik? 😅",stat:'charm',req:9,bonus:8},
-        ]}
-      ],win:"Isabella tager din hånd. 'Du har bestået.' Hele klubben ser det. TBH DRENGENE SER DET. HANZI ER TILBAGE! 👑🔥",lose:"Isabella ryster på hovedet. 'Tæt på... men ikke nok.' Du er stadig ude af TBH."},
-    ],
-];
-
-let curGirl,curLine,clubScore;
-
-function openClub(){
-    G.scene='club';show('club-ov');
-    const cc=document.getElementById('club-canvas');
-    cc.width=window.innerWidth;cc.height=window.innerHeight;
-    renderClubBG(cc);S.startClub();
-
-    const roundGirls=girlsByRound[Math.min(G.round-1,girlsByRound.length-1)];
-    curGirl=roundGirls[Math.floor(Math.random()*roundGirls.length)];
-    curLine=0;clubScore=0;
-
-    document.getElementById('club-girl-info').innerHTML=`<div class="cg-icon">${curGirl.icon}</div><div class="cg-name">${curGirl.name}</div><div class="cg-diff">${curGirl.diff}</div>`;
-    clubDialog('FORTÆLLER',`Hanzi træder ind. Bassen banker. Du ser ${curGirl.name}...`);
-    document.getElementById('club-leave').style.display='none';
-    setTimeout(()=>showClubLine(),2000);
-}
-
-function renderClubBG(cc){
-    const cx=cc.getContext('2d');let t=0;
-    function draw(){if(G.scene!=='club')return;cx.fillStyle='#0a0010';cx.fillRect(0,0,cc.width,cc.height);t+=0.02;
-        const fY=cc.height*0.55;
-        for(let x=0;x<cc.width;x+=45)for(let y=fY;y<cc.height;y+=45){cx.fillStyle=`hsl(${(x+y+t*100)%360},65%,${15+Math.sin(t*2+x*0.04)*7}%)`;cx.fillRect(x+1,y+1,43,43);}
-        for(let i=0;i<5;i++){cx.strokeStyle=`hsla(${(t*50+i*70)%360},100%,55%,0.15)`;cx.lineWidth=2;cx.beginPath();cx.moveTo(cc.width*(0.1+i*0.18),0);cx.lineTo(cc.width*(0.1+i*0.18)+Math.sin(t+i)*cc.height*0.3,cc.height);cx.stroke();}
-        cx.fillStyle='#aaa';cx.beginPath();cx.arc(cc.width/2,45,16,0,Math.PI*2);cx.fill();
-        requestAnimationFrame(draw);}
-    draw();
-}
-
-function clubDialog(sp,txt){
-    document.getElementById('cb-speaker').textContent=sp;
-    document.getElementById('cb-text').textContent=txt;
-    document.getElementById('club-choices').innerHTML='';
-}
-
-function showClubLine(){
-    if(curLine>=curGirl.lines.length){resolveClub();return;}
-    const line=curGirl.lines[curLine];
-    clubDialog(line.speaker,line.text);
-    const ch=document.getElementById('club-choices');ch.innerHTML='';
-    line.choices.forEach(c=>{
-        const pct=G.chance(c.stat,c.req);
-        const pctClass=pct>=65?'pct-high':pct>=40?'pct-mid':'pct-low';
-        const btn=document.createElement('button');btn.className='club-ch';
-        btn.innerHTML=`<span>${c.text}</span><span class="ch-pct ${pctClass}">${pct}%</span>`;
-        btn.onclick=()=>{
-            S.click();
-            const roll=Math.random()*100;
-            const success=roll<pct;
-            const bonus=success?Math.max(c.bonus,1):Math.min(c.bonus,-2);
-            clubScore+=bonus;
-            if(success&&bonus>0){S.ok();clubDialog('✅','Smooth! Hun smiler. Det landede! 😏');floatText('+'+bonus,'#00d4aa');}
-            else{S.bad();clubDialog('❌','Yikes... akavet stilhed. 😬');floatText(bonus+'','#ff006e');}
-            curLine++;
-            setTimeout(()=>showClubLine(),1500);
-        };
-        ch.appendChild(btn);
+const foodItems=[{name:'Kebab',icon:'🥙',price:25,hunger:30},{name:'Protein Shake',icon:'🥤',price:40,hunger:45},{name:'Pizza',icon:'🍕',price:30,hunger:35},{name:'Energi Drik',icon:'⚡',price:20,hunger:15},{name:'Sushi',icon:'🍣',price:55,hunger:55}];
+const gearItems=[{name:'Barbertrim',icon:'💈',price:50},{name:'Ny T-shirt',icon:'👕',price:80},{name:'Fresh Sneakers',icon:'👟',price:120},{name:'Guld-kæde',icon:'⛓️',price:200},{name:'Solbriller',icon:'🕶️',price:180},{name:'Designer Jakke',icon:'🧥',price:300}];
+const combatItems=[{name:'Cocktail',icon:'🍹',price:60,item:'drink',desc:'Skade i kamp'},{name:'Energy Shot',icon:'⚡',price:80,item:'energy',desc:'+MP i kamp'},{name:'Proteinbar',icon:'🍫',price:50,item:'heal',desc:'+HP i kamp'}];
+let shopTab='food';
+function openShop(){G.scene='shop';advTime(1);drawShopBg();renderShop();document.getElementById('shop-ov').classList.add('active');}
+function renderShop(){
+    document.getElementById('shop-tabs').innerHTML=['food','gear','combat'].map(t=>`<button class="stab${shopTab===t?' act':''}" onclick="shopTab='${t}';renderShop()">${t==='food'?'🍕 MAD':t==='gear'?'👔 STYLE':'⚔️ KAMP'}</button>`).join('');
+    const l=document.getElementById('shop-list');l.innerHTML='';
+    const items=shopTab==='food'?foodItems:shopTab==='gear'?gearItems:combatItems;
+    items.forEach((it,i)=>{
+        const bk=shopTab==='gear'&&G.bought.includes('g'+i);
+        const d=document.createElement('div');d.className='si'+(bk?' dis':'');
+        const desc=shopTab==='food'?'+'+it.hunger+' sult':shopTab==='gear'?'+2 CHARM pts':(it.desc||'');
+        d.innerHTML=`<div class="si-l"><span class="si-i">${it.icon}</span><div><div class="si-n">${it.name}</div><div class="si-d">${desc}</div></div></div><div class="si-p">${bk?'KØBT':it.price+' KR'}</div>`;
+        if(!bk)d.onclick=()=>{
+            if(G.money<it.price){msg('Gulle: "Ingen penge, ingen drip!"');S.bad();return;}
+            G.money-=it.price;S.coin();
+            if(shopTab==='food'){G.hunger=Math.min(G.maxHunger,G.hunger+it.hunger);S.eat();float('+'+it.hunger+' SULT','#ff006e');msg('+'+it.hunger+' sult!');}
+            else if(shopTab==='gear'){G.bought.push('g'+i);G.charmPts+=2;G.charmTotal+=2;float('+2 CHARM','#ffbe0b');}
+            else{G.inv.push(it.item);float('+1 '+it.name,'#8b5cf6');}
+            renderShop();updHUD();};
+        l.appendChild(d);
     });
 }
 
-function resolveClub(){
-    const tp=G.stats.styrke+G.stats.style+G.stats.charm+G.stats.arms;
-    const th=curGirl.threshold.styrke+curGirl.threshold.style+curGirl.threshold.charm;
-    const sb=tp/(th*2);
-    const fs=clubScore+sb*6;
-    if(fs>6){
-        clubDialog('💖',curGirl.win);S.perf();
-        G.totalScore+=100;G.girlsMet++;
-        floatText('+100 SCORE!','#ff006e');
-    }else if(fs>2){
-        clubDialog('😐',"'Du er cute, men... nej.' Tæt på!");
-        G.totalScore+=25;
-    }else{
-        clubDialog('💔',curGirl.lose);S.bad();
-    }
-    document.getElementById('club-choices').innerHTML='';
-    document.getElementById('club-leave').style.display='block';
-}
-
-function leaveClub(){
-    S.stopClub();hide('club-ov');G.scene='map';
-    G.round++;G.daysUntilClub=7;G.energi=G.maxEnergi;G.day++;
-
-    if(G.round>G.maxRounds){
-        endGame();return;
-    }
-
-    const girlScored=G.girlsMet>=G.round-1;
-    if(girlScored){
-        lethTip(`NICE Hanzi! Du scorede ${curGirl.name}! 🔥 Runde ${G.round} om 7 dage. Pigerne bliver SVÆRERE. Bliv stærkere!`);
-    }else{
-        lethTip(`Ah bror, ${curGirl.name} var ikke imponeret... Træn hårdere! Runde ${G.round} om 7 dage. Du kan stadig nå det! 💪`);
-    }
-    buildMap();updateHUD();
-}
-
-// ===== END GAME =====
-function endGame(){
-    G.scene='end';
-    hide('map-screen');show('result-ov');
-    const box=document.getElementById('result-box');
-    let icon,title,color,desc;
-    if(G.girlsMet>=4){icon='👑';title='HANZI ER LEGENDEN!';color='#ffbe0b';desc='ALLE 4 SCORET! Isabella tog din hånd foran hele klubben. TBH drengene bøjer sig. Du er NUMMER 1 IGEN! Leth græder af stolthed. 🔥👑';}
-    else if(G.girlsMet>=3){icon='😎';title='HANZI HAR GAME!';color='#00d4aa';desc=`${G.girlsMet} ud af 4 scoret! Stærkt comeback, men Isabella glippede. TBH overvejer at tage dig tilbage...`;}
-    else if(G.girlsMet>=1){icon='💪';title='DER ER POTENTIALE';color='#ff6b35';desc=`${G.girlsMet} scoret. Ikke nok til TBH, men Leth siger 'Vi prøver igen næste måned, bror.'`;}
-    else{icon='😅';title='HANZI PRØVEDE...';color='#aaa';desc='0 scoret. TBH er stadig ude af rækkevidde. Men hey... der er altid næste sæson!';}
-    box.innerHTML=`<div class="r-icon">${icon}</div><h2 style="color:${color}">${title}</h2><div class="r-desc">${desc}</div><div class="r-score">SCORE: ${G.totalScore} | LVL: ${G.totalLvl()} | DAMER: ${G.girlsMet}/4</div><button class="btn" onclick="restartGame()">PRØV IGEN</button>`;
-}
-
-function restartGame(){
-    G.day=1;G.daysUntilClub=7;G.money=200;G.energi=5;G.maxEnergi=5;G.round=1;
-    G.stats={styrke:1,arms:1,ben:1,cardio:1,style:1,charm:1};
-    G.xp={styrke:0,arms:0,ben:0,cardio:0,style:0,charm:0};
-    G.bought=[];G.girlsMet=0;G.totalScore=0;G.tutorial=0;
-    hide('result-ov');
-    hide('title');
-    initPhone();
-}
-
-// ===== START =====
-document.getElementById('start-btn').onclick=()=>{
-    S.init();S.ok();
-    hide('title');
-    initPhone();
+// ===== BRANCHING SKILL TREE =====
+const skillTree={
+    root:{id:'root',name:'Charm Basis',icon:'🌟',desc:'Start',cost:0,children:['combat','defense','social']},
+    combat:{id:'combat',name:'Kampstil',icon:'⚔️',desc:'+3 STR',cost:2,effect:()=>{G.styrke+=3},children:['dmg1','crit']},
+    defense:{id:'defense',name:'Forsvar',icon:'🛡️',desc:'+3 CRD',cost:2,effect:()=>{G.cardio+=3},children:['hp1','block1']},
+    social:{id:'social',name:'Social',icon:'💬',desc:'+3 TLK',cost:2,effect:()=>{G.smalltalk+=3},children:['mp1','regen']},
+    dmg1:{id:'dmg1',name:'Heavy Hits',icon:'💥',desc:'+5 STR',cost:4,effect:()=>{G.styrke+=5},children:['berserker']},
+    crit:{id:'crit',name:'Crit Chance',icon:'🎯',desc:'+5 REF',cost:4,effect:()=>{G.reflex+=5},children:['berserker']},
+    hp1:{id:'hp1',name:'Bulk Up',icon:'💖',desc:'+5 CRD',cost:4,effect:()=>{G.cardio+=5},children:['tank']},
+    block1:{id:'block1',name:'Iron Guard',icon:'🧱',desc:'+5 REF',cost:4,effect:()=>{G.reflex+=5},children:['tank']},
+    mp1:{id:'mp1',name:'Deep Talk',icon:'🗣️',desc:'+5 TLK',cost:4,effect:()=>{G.smalltalk+=5},children:['rizz']},
+    regen:{id:'regen',name:'Recovery',icon:'💚',desc:'+4 CRD',cost:4,effect:()=>{G.cardio+=4},children:['rizz']},
+    berserker:{id:'berserker',name:'BERSERKER',icon:'🔥',desc:'2x Flex DMG!',cost:8,effect:()=>{G.styrke+=5},children:[]},
+    tank:{id:'tank',name:'TANK',icon:'🏔️',desc:'+15 CRD +5 REF',cost:8,effect:()=>{G.cardio+=15;G.reflex+=5},children:[]},
+    rizz:{id:'rizz',name:'RIZZ MASTER',icon:'👑',desc:'+5 ALL stats!',cost:8,effect:()=>{G.styrke+=5;G.cardio+=5;G.smalltalk+=5;G.reflex+=5},children:[]},
 };
-document.getElementById('phone-next').onclick=()=>advancePhone();
+
+function canUnlock(id){
+    if(id==='root')return!G.perks.root&&G.charmPts>=0;
+    for(const k in skillTree){if(skillTree[k].children.includes(id)&&G.perks[k])return!G.perks[id]&&G.charmPts>=skillTree[id].cost;}
+    return false;
+}
+
+function openTree(){
+    G.scene='tree';
+    document.getElementById('tree-sub').textContent='Charm Points: '+G.charmPts+' | Vælg din vej!';
+    const w=document.getElementById('tree-w');w.innerHTML='';
+    G.perks.root=true;
+    // Render tree visually
+    function renderRow(ids){
+        const row=document.createElement('div');row.className='tree-row';
+        ids.forEach(id=>{
+            const s=skillTree[id];if(!s)return;
+            const unlocked=G.perks[id];const can=canUnlock(id);
+            const d=document.createElement('div');
+            d.className='tn'+(unlocked?' on':can?'':' off');
+            d.innerHTML=`<div class="ti">${s.icon}</div><div class="tt">${s.name}</div><div class="td">${s.desc}</div><div class="tc" style="color:${unlocked?'#00d4aa':'#ff006e'}">${unlocked?'✅':s.cost+' PTS'}</div>`;
+            if(can&&!unlocked)d.onclick=()=>{G.charmPts-=s.cost;G.perks[id]=true;if(s.effect)s.effect();S.perf();float('UNLOCKED!','#ffbe0b');openTree();updHUD();};
+            row.appendChild(d);
+        });
+        w.appendChild(row);
+    }
+    function addLines(){const c=document.createElement('div');c.className='tree-con';c.innerHTML='<div class="tree-line"></div>';w.appendChild(c);}
+
+    // Root
+    renderRow(['root']);addLines();
+    // 3 branches
+    renderRow(['combat','defense','social']);addLines();
+    // Sub branches
+    renderRow(['dmg1','crit','hp1','block1','mp1','regen']);addLines();
+    // Ultimates
+    renderRow(['berserker','tank','rizz']);
+
+    document.getElementById('tree-ov').classList.add('active');
+}
+
+// ===== WORK =====
+const allJobs=[
+    {name:'Netto Kassen',pay:[60,110],req:1},{name:'Uber Eats',pay:[80,150],req:1},
+    {name:'Lager Vagt',pay:[100,180],req:2},{name:'Bartender',pay:[140,240],req:3},
+    {name:'Promoter',pay:[180,300],req:4},{name:'DJ Assistent',pay:[230,380],req:5}];
+function openWork(){
+    G.scene='work';drawWorkBg();
+    document.getElementById('work-sub').textContent=`Ritardo: "Tid er penge!" | LVL ${G.workLvl} (${G.workXP}/${G.workNeed()} XP)`;
+    const l=document.getElementById('work-list');l.innerHTML='';
+    allJobs.forEach(j=>{
+        const lk=G.workLvl<j.req;
+        const d=document.createElement('div');d.className='si'+(lk?' dis':'');
+        d.innerHTML=`<div class="si-l"><span class="si-i">${lk?'🔒':'💼'}</span><div><div class="si-n">${j.name}</div><div class="si-d">${lk?'Kræver LVL '+j.req:j.pay[0]+'-'+j.pay[1]+' kr | -15 sult | 3t'}</div></div></div><div class="si-p"></div>`;
+        if(!lk)d.onclick=()=>{
+            if(G.hunger<15){msg('For sulten!');return;}
+            G.hunger-=15;advTime(3);
+            const earn=j.pay[0]+Math.floor(Math.random()*(j.pay[1]-j.pay[0]));
+            G.money+=earn;G.workXP++;
+            if(G.workXP>=G.workNeed()){G.workXP=0;G.workLvl++;float('WORK LVL UP!','#00d4aa');msg('Ritardo: "Forfremmet! LVL '+G.workLvl+'!" 🎉');}
+            S.coin();float('+'+earn+' KR','#00d4aa');closeOv();};
+        l.appendChild(d);
+    });
+    document.getElementById('work-ov').classList.add('active');
+}
+
+// ===== COMBAT =====
+const girlsByRound=[
+    [{name:"Sofie",icon:"👩‍🦰",rating:5,hp:50,atk:6,abilities:['Øjenrulle'],attacks:["Du er ikke min type lol","Ew hvem inviterede dig?","Haha cute... men nej 💀","*ruller med øjnene*"],win:"Sofie giver sit nummer! 📱",lose:"'Nice try...' Hun vender sig."}],
+    [{name:"Nadia",icon:"💃",rating:6,hp:75,atk:10,abilities:['Gab','Ignorér'],attacks:["Du danser som min farfar 💀","Er det DIT bedste?","Min ex var sjovere","*gaber højlydt*"],win:"Nadia: 'Vi danser hele natten!' 🎶",lose:"Friendzoned."}],
+    [{name:"Jasmin",icon:"👸",rating:8,hp:110,atk:15,abilities:['Gucci Shame','Security Call'],attacks:["Kender du Gucci fra Zara?","Du LUGTER af Netto 🤢","Sikkerhed? Remove this.","*sender billede til veninderne*"],win:"'Du er anderledes...' 💎",lose:"Vagten eskorterer dig ud."}],
+    [{name:"Isabella",icon:"👑",rating:10,hp:150,atk:22,abilities:['DM Flex','Chihuahua Attack','Hele Klubben Griner'],attacks:["Min DM er fyldt med bedre","Du er nummer INGENTING 💀","Min chihuahua har mere game","*hele klubben griner*"],win:"HELE KLUBBEN SER DET!\nHANZI ER #1 IGEN! 👑🔥",lose:"'Tæt på... men nej.'"}]
+];
+
+let C={girl:null,hHP:0,hMax:0,hMP:0,hMMax:0,gHP:0,gMax:0,phase:'menu'};
+let combatAF=null;
+
+function startCombatWithGirl(girl){
+    G.scene='combat';Mus.play('fight');
+    C.girl=girl;
+    C.hMax=G.maxHP;C.hHP=C.hMax;C.hMMax=G.maxMP;C.hMP=C.hMMax;
+    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';
+    document.getElementById('combat-ui').classList.add('active');
+    rsz();startCombatBg();updC();
+    cSpeech(C.girl.icon+' '+C.girl.name+' ('+C.girl.rating+'/10) dukker op! 💃');
+    setTimeout(showCMenu,1500);
+}
+
+function startCombatBg(){
+    const cc=document.getElementById('c-cv'),cx2=cc.getContext('2d');
+    (function drawCBg(){
+        if(G.scene!=='combat'){return;}
+        const W=cc.width,H=cc.height,t=Date.now()*.001;
+        cx2.clearRect(0,0,W,H);
+        // Dark club
+        cx2.fillStyle='#08000f';cx2.fillRect(0,0,W,H);
+        // Dance floor tiles
+        const tileS=35;const fY=H*.45;
+        for(let y=fY;y<H;y+=tileS)for(let x2=0;x2<W;x2+=tileS){
+            const hue=(x2+y+t*60)%360;const bri=8+Math.sin(t*3+x2*.05+y*.03)*4;
+            cx2.fillStyle=`hsl(${hue},50%,${bri}%)`;cx2.fillRect(x2+1,y+1,tileS-2,tileS-2);}
+        // Spotlights
+        for(let i=0;i<3;i++){
+            const sx=W*(.2+i*.3)+Math.sin(t*2+i)*30;
+            const grd=cx2.createRadialGradient(sx,0,0,sx,H*.5,H*.4);
+            grd.addColorStop(0,`hsla(${(t*50+i*120)%360},100%,50%,.06)`);grd.addColorStop(1,'transparent');
+            cx2.fillStyle=grd;cx2.fillRect(0,0,W,H);}
+        // DJ booth
+        cx2.fillStyle='#1a0030';cx2.fillRect(W*.35,10,W*.3,30);
+        cx2.fillStyle='#ff006e';cx2.shadowColor='#ff006e';cx2.shadowBlur=4;cx2.font="bold 8px 'Press Start 2P'";cx2.textAlign='center';cx2.fillText('♪ DJ ♪',W*.5,28);cx2.shadowBlur=0;
+        // Dancing silhouettes
+        for(let i=0;i<6;i++){
+            const dx=W*(.08+i*.15),dy=fY-10+Math.sin(t*4+i*2)*5;
+            cx2.fillStyle='rgba(255,255,255,.04)';cx2.beginPath();cx2.arc(dx,dy,4,0,Math.PI*2);cx2.fill();
+            cx2.fillRect(dx-2,dy+4,4,8);}
+        // Hanzi (left side)
+        drawNPC(cx2,W*.25,H*.55,'leth',t);
+        // Girl (right side)
+        if(C.girl){
+            cx2.save();cx2.translate(W*.75,H*.5);
+            const gb=Math.sin(t*3)*2;
+            cx2.fillStyle='#f0c8a0';cx2.beginPath();cx2.arc(0,-18+gb,8,0,Math.PI*2);cx2.fill();
+            cx2.fillStyle='#a0522d';cx2.beginPath();cx2.arc(0,-23+gb,9,Math.PI,.1);cx2.fill();
+            cx2.fillStyle='#ff006e';cx2.fillRect(-7,-10+gb,14,18);
+            cx2.fillStyle='#f0c8a0';cx2.fillRect(-4,8+gb,3,10);cx2.fillRect(1,8+gb,3,10);
+            cx2.restore();
+        }
+        combatAF=requestAnimationFrame(drawCBg);
+    })();
+}
+
+function updC(){
+    document.getElementById('c-hanzi').innerHTML=`<div class="cname" style="color:#00d4aa">HANZI 🕺</div><div class="crow"><label style="color:#ff006e">HP</label><div class="ctrk"><div class="cf" style="width:${C.hHP/C.hMax*100}%;background:#ff006e"></div></div><span class="cv">${C.hHP}</span></div><div class="crow"><label style="color:#3b82f6">MP</label><div class="ctrk"><div class="cf" style="width:${C.hMP/C.hMMax*100}%;background:#3b82f6"></div></div><span class="cv">${C.hMP}</span></div>`;
+    document.getElementById('c-girl').innerHTML=`<div class="cname" style="color:#ff006e">${C.girl.icon} ${C.girl.name}</div><div class="crow"><label style="color:#ff006e">HP</label><div class="ctrk"><div class="cf" style="width:${C.gHP/C.gMax*100}%;background:#ff006e"></div></div><span class="cv">${C.gHP}</span></div>`;
+}
+
+function cSpeech(t){const s=document.getElementById('c-speech');s.textContent=t;s.classList.add('show');setTimeout(()=>s.classList.remove('show'),2500);}
+function cAct(t,c='#fff'){const e=document.getElementById('c-act');e.textContent=t;e.style.color=c;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1000);}
+
+function showCMenu(){
+    C.phase='menu';document.getElementById('c-items').style.display='none';
+    const m=document.getElementById('c-menu');m.style.display='grid';m.innerHTML='';
+    [{name:'DANS',icon:'🕺',desc:'Basis',color:'#ff006e',mp:0,act:()=>pAtk('dans')},
+     {name:'PICKUP LINE',icon:'🗣️',desc:'-5 MP',color:'#ffbe0b',mp:5,act:()=>pAtk('line')},
+     {name:'FLEX',icon:'💪',desc:'-8 MP',color:'#ff6b35',mp:8,act:()=>pAtk('flex')},
+     {name:'ITEMS',icon:'🎒',desc:'Brug items',color:'#8b5cf6',mp:0,act:showCItems}
+    ].forEach(mv=>{
+        const b=document.createElement('button');b.className='cbtn';b.style.borderColor=mv.color;b.style.color=mv.color;
+        if(mv.mp>C.hMP){b.style.opacity='.25';b.style.pointerEvents='none';}
+        b.innerHTML=`<span class="ci">${mv.icon}</span>${mv.name}<span class="cc">${mv.desc}</span>`;
+        b.onclick=mv.act;m.appendChild(b);
+    });
+}
+
+function showCItems(){
+    S.click();document.getElementById('c-menu').style.display='none';
+    const it=document.getElementById('c-items');it.style.display='flex';it.innerHTML='';
+    const cnt=k=>G.inv.filter(i=>i===k).length;
+    [{n:'Drink',i:'🍹',k:'drink',c:cnt('drink'),fn:()=>{G.inv.splice(G.inv.indexOf('drink'),1);const d=8+G.styrke;C.gHP=Math.max(0,C.gHP-d);S.ok();cAct('🍹 -'+d,'#ffbe0b');cSpeech('Drink kastet! -'+d+' HP!');updC();chkEnd()||setTimeout(eTurn,1200);}},
+     {n:'Energy',i:'⚡',k:'energy',c:cnt('energy'),fn:()=>{G.inv.splice(G.inv.indexOf('energy'),1);const h=Math.min(C.hMMax-C.hMP,12);C.hMP+=h;S.heal();cAct('+'+h+' MP','#3b82f6');updC();setTimeout(eTurn,1200);}},
+     {n:'Heal',i:'🍫',k:'heal',c:cnt('heal'),fn:()=>{G.inv.splice(G.inv.indexOf('heal'),1);const h=Math.min(C.hMax-C.hHP,20);C.hHP+=h;S.heal();cAct('+'+h+' HP','#ff006e');updC();setTimeout(eTurn,1200);}}
+    ].forEach(x=>{const b=document.createElement('button');b.className='citem'+(x.c<=0?' dis':'');b.textContent=x.i+' '+x.n+'('+x.c+')';b.onclick=()=>{if(x.c<=0)return;it.style.display='none';x.fn();};it.appendChild(b);});
+    const back=document.createElement('button');back.className='citem';back.textContent='← TILBAGE';back.onclick=()=>{S.click();showCMenu();};it.appendChild(back);
+}
+
+function pAtk(type){
+    S.click();document.getElementById('c-menu').style.display='none';
+    let base;
+    if(type==='dans'){base=G.dmg;cSpeech('Hanzi: "Watch this move!" 🕺');}
+    else if(type==='line'){base=G.dmg+G.smalltalk*2;C.hMP=Math.max(0,C.hMP-5);cSpeech('Hanzi: "Er du fra himlen? For du ligner en engel" 😏');}
+    else{base=G.dmg+G.styrke*2;C.hMP=Math.max(0,C.hMP-8);cSpeech('Hanzi: *flexer biceps* 💪🔥');}
+    if(G.perks.berserker&&type==='flex')base*=2;
+    updC();
+    doTiming(q=>{
+        const hitRoll=Math.random()*100;
+        const hitChance=60+G.hitBonus+(q==='perfect'?20:q==='good'?10:0);
+        if(hitRoll>hitChance){S.bad();cAct('MISS!','#ff006e');cSpeech('Misset! 😤');updC();chkEnd()||setTimeout(eTurn,1200);return;}
+        let mult=q==='perfect'?1.8:q==='good'?1.3:q==='ok'?1:.6;
+        let dmg=Math.max(1,Math.floor(base*mult));
+        C.gHP=Math.max(0,C.gHP-dmg);
+        if(q==='perfect'){S.perf();cAct('PERFEKT! -'+dmg,'#ffbe0b');}
+        else if(q==='good'){S.ok();cAct('-'+dmg,'#00d4aa');}
+        else{S.click();cAct('-'+dmg,'#aaa');}
+        updC();chkEnd()||setTimeout(eTurn,1200);
+    });
+}
+
+function doTiming(cb){
+    const bar=document.getElementById('c-timing');bar.style.display='block';
+    const zone=document.getElementById('c-zone'),needle=document.getElementById('c-needle');
+    const zs=30+Math.random()*20,zw=12+Math.max(0,G.reflex)*1.2;
+    zone.style.left=zs+'%';zone.style.width=Math.min(35,zw)+'%';
+    let pos=0,spd=1.3+G.round*.25,active=true;
+    const tap=()=>{if(!active)return;active=false;
+        document.removeEventListener('keydown',tap);document.removeEventListener('touchstart',tap);
+        bar.style.display='none';
+        const inZ=pos>=zs&&pos<=zs+zw,cd=Math.abs(pos-(zs+zw/2));
+        cb(inZ&&cd<zw*.2?'perfect':inZ?'good':Math.abs(pos-zs)<7||Math.abs(pos-(zs+zw))<7?'ok':'miss');
+    };
+    document.addEventListener('keydown',tap);document.addEventListener('touchstart',tap);
+    (function a(){if(!active)return;pos+=spd;if(pos>=100||pos<=0)spd*=-1;pos=Math.max(0,Math.min(100,pos));
+        needle.style.left=pos+'%';requestAnimationFrame(a);})();
+}
+
+function eTurn(){
+    const g=C.girl,atk=g.attacks[Math.floor(Math.random()*g.attacks.length)];
+    cSpeech(g.name+': "'+atk+'"');cAct('💬','#ff006e');
+    setTimeout(()=>{
+        cSpeech('TAP for at DODGE! 🛡️');
+        doTiming(q=>{
+            const blocked=Math.random()*100<G.blockChance;
+            let red=q==='perfect'?1:q==='good'?.6:q==='ok'?.3:0;
+            if(blocked)red=Math.max(red,.5);
+            let dmg=Math.max(1,Math.floor(g.atk*(1-red)));
+            C.hHP=Math.max(0,C.hHP-dmg);
+            if(q==='perfect'){cAct('DODGE!','#00d4aa');cSpeech('Perfekt dodge! Ingen skade!');}
+            else if(blocked){S.click();cAct('BLOCK! -'+dmg,'#3b82f6');cSpeech('Blokeret noget! -'+dmg);}
+            else{S.hit();cAct('-'+dmg+' OUCH!','#ff006e');cSpeech('"'+atk+'" -'+dmg+'!');
+                document.getElementById('c-hanzi').style.animation='shake .3s';setTimeout(()=>document.getElementById('c-hanzi').style.animation='',300);}
+            updC();chkEnd()||setTimeout(showCMenu,800);
+        });
+    },800);
+}
+
+function chkEnd(){
+    if(C.gHP<=0){C.phase='done';cSpeech(C.girl.win);cAct('WIN! 🏆','#ffbe0b');S.perf();G.girlsMet++;G.totalScore+=100;
+        setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 2">🏆 VICTORY!</button>`;document.getElementById('c-menu').style.display='grid';},1500);return true;}
+    if(C.hHP<=0){C.phase='done';cSpeech(C.girl.lose);cAct('REJECTED 💔','#ff006e');S.bad();G.totalScore+=10;
+        setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 2">💔 REJECTED...</button>`;document.getElementById('c-menu').style.display='grid';},1500);return true;}
+    return false;
+}
+
+function leaveCombat(){
+    cancelAnimationFrame(combatAF);
+    document.getElementById('combat-ui').classList.remove('active');
+    G.scene='map';Mus.play('map');G.round++;G.daysLeft=7;G.day++;G.hour=8;
+    G.hunger=Math.min(G.maxHunger,G.hunger+20);
+    if(G.round>G.maxRounds){endGame();return;}
+    updHUD();msg(C.gHP<=0?'SCORET! 🔥 Næste runde om 7 dage!':'Træn hårdere! Runde '+G.round+' om 7 dage.');
+}
+
+// ===== END =====
+function endGame(){
+    G.scene='end';Mus.stop();document.getElementById('hud').className='';
+    const r=document.getElementById('result-ov');r.classList.add('active');
+    let i,t,c,d;
+    if(G.girlsMet>=4){i='👑';t='HANZI ER LEGENDEN!';c='#ffbe0b';d='ALLE 4 SCORET! TBH er dit igen! 🔥👑';}
+    else if(G.girlsMet>=3){i='😎';t='NÆSTEN DER!';c='#00d4aa';d=G.girlsMet+'/4 scoret. Stærkt comeback!';}
+    else if(G.girlsMet>=1){i='💪';t='DER ER HÅBET';c='#ff6b35';d=G.girlsMet+' scoret. "Næste sæson, bror."';}
+    else{i='😅';t='HANZI PRØVEDE...';c='#aaa';d='0 scoret. Men der er altid næste gang!';}
+    r.innerHTML=`<div style="text-align:center"><div style="font-size:3.5rem;margin-bottom:10px">${i}</div><div class="pix" style="font-size:clamp(10px,3.5vw,20px);color:${c};margin-bottom:6px">${t}</div><div style="font-size:.65rem;color:#aaa;max-width:300px;margin:0 auto 14px;line-height:1.6">${d}</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#ffbe0b;margin-bottom:16px">SCORE: ${G.totalScore} | DAMER: ${G.girlsMet}/4</div><button class="btn" onclick="restart()">PRØV IGEN</button></div>`;
+}
+
+function restart(){
+    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,px:.5,py:.5,scene:'title'});
+    document.getElementById('result-ov').classList.remove('active');
+    document.getElementById('title-ov').style.display='flex';
+}
+
+// ===== PHONE =====
+const phoneScript=[
+    {t:'n',x:'📱 Indkommende opkald...'},
+    {t:'i',x:'Bror... BROR! Du er vågen?! 😭'},
+    {t:'o',x:'Leth...? Hvad skete der?'},
+    {t:'i',x:'Motorcykel-ulykke. 2 ÅR i koma.'},
+    {t:'o',x:'Hvad med TBH?!'},
+    {t:'i',x:'De smed dig ud. Du er færdig, siger de.'},
+    {t:'o',x:'HVAD?! Jeg var NUMMER 1!'},
+    {t:'i',x:'Var. Alt er væk. Men - scor den hotteste pige, og du er TILBAGE. 👀'},
+    {t:'i',x:'Træn STYRKE for skade, CARDIO for HP, SMALL TALK for mana, REFLEX for block.'},
+    {t:'i',x:'Køb MAD for energi! Byg din SKILL TREE! 🌟'},
+    {t:'i',x:'7 dage per runde. Når tiden er ude SKAL du på klubben! 🪩'},
+    {t:'o',x:'LETS GO! 🔥'},
+];
+let phI=0;
+function initPhone(){phI=0;document.getElementById('ph-msgs').innerHTML='';document.getElementById('phone-ov').classList.add('active');document.getElementById('title-ov').style.display='none';advPh();}
+function advPh(){if(phI>=phoneScript.length){document.getElementById('phone-ov').classList.remove('active');startMap();return;}
+    const l=phoneScript[phI],m=document.getElementById('ph-msgs'),d=document.createElement('div');
+    d.className='mb mb-'+(l.t==='n'?'nar':l.t==='i'?'in':'out');d.textContent=l.x;
+    m.appendChild(d);m.scrollTop=m.scrollHeight;S.click();phI++;}
+
+// ===== MAP START =====
+function startMap(){G.scene='map';G.px=.5;G.py=.5;Mus.play('map');updHUD();
+    if(G.tutorial===0){G.tutorial=1;msg('Tryk på en bygning for at gå derhen! Start med GYM! 💪');}}
+
+// ===== MAIN LOOP =====
+function loop(){
+    cx.clearRect(0,0,cv.width,cv.height);
+    if(G.scene==='title'){
+        // Title bg
+        const W=cv.width,H=cv.height,t=Date.now()*.001;
+        cx.fillStyle='#050510';cx.fillRect(0,0,W,H);
+        for(let i=0;i<60;i++){cx.fillStyle=`rgba(255,255,255,${.1+Math.sin(t*2+i)*.08})`;cx.fillRect((i*173+30)%W,(i*67+15)%(H*.6),1.5,1.5);}
+        // City silhouette
+        const gY=H*.65;
+        for(let i=0;i<10;i++){const bx=i*W/9-5,bw=W/11,bh=25+((i*47)%45);
+            cx.fillStyle='#0d0820';cx.fillRect(bx,gY-bh,bw,bh+H);
+            for(let wy=gY-bh+6;wy<gY;wy+=9)for(let wx=bx+3;wx<bx+bw-3;wx+=11){
+                cx.fillStyle=Math.sin(wx*7+wy*3+t)>.3?'rgba(255,190,11,.15)':'rgba(0,0,0,.2)';cx.fillRect(wx,wy,5,5);}}
+    }
+    else if(['map','gym','shop','work','tree','train'].includes(G.scene)){drawMap();}
+    requestAnimationFrame(loop);
+}
+
+// ===== INIT =====
+document.getElementById('start-btn').onclick=()=>{
+    S.init();Mus.init();S.ok();
+    document.getElementById('title-ov').style.display='none';
+    playVid('video/intro.mp4',()=>initPhone());
+};
+document.getElementById('ph-next').onclick=advPh;
+loop();
 </script>
 </body>
 </html>
