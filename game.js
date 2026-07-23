@@ -22,7 +22,7 @@ eat(){this.n(300,.05,'sine');setTimeout(()=>this.n(500,.05,'sine'),40);}};
 
 // ===== GAME STATE =====
 const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:5,
-styrke:0,cardio:0,smalltalk:0,reflex:0,
+styrke:0,cardio:0,smalltalk:0,reflex:0,gymLvl:1,critChance:5,critDmg:150,
 get dmg(){return 5+this.styrke*2},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*3},
 get blockChance(){return Math.min(50,5+this.reflex*3)},get hitBonus(){return this.reflex*2},
 charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
@@ -30,7 +30,7 @@ inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,
 bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,
 px:.5,py:.5,tx:.5,ty:.5,walking:false};
 
-function girlScale(base,rating){return Math.round(base*Math.pow(1.5,rating-1));}
+function girlScale(base,rating){return Math.round(base*Math.pow(1.3,rating-1));}
 
 // ===== HELPERS =====
 function float(t,c='#fff'){const e=document.createElement('div');e.className='float';e.textContent=t;e.style.color=c;e.style.left=(innerWidth/2-30)+'px';e.style.top=(innerHeight/2-30)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1000);}
@@ -207,7 +207,8 @@ function onArrivedInner(id){
 }
 
 function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;eventMarker=null;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}spawnEventMarker();
-showDayFlash();if(G.daysLeft===0)setTimeout(forceClub,2500);}
+showDayFlash();if(G.daysLeft===0)setTimeout(forceClub,2500);
+if(G.day%3===0){const lc=loreCalls.find(c=>c.day===G.day)||loreCalls[loreCallIdx%loreCalls.length];loreCallIdx++;setTimeout(()=>showLoreCall(lc),2500);}}
 function showDayFlash(){
     const f=document.getElementById('day-flash');
     document.getElementById('df-day').textContent='DAG '+G.day;
@@ -217,17 +218,19 @@ function showDayFlash(){
 }
 const lethLore=[
     'Leth: "TBH smed dig ud fordi du var i koma... kold business bror."',
-    'Leth: "Manager Danny sagde du var færdig. Beviser ham forkert!"',
+    'Leth: "Nogen i skyggerne styrede det hele... men hvem?"',
     'Leth: "De erstattede dig med en fyr der ikke engang kan danse..."',
     'Leth: "TBH\'s nye lineup er svag. De mangler dig, bror."',
     'Leth: "Husker du den aften i Royal Arena? 40.000 mennesker..."',
-    'Leth: "Danny tog alt - din plads, dine penge, endda din parkeringsplads."',
+    'Leth: "Der er en mystisk figur bag alt... folk kalder ham Kalle Mith."',
     'Leth: "Rygtet siger TBH er ved at gå konkurs uden dig."',
     'Leth: "Din motorcykel-ulykke var ikke tilfældig... bare siger."',
-    'Leth: "Scor den hotteste pige og hele byen snakker. Danny VED det."',
-    'Leth: "Jeg tror Danny er bange for dit comeback. Han burde være."',
+    'Leth: "Scor den hotteste pige og hele byen snakker. Kalle Mith VED det."',
+    'Leth: "Jeg tror der er nogen der styrer fra skyggerne. Han burde være bange."',
     'Leth: "TBH\'s fans savner dig. #BringHanziBack er trending."',
     'Leth: "Vent... der sker noget stort efter klubben. Kan ikke sige mere."',
+    'Leth: "Kalle Mith har en kæreste... den smukkeste pige i verden, siger de."',
+    'Leth: "Kalle Mith... Mikkel Leth... mærkeligt, de ligner hinanden, ik?"',
 ];
 const visitedLocations={};
 const locationIntros={
@@ -239,6 +242,68 @@ const locationIntros={
     club:'🪩 KLUBBEN\nDen store boss fight!\nHer møder du rundens pige.',
 };
 function advTime(h){G.hour+=h;if(G.hour>=24){newDay();}}
+
+// ===== LORE CALLS =====
+const loreCalls=[
+    {day:3, speakers:['Lemming','Malte'], lines:[
+        {who:'Lemming',text:'Bro, har du hoert om den mystiske fyr der styrer HELE nattelivet?'},
+        {who:'Malte',text:'Ja, folk kalder ham... noget med K? Ingen kender hans rigtige navn.'},
+        {who:'Lemming',text:'Og hans kaereste... bro. VERDENS smukkeste kvinde. For real.'},
+    ]},
+    {day:6, speakers:['Marius','Thomas'], lines:[
+        {who:'Marius',text:'Yo, den der mystiske fyr... hans navn er et anagram for nogen vi kender.'},
+        {who:'Thomas',text:'Et anagram? Hvad mener du?'},
+        {who:'Marius',text:'Taenk over det... Kalle Mith. Flyt rundt paa bogstaverne...'},
+        {who:'Thomas',text:'Vent... det lyder naesten som... nej det kan ikke passe!'},
+    ]},
+    {day:9, speakers:['Lemming','Marius','Malte'], lines:[
+        {who:'Lemming',text:'Guys. Kalle Mith. Mikkel Leth. DET ER DET SAMME NAVN!'},
+        {who:'Marius',text:'LETH?! Vores LETH?!'},
+        {who:'Malte',text:'Men... Leth hjaelper os jo? Er det hele bare et spil?!'},
+        {who:'Lemming',text:'Hans kaereste hedder Valentina. De siger hun er umulig at score...'},
+    ]},
+    {day:12, speakers:['Thomas','Malte'], lines:[
+        {who:'Thomas',text:'Bro, Kalle Mith aka LETH kontrollerer ALT. Klubberne, bodegaerne...'},
+        {who:'Malte',text:'Og Valentina... hun er den ultimative test. Hvis nogen scorer hende...'},
+        {who:'Thomas',text:'Saa falder hele hans imperium. Det er den eneste maade.'},
+    ]},
+    {day:15, speakers:['Lemming','Thomas','Marius'], lines:[
+        {who:'Lemming',text:'Har I set Kalle Mith? Han gemmer sig... men han er overalt.'},
+        {who:'Thomas',text:'Jeg saa ham i gaar... eller var det Leth? De ligner hinanden 100%.'},
+        {who:'Marius',text:'Fordi de ER den samme person, din tosse!'},
+        {who:'Lemming',text:'Valentina blev set paa VIP i fredags. Hun er UNREAL bro.'},
+    ]},
+    {day:18, speakers:['Malte','Marius'], lines:[
+        {who:'Malte',text:'Kalle Mith ved at Hanzi er paa vej. Han er bange.'},
+        {who:'Marius',text:'Bange? Ham? Han ejer ALTING!'},
+        {who:'Malte',text:'Netop. Og Hanzi er den eneste der kan tage det fra ham.'},
+    ]},
+];
+let loreCallIdx=0;
+function showLoreCall(callData){
+    let lineIdx=0;
+    const ov=document.getElementById('phone-ov');
+    const msgs=document.getElementById('ph-msgs');
+    msgs.innerHTML='';
+    const narDiv=document.createElement('div');narDiv.className='mb mb-nar';
+    narDiv.textContent='Indkommende gruppeopkald...';
+    msgs.appendChild(narDiv);
+    ov.classList.add('active');
+    function advLore(){
+        if(lineIdx>=callData.lines.length){
+            ov.classList.remove('active');
+            document.getElementById('ph-next').onclick=advPh;
+            return;
+        }
+        const line=callData.lines[lineIdx];
+        const d=document.createElement('div');
+        d.className='mb mb-in';
+        d.textContent=line.who+': '+line.text;
+        msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;S.click();lineIdx++;
+    }
+    document.getElementById('ph-next').onclick=advLore;
+    advLore();
+}
 let eventMarker=null;
 function spawnEventMarker(){
     if(G.eventDoneToday||Math.random()>.5)return;
@@ -460,6 +525,14 @@ function drawWorkBg(){
 }
 
 // ===== GYM =====
+const gymUpgradeCost=[0, 300, 600, 1200, 2500];
+const gymPerks=[
+    {id:'regen',name:'HP REGEN',icon:'💚',desc:'Gendan 3 HP per tur i kamp',cost:500,unlocked:false},
+    {id:'critUp',name:'CRIT CHANCE+',icon:'🎯',desc:'+10% crit chance',cost:400,unlocked:false},
+    {id:'critDmgUp',name:'CRIT SKADE+',icon:'💥',desc:'+50% crit skade (200% total)',cost:600,unlocked:false},
+    {id:'warmup',name:'OPVARMNING',icon:'🔥',desc:'+2 til alle stats fra træning',cost:800,unlocked:false},
+    {id:'ironWill',name:'JERNVILJE',icon:'🛡️',desc:'+15% block chance',cost:700,unlocked:false},
+];
 const exercises=[
     {id:'str',name:'STYRKE',icon:'🏋️',desc:'⚔️ +Skade',stat:'styrke',game:'mash'},
     {id:'crd',name:'CARDIO',icon:'🏃',desc:'❤️ +Max HP',stat:'cardio',game:'runner'},
@@ -468,13 +541,34 @@ const exercises=[
 ];
 function openGym(){
     G.scene='gym';Mus.play('gym');drawGymBg();
-    document.getElementById('gym-sub').textContent=`Leth: "Vælg øvelse! Koster 20 sult." | Sult: ${G.hunger}`;
+    document.getElementById('gym-sub').textContent=`Leth: "GYM LVL ${G.gymLvl}!" | Sult: ${G.hunger}`;
     const g=document.getElementById('gym-g');g.innerHTML='';
     exercises.forEach(ex=>{
         const c=document.createElement('div');c.className='gym-c';
         c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gd">${ex.desc}</div><div class="gl">${G[ex.stat]} pts</div>`;
         c.onclick=()=>{if(G.hunger<20){msg('For sulten!');return;}G.hunger-=20;advTime(2);startTrain(ex);};
         g.appendChild(c);
+    });
+    // Gym upgrade
+    if(G.gymLvl < 5){
+        const cost = gymUpgradeCost[G.gymLvl];
+        const u = document.createElement('div');u.className='gym-c';
+        u.style.borderColor='rgba(255,190,11,.4)';
+        u.innerHTML=`<div class="gi">⬆️</div><div class="gn">OPGRADER GYM</div><div class="gd">LVL ${G.gymLvl+1} · Mere gain</div><div class="gl">${cost} KR</div>`;
+        u.onclick=()=>{if(G.money<cost){msg('Ikke nok penge!');S.bad();return;}G.money-=cost;G.gymLvl++;S.perf();float('GYM LVL '+G.gymLvl+'!','#ffbe0b');openGym();updHUD();};
+        g.appendChild(u);
+    }
+    // Gym perks
+    gymPerks.filter(p=>!p.unlocked).forEach(p=>{
+        const pk=document.createElement('div');pk.className='gym-c';
+        pk.style.borderColor='rgba(0,212,170,.3)';
+        pk.innerHTML=`<div class="gi">${p.icon}</div><div class="gn">${p.name}</div><div class="gd">${p.desc}</div><div class="gl">${p.cost} KR</div>`;
+        pk.onclick=()=>{if(G.money<p.cost){msg('Ikke nok penge!');S.bad();return;}G.money-=p.cost;p.unlocked=true;S.perf();float(p.name+' UNLOCKED!','#00d4aa');
+            if(p.id==='critUp')G.critChance+=10;
+            if(p.id==='critDmgUp')G.critDmg+=50;
+            if(p.id==='ironWill')G.reflex+=5;
+            openGym();updHUD();};
+        g.appendChild(pk);
     });
     document.getElementById('gym-ov').classList.add('active');
 }
@@ -487,7 +581,7 @@ function startTrain(ex){
     document.getElementById('tt').textContent=ex.icon+' '+ex.name;
     document.getElementById('ts').textContent='';document.getElementById('tr').innerHTML='';
     const tc=document.getElementById('tc');tc.width=Math.min(340,innerWidth-20);tc.height=Math.min(300,innerHeight*.38);
-    tState={ex,score:0,max:0,phase:'go',done:false};
+    tState={ex,score:0,phase:'go',done:false};
     switch(ex.game){
         case'mash':trainMash(tc);break;
         case'runner':trainRunner(tc);break;
@@ -498,36 +592,39 @@ function startTrain(ex){
 
 function endTrain(){
     cancelAnimationFrame(tAF);tState.done=true;
-    const ex=tState.ex,sc=tState.score,mx=tState.max||1;
-    const p=Math.min(1,sc/mx);const gain=Math.max(1,Math.floor(p*3+1));
+    const ex=tState.ex,sc=tState.score;
+    const baseGain=Math.max(1, Math.floor(sc * (0.5 + G.gymLvl * 0.3)));
+    let gain=baseGain;
+    if(gymPerks.find(p=>p.id==='warmup'&&p.unlocked))gain+=2;
     G[ex.stat]+=gain;G.charmPts+=1;G.charmTotal+=1;
     float('+'+gain+' '+ex.name,'#ffbe0b');
-    let gr,gc;if(p>.8){gr='PERFEKT!';gc='#ffbe0b';S.perf();}else if(p>.5){gr='GODT!';gc='#00d4aa';S.ok();}else{gr='OK';gc='#ff6b35';S.click();}
+    let gr,gc;
+    if(sc>=15){gr='LEGENDARISK!';gc='#ff006e';S.perf();}
+    else if(sc>=10){gr='PERFEKT!';gc='#ffbe0b';S.perf();}
+    else if(sc>=6){gr='GODT!';gc='#00d4aa';S.ok();}
+    else if(sc>=3){gr='OK';gc='#ff6b35';S.click();}
+    else{gr='SVAGT...';gc='#888';S.bad();}
     document.getElementById('ti').textContent='';
-    document.getElementById('tr').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:${gc};margin-bottom:5px">${gr}</div><div class="pix" style="font-size:clamp(5px,1.2vw,8px);color:#ffbe0b;margin-bottom:3px">+${gain} ${ex.stat.toUpperCase()}</div><div class="pix" style="font-size:clamp(3px,.8vw,5px);color:#888;margin-bottom:10px">DMG:${G.dmg} HP:${G.maxHP} MP:${G.maxMP} BLK:${G.blockChance}%</div><button class="btn btn-s" onclick="document.getElementById('train-ov').classList.remove('active');openGym();updHUD();">VIDERE</button></div>`;
+    document.getElementById('tr').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:${gc};margin-bottom:5px">${gr}</div><div class="pix" style="font-size:clamp(5px,1.2vw,8px);color:#ffbe0b;margin-bottom:3px">+${gain} ${ex.stat.toUpperCase()} (Score: ${sc})</div><div class="pix" style="font-size:clamp(3px,.8vw,5px);color:#888;margin-bottom:10px">DMG:${G.dmg} HP:${G.maxHP} MP:${G.maxMP} BLK:${G.blockChance}%</div><button class="btn btn-s" onclick="document.getElementById('train-ov').classList.remove('active');openGym();updHUD();">VIDERE</button></div>`;
 }
 
 // GAME 1: BUTTON MASH (styrke)
 function trainMash(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
-    tState.max=40;let count=0,timeLeft=5,started=false,lastT=Date.now();
+    let count=0,timeLeft=5,started=false,lastT=Date.now();
     document.getElementById('ti').textContent='TAP SÅ HURTIGT DU KAN! 💪';
     const tap=()=>{if(tState.done)return;if(!started){started=true;lastT=Date.now();}count++;tState.score=count;S.click();};
     tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);document.addEventListener('keydown',tap);
     (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);document.removeEventListener('keydown',tap);return;}
         if(started){timeLeft=5-(Date.now()-lastT)/1000;if(timeLeft<=0){tState.score=count;endTrain();return;}}
         x.clearRect(0,0,W,H);
-        // Bar
-        const pct=count/tState.max;
-        x.fillStyle='rgba(255,255,255,.05)';x.fillRect(W*.1,H*.4,W*.8,30);
-        x.fillStyle='#ff006e';x.fillRect(W*.1,H*.4,W*.8*Math.min(1,pct),30);
         // Count
         x.font="bold 28px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#fff';x.fillText(count,W/2,H*.32);
         x.font="10px 'Press Start 2P'";x.fillStyle='#ffbe0b';x.fillText(started?timeLeft.toFixed(1)+'s':'TAP FOR AT STARTE!',W/2,H*.58);
         // Animated fist
         const fs=count%2===0?1:.9;
         x.font=`${30*fs}px serif`;x.fillText('👊',W/2,H*.78);
-        document.getElementById('ts').textContent=count+'/'+tState.max;
+        document.getElementById('ts').textContent='Score: '+count;
         tAF=requestAnimationFrame(draw);
     })();
 }
@@ -535,16 +632,16 @@ function trainMash(tc){
 // GAME 2: RUNNER (cardio)
 function trainRunner(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
-    tState.max=10;let py=H*.7,vy=0,onG=true,obs=[],score=0,dist=0,spd=2,alive=true;
+    let py=H*.7,vy=0,onG=true,obs=[],score=0,dist=0,spd=2,alive=true;
     document.getElementById('ti').textContent='TAP FOR AT HOPPE! 🏃';
-    for(let i=0;i<10;i++)obs.push({x:W+i*100+Math.random()*60,h:15+Math.random()*15});
+    for(let i=0;i<5;i++)obs.push({x:W+i*120+Math.random()*60,h:15+Math.random()*15});
     const jump=()=>{if(!alive||tState.done)return;if(onG){vy=-8;onG=false;S.click();}};
     tc.addEventListener('mousedown',jump);tc.addEventListener('touchstart',jump);document.addEventListener('keydown',jump);
     (function draw(){if(tState.done){tc.removeEventListener('mousedown',jump);tc.removeEventListener('touchstart',jump);document.removeEventListener('keydown',jump);return;}
         x.clearRect(0,0,W,H);
         // Ground
         const gY=H*.78;x.fillStyle='#2a2a2a';x.fillRect(0,gY,W,H-gY);
-        x.strokeStyle='rgba(255,255,255,.06)';for(let i=0;i<W;i+=20){x.beginPath();x.moveTo((i-dist*2)%W,gY);x.lineTo((i-dist*2)%W,gY+3);x.stroke();}
+        x.strokeStyle='rgba(255,255,255,.06)';for(let i=0;i<W;i+=20){x.beginPath();x.moveTo(((i-dist*2)%W+W)%W,gY);x.lineTo(((i-dist*2)%W+W)%W,gY+3);x.stroke();}
         // Player
         vy+=.4;py+=vy;if(py>=gY-16){py=gY-16;vy=0;onG=true;}
         const legOff=Math.sin(dist*.1)*4;
@@ -553,16 +650,19 @@ function trainRunner(tc){
         x.fillStyle='#1e293b';x.fillRect(50,py+16+legOff,5,6);x.fillRect(57,py+16-legOff,5,6);// legs
         // Obstacles
         obs.forEach(o=>{
-            o.x-=spd;if(o.x<-20){o.x=W+50+Math.random()*80;o.h=15+Math.random()*20;score++;tState.score=score;}
+            o.x-=spd;if(o.x<-20){o.x=W+50+Math.random()*80;o.h=15+Math.random()*20;score++;tState.score=score;
+                // Speed up every 3 obstacles
+                if(score%3===0)spd+=0.4;
+            }
             x.fillStyle='#ffbe0b';x.fillRect(o.x,gY-o.h,12,o.h);
             // Collision
             if(alive&&o.x>40&&o.x<70&&py+16>gY-o.h){alive=false;S.bad();tState.score=score;setTimeout(endTrain,500);}
         });
-        dist+=spd;spd=2+dist*.001;
+        dist+=spd;
         // Score
         x.font="bold 10px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#00d4aa';x.fillText('SCORE: '+score,W-10,20);
-        document.getElementById('ts').textContent=score+'/'+tState.max;
-        if(score>=tState.max&&alive){tState.score=score;endTrain();return;}
+        x.font="bold 8px 'Press Start 2P'";x.fillStyle='#ffbe0b';x.fillText('SPD: '+spd.toFixed(1),W-10,35);
+        document.getElementById('ts').textContent='Score: '+score;
         tAF=requestAnimationFrame(draw);
     })();
 }
@@ -570,7 +670,6 @@ function trainRunner(tc){
 // GAME 3: MEMORY SEQUENCE (small talk)
 function trainMemory(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
-    tState.max=6;
     const colors=['#ff006e','#ffbe0b','#00d4aa','#3b82f6'];
     const emojis=['😎','🗣️','💬','🤙'];
     const positions=[[W*.25,H*.35],[W*.75,H*.35],[W*.25,H*.7],[W*.75,H*.7]];
@@ -583,7 +682,7 @@ function trainMemory(tc){
 
     function drawBtns(lit){
         x.clearRect(0,0,W,H);
-        x.font="bold 8px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#888';x.fillText('RUNDE '+round+'/'+tState.max,W/2,20);
+        x.font="bold 8px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#888';x.fillText('RUNDE '+round,W/2,20);
         positions.forEach((p,i)=>{
             const isLit=lit===i;
             x.fillStyle=isLit?colors[i]:'rgba(255,255,255,.06)';
@@ -603,7 +702,6 @@ function trainMemory(tc){
         drawBtns(hit);S.click();
         if(hit===seq[pIdx]){pIdx++;
             if(pIdx>=seq.length){tState.score=round;S.ok();
-                if(round>=tState.max){setTimeout(endTrain,400);return;}
                 setTimeout(()=>nextRound(),600);}
         } else{wrong=true;S.bad();tState.score=Math.max(0,round-1);setTimeout(endTrain,600);}
     };
@@ -615,7 +713,7 @@ function trainMemory(tc){
                 if(showIdx>seq.length){showPhase=false;canTap=true;drawBtns(-1);document.getElementById('ti').textContent='Din tur! Gentag sekvensen! 👆';}
             } else if(now-lastShow>400){drawBtns(-1);}
         }
-        document.getElementById('ts').textContent=round+'/'+tState.max;
+        document.getElementById('ts').textContent='Score: '+round;
         tAF=requestAnimationFrame(draw);
     })();
 }
@@ -623,10 +721,13 @@ function trainMemory(tc){
 // GAME 4: REACTION (reflex)
 function trainReaction(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
-    tState.max=12;let targets=[],score=0,spawned=0,spawnT=0;
-    document.getElementById('ti').textContent='TAP cirklerne hurtigt! ⚡';
+    let targets=[],score=0,spawnT=0,misses=0;
+    document.getElementById('ti').textContent='TAP cirklerne hurtigt! 3 misses = slut ⚡';
 
-    function spawn(){if(spawned>=18)return;targets.push({x:30+Math.random()*(W-60),y:30+Math.random()*(H-60),r:18,life:1,born:Date.now()});spawned++;}
+    function getSpawnInterval(){return Math.max(300, 800 - score * 30);}
+    function getTargetLifetime(){return Math.max(800, 2000 - score * 80);}
+
+    function spawn(){targets.push({x:30+Math.random()*(W-60),y:30+Math.random()*(H-60),r:18,life:1,born:Date.now()});}
 
     const tap=e=>{if(tState.done)return;
         const rect=tc.getBoundingClientRect();
@@ -635,7 +736,7 @@ function trainReaction(tc){
         for(let i=targets.length-1;i>=0;i--){
             if(Math.hypot(mx-targets[i].x,my-targets[i].y)<targets[i].r+5){
                 targets.splice(i,1);score++;tState.score=score;S.click();float('HIT!','#00d4aa');
-                if(score>=tState.max){endTrain();return;}break;
+                break;
             }
         }
     };
@@ -643,17 +744,21 @@ function trainReaction(tc){
 
     (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);return;}
         x.clearRect(0,0,W,H);
-        const now=Date.now();if(now-spawnT>800&&spawned<18){spawn();spawnT=now;}
+        const now=Date.now();if(now-spawnT>getSpawnInterval()){spawn();spawnT=now;}
+        const lifetime=getTargetLifetime();
         targets=targets.filter(t=>{
-            t.life=1-Math.min(1,(now-t.born)/2000);
-            if(t.life<=0){S.bad();return false;}
+            t.life=1-Math.min(1,(now-t.born)/lifetime);
+            if(t.life<=0){S.bad();misses++;
+                if(misses>=3){tState.score=score;setTimeout(endTrain,300);return false;}
+                return false;}
             x.globalAlpha=t.life;x.fillStyle='#ff006e';x.shadowColor='#ff006e';x.shadowBlur=8;
             x.beginPath();x.arc(t.x,t.y,t.r*t.life,0,Math.PI*2);x.fill();
             x.fillStyle='#fff';x.font='12px serif';x.textAlign='center';x.fillText('🎯',t.x,t.y+4);
             x.shadowBlur=0;x.globalAlpha=1;return true;
         });
-        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText(score+'/'+tState.max,W-8,16);
-        document.getElementById('ts').textContent=score+'/'+tState.max;
+        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText('Score: '+score,W-8,16);
+        x.fillStyle='#ff006e';x.fillText('Miss: '+misses+'/3',W-8,30);
+        document.getElementById('ts').textContent='Score: '+score;
         tAF=requestAnimationFrame(draw);
     })();
 }
@@ -737,6 +842,24 @@ function openTree(){
     // Ultimates
     renderRow(['berserker','tank','rizz']);
 
+    // Flex abilities section
+    const flexTitle=document.createElement('div');flexTitle.className='tree-con';flexTitle.innerHTML='<div class="tree-line"></div>';w.appendChild(flexTitle);
+    const flexHeader=document.createElement('div');flexHeader.className='tree-row';
+    flexHeader.innerHTML='<div style="color:#e040fb;font-size:clamp(6px,1.5vw,10px);text-align:center;width:100%;padding:8px 0" class="pix">FLEX ABILITIES</div>';
+    w.appendChild(flexHeader);
+    const flexRow=document.createElement('div');flexRow.className='tree-row';
+    flexAbilities.forEach(ab=>{
+        const d=document.createElement('div');
+        d.className='tn'+(ab.unlocked?' on':'');
+        d.innerHTML=`<div class="ti">${ab.icon}</div><div class="tt">${ab.name}</div><div class="td">${ab.desc}</div><div class="tc" style="color:${ab.unlocked?'#00d4aa':'#e040fb'}">${ab.unlocked?'UNLOCKED':ab.cost+' CHARM'}</div>`;
+        if(!ab.unlocked)d.onclick=()=>{
+            if(G.charmPts<ab.cost){msg('Ikke nok charm points!');S.bad();return;}
+            G.charmPts-=ab.cost;ab.unlocked=true;S.perf();float('UNLOCKED: '+ab.name+'!','#e040fb');openTree();updHUD();
+        };
+        flexRow.appendChild(d);
+    });
+    w.appendChild(flexRow);
+
     document.getElementById('tree-ov').classList.add('active');
 }
 
@@ -767,14 +890,14 @@ function openWork(){
 
 // ===== BODEGA =====
 const bodegaPool=[
-    {name:"Katrine",icon:"🍺",rating:1,abilities:['Bartender Help'],attacks:["Haha nej","Du prøver for hårdt","*bestiller en drink*","Cute men nej","Øhm... kender vi hinanden?","Du ligner en der drikker Harboe","Seriøst? Den replik?","Ej stop, min veninde kigger","Hvem sendte dig herover? 😂","Jeg har en kæreste... tror jeg","*griner nervøst*","Det var næsten charmerende. Næsten."],win:"Katrine giver nummer! 📱",lose:"'Ses aldrig.'"},
-    {name:"Tina",icon:"💅",rating:2,abilities:['Øl-Splash'],attacks:["Haha du ligner min ex","Køb mig en øl først","Du danser som en far 😂","*tager en slurk*","Er du altid så... intens?","Min ex sagde det samme 💀","Du har vist drukket nok","*kigger på veninderne og griner*","Prøver du at flirte eller har du krampe?","Okay det var lidt sjovt. Men nej.","Du er modig, det giver jeg dig","Hmm... nej. Men tak for underholdningen."],win:"Tina: 'Du er sgu okay!' 🍻",lose:"'Ej... nej tak.' 😬"},
-    {name:"Mette",icon:"🍷",rating:2,abilities:['Wine Throw'],attacks:["Er det din bedste replik?","Min kat er sjovere","*kigger på telefonen*","Prøv igen, skat","Du minder mig om en fyr der skylder mig penge","Hvad er det for en cologne? Desperation?","Åh gud, ikke igen...","*nipper til vinen og ignorerer dig*","Ved du hvad? Nej.","Du ville ikke overleve én dag med mig","Sødt forsøg, forkert pige","Min mor sagde jeg skulle undgå typer som dig"],win:"Mette: 'Okay, én dans!' 💃",lose:"'Kender du ikke hints?' 🙄"},
-    {name:"Louise",icon:"🎤",rating:3,abilities:['Karaoke Burn'],attacks:["Kan du overhovedet synge?","Du lugter af gym 💀","Min veninde siger nej","*synger højere end dig*","Jeg synger dig ud af lokalet om lidt","Er det her din audition? Du er dumpet","*dedikerer en sang til din fiasko*","Tonedøv OG charmløs? Wow.","Kan du freestyle? Nej? Farvel.","Din stemme giver mig tinnitus","Hold din dayjob, skat 🎤","*synger 'bye bye bye' direkte til dig*"],win:"Louise: 'Du har charm!' 🎶",lose:"'Stick to the gym, bro.'"},
-    {name:"Fie",icon:"📱",rating:3,abilities:['Insta Block'],attacks:["Hvor mange følgere har du?","Ej du er ikke verified","*poster dig på story* 💀","Swipe left IRL","Du er ikke TikTok-worthy","*tager et billede* Det her går på finsta","Under 1000 følgere? Yikes...","Kan du overhovedet redigere reels?","Dit aesthetic er giving 2015","Ej vent, det her er content gold 📸","*checker din profil* Hmm... private? Sus.","Ingen blå flueben, ingen interesse"],win:"Fie: 'Okay du er cute' 📱❤️",lose:"'Blocked IRL.'"},
-    {name:"Sara",icon:"💄",rating:4,abilities:['Makeup Shield'],attacks:["Min foundation koster mere end dig","Du er en 4 max","*tager selfie uden dig*","Ew.","Min highlighter skinner mere end din fremtid","Skat, du er ikke i min liga","*retter på sin læbestift*","Hvem gav dig lov til at tale til mig?","Du er giving discount-version af min ex","Er det outfit fra Wish? 💀","Aww du prøver så hårdt. Det er ynkeligt.","Kan du betale min Sephora-regning? Nej? Farvel."],win:"Sara: 'Du er charmerende' 💋",lose:"'Næste.'"},
-    {name:"Ida",icon:"🎵",rating:4,abilities:['Bass Drop'],attacks:["Kan du ikke høre beaten?","Din vibe er OFF","*danser væk*","Prøv igen om 10 år","Du er off-beat i livet generelt","Har du nogensinde været til en festival? Du ser ikke ud til det","*sætter høretelefoner på*","Din energi er forkert frekvens","Dine moves er fra 2012","Bass dropper hårdere end dine pick-up lines","*laver en DJ-scratch med munden*","Denne sang handler om at ghoste folk som dig"],win:"Ida: 'Nice moves!' 🎵",lose:"'Cringe.'"},
-    {name:"Emma",icon:"🌸",rating:5,abilities:['Friend Zone'],attacks:["Du er SÅ sød... som en ven","Aww cute forsøg","*sender dig til veninderne*","Du minder mig om min bror","Vi er BEDSTE venner nu! Ikke mere.","Ej du er virkelig en god ven ❤️ ...ven.","Skal vi lave en vennegruppe?","Aww du er som en golden retriever. Ven-zonen.","*giver dig et klap på skulderen*","Du ville være PERFEKT til min veninde... nej vent","Bro-energy. Sorry.","Kan du ikke bare være min gay bestie?"],win:"Emma: 'Okay... én date!' 🌸",lose:"'Vi kan være venner?'"},
+    {name:"Katrine",icon:"🍺",rating:1,abilities:['Bartender Help'],attacks:["Haha nej","Du prøver for hårdt","*bestiller en drink*","Cute men nej","Øhm... kender vi hinanden?","Du ligner en der drikker Harboe","Seriøst? Den replik?","Ej stop, min veninde kigger","Hvem sendte dig herover? 😂","Jeg har en kæreste... tror jeg","*griner nervøst*","Det var næsten charmerende. Næsten.","Tror du vi er i en film eller hvad?","Min hund er bedre selskab","*tager en selfie uden dig i baggrunden*","Okay DET var pinligt","Er du fra Randers? Du giver Randers-vibes","Nej nej nej. Prøv den næste bar."],win:"Katrine giver nummer! 📱",lose:"'Ses aldrig.'"},
+    {name:"Tina",icon:"💅",rating:2,abilities:['Øl-Splash'],attacks:["Haha du ligner min ex","Køb mig en øl først","Du danser som en far 😂","*tager en slurk*","Er du altid så... intens?","Min ex sagde det samme 💀","Du har vist drukket nok","*kigger på veninderne og griner*","Prøver du at flirte eller har du krampe?","Okay det var lidt sjovt. Men nej.","Du er modig, det giver jeg dig","Hmm... nej. Men tak for underholdningen.","*hælder øl i dit skød* Ups!","Du minder mig om min lillebror","Har du prøvet at smile MINDRE?","Wow du er virkelig... noget.","Min veninde siger du ligner en NPC","*blokerer dig med sin taske*"],win:"Tina: 'Du er sgu okay!' 🍻",lose:"'Ej... nej tak.' 😬"},
+    {name:"Mette",icon:"🍷",rating:2,abilities:['Wine Throw'],attacks:["Er det din bedste replik?","Min kat er sjovere","*kigger på telefonen*","Prøv igen, skat","Du minder mig om en fyr der skylder mig penge","Hvad er det for en cologne? Desperation?","Åh gud, ikke igen...","*nipper til vinen og ignorerer dig*","Ved du hvad? Nej.","Du ville ikke overleve én dag med mig","Sødt forsøg, forkert pige","Min mor sagde jeg skulle undgå typer som dig","*kaster vin i dit ansigt* Refreshing!","Du er som en pop-up reklame IRL","Har du en returpolitik på den replik?","Min terapeut advarer mig mod typer som dig","Ej, gider du ikke bare... gå?","*swiper left på dig i virkeligheden*"],win:"Mette: 'Okay, én dans!' 💃",lose:"'Kender du ikke hints?' 🙄"},
+    {name:"Louise",icon:"🎤",rating:3,abilities:['Karaoke Burn'],attacks:["Kan du overhovedet synge?","Du lugter af gym 💀","Min veninde siger nej","*synger højere end dig*","Jeg synger dig ud af lokalet om lidt","Er det her din audition? Du er dumpet","*dedikerer en sang til din fiasko*","Tonedøv OG charmløs? Wow.","Kan du freestyle? Nej? Farvel.","Din stemme giver mig tinnitus","Hold din dayjob, skat 🎤","*synger 'bye bye bye' direkte til dig*","Du rammer ikke engang de lave toner","*laver en diss-track om dig on the spot*","Auto-tune kan ikke redde dig","Selv Simon Cowell ville sige nej","Min mikrofon har mere personlighed","*synger en ballade om din fiasko*"],win:"Louise: 'Du har charm!' 🎶",lose:"'Stick to the gym, bro.'"},
+    {name:"Fie",icon:"📱",rating:3,abilities:['Insta Block'],attacks:["Hvor mange følgere har du?","Ej du er ikke verified","*poster dig på story* 💀","Swipe left IRL","Du er ikke TikTok-worthy","*tager et billede* Det her går på finsta","Under 1000 følgere? Yikes...","Kan du overhovedet redigere reels?","Dit aesthetic er giving 2015","Ej vent, det her er content gold 📸","*checker din profil* Hmm... private? Sus.","Ingen blå flueben, ingen interesse","Dit engagement rate er tragisk","*unfollower dig mens du ser på*","Du er giving 'ratio'd' energy","Har du prøvet at have charisma?","*tagger dig i en cringe-compilation*","Din grid er KAOS"],win:"Fie: 'Okay du er cute' 📱❤️",lose:"'Blocked IRL.'"},
+    {name:"Sara",icon:"💄",rating:4,abilities:['Makeup Shield'],attacks:["Min foundation koster mere end dig","Du er en 4 max","*tager selfie uden dig*","Ew.","Min highlighter skinner mere end din fremtid","Skat, du er ikke i min liga","*retter på sin læbestift*","Hvem gav dig lov til at tale til mig?","Du er giving discount-version af min ex","Er det outfit fra Wish? 💀","Aww du prøver så hårdt. Det er ynkeligt.","Kan du betale min Sephora-regning? Nej? Farvel.","*pudrer sig aggressivt*","Mine vipper koster mere end din husleje","Du er som mascara der løber - tragisk","Min contour har mere dybde end din personlighed","*sprayer parfume mod dig som afskrækning*","Selv min beauty blender afviser dig"],win:"Sara: 'Du er charmerende' 💋",lose:"'Næste.'"},
+    {name:"Ida",icon:"🎵",rating:4,abilities:['Bass Drop'],attacks:["Kan du ikke høre beaten?","Din vibe er OFF","*danser væk*","Prøv igen om 10 år","Du er off-beat i livet generelt","Har du nogensinde været til en festival? Du ser ikke ud til det","*sætter høretelefoner på*","Din energi er forkert frekvens","Dine moves er fra 2012","Bass dropper hårdere end dine pick-up lines","*laver en DJ-scratch med munden*","Denne sang handler om at ghoste folk som dig","Du er som en skippet sang på shuffle","*skruer op for musikken for at overdøve dig*","Din rytme er som wifi der buffer","Selv Soundcloud rappers har mere game","*mixer dig ud af samtalen*","Du er en one-hit-wonder... uden hittet"],win:"Ida: 'Nice moves!' 🎵",lose:"'Cringe.'"},
+    {name:"Emma",icon:"🌸",rating:5,abilities:['Friend Zone'],attacks:["Du er SÅ sød... som en ven","Aww cute forsøg","*sender dig til veninderne*","Du minder mig om min bror","Vi er BEDSTE venner nu! Ikke mere.","Ej du er virkelig en god ven ❤️ ...ven.","Skal vi lave en vennegruppe?","Aww du er som en golden retriever. Ven-zonen.","*giver dig et klap på skulderen*","Du ville være PERFEKT til min veninde... nej vent","Bro-energy. Sorry.","Kan du ikke bare være min gay bestie?","Skal vi lave en friendship bracelet? 🥹","*tilføjer dig til 'besties' gruppen*","Du er som en bamse - cute men ikke boyfriend material","Ej du ville være SÅ god som min ven-date til bryllup!","*giver dig et kram* ...et VENNE-kram!","Du er som en bror fra en anden mor. Og det bliver du ved med."],win:"Emma: 'Okay... én date!' 🌸",lose:"'Vi kan være venner?'"},
 ];
 let bodegaUsedToday=false;
 const bodegaUpgradeCost=[0,200,500,1000];
@@ -809,7 +932,7 @@ function pickBodegaGirl(){
     return weighted[Math.floor(Math.random()*weighted.length)];
 }
 function openBodega(){
-    G.scene='bodega';advTime(2);drawBodegaBg();
+    G.scene='bodega';advTime(1);drawBodegaBg();
     const sub=document.getElementById('bodega-sub');
     const l=document.getElementById('bodega-list');l.innerHTML='';
     if(bodegaUsedToday){sub.textContent='Du har allerede prøvet i dag! Kom igen i morgen.';
@@ -819,11 +942,11 @@ function openBodega(){
     sub.textContent=`LVL ${G.bodegaLvl} · Tilfældig pige! (1/dag)`;
     const d=document.createElement('div');d.className='si';
     d.innerHTML=`<div class="si-l"><span class="si-i">${g.icon}</span><div><div class="si-n">${g.name}</div><div class="si-d">${g.rating}/10 · ⭐${'⭐'.repeat(g.rating)}</div></div></div><div class="si-p" style="color:#f59e0b">⭐${g.rating}</div>`;
-    d.onclick=()=>{bodegaUsedToday=true;document.getElementById('bodega-ov').classList.remove('active');startCombatWithGirl(g);};
+    d.onclick=()=>{bodegaUsedToday=true;l.innerHTML='';document.getElementById('bodega-ov').classList.remove('active');startCombatWithGirl(g);C.isBodega=true;};
     l.appendChild(d);
     const skip=document.createElement('div');skip.className='si';skip.style.borderColor='rgba(255,255,255,.1)';
     skip.innerHTML=`<div class="si-l"><span class="si-i">🚪</span><div><div class="si-n">GÅ IGEN</div><div class="si-d">Gem dit forsøg til i morgen</div></div></div>`;
-    skip.onclick=()=>{document.getElementById('bodega-ov').classList.remove('active');G.scene='map';};
+    skip.onclick=()=>{l.innerHTML='';document.getElementById('bodega-ov').classList.remove('active');G.scene='map';};
     l.appendChild(skip);
     if(G.bodegaLvl<4){
         const cost=bodegaUpgradeCost[G.bodegaLvl];
@@ -1052,21 +1175,34 @@ function showRandomEvent(){
 
 // ===== COMBAT =====
 const girlsByRound=[
-    [{name:"Sofie",icon:"👩‍🦰",rating:5,abilities:['Øjenrulle'],attacks:["Du er ikke min type lol","Ew hvem inviterede dig?","Haha cute... men nej 💀","*ruller med øjnene*","Prøvede du lige at wink? Det lignede et tic","Jeg har set bedre pick-up lines på Reddit","Min veninde siger du ligner hendes onkel","*griner med veninderne og peger*","Du prøver SÅ hårdt, det er pinligt","Hmm... nej. Next.","Er det her en dare fra dine venner?","*tager en stor slurk af sin drink*","Okay wow. Det var IKKE det right move.","Du minder mig om en fyr jeg ghostede"],win:"Sofie giver sit nummer! 📱",lose:"'Nice try...' Hun vender sig."}],
-    [{name:"Nadia",icon:"💃",rating:6,abilities:['Gab','Ignorér'],attacks:["Du danser som min farfar 💀","Er det DIT bedste?","Min ex var sjovere","*gaber højlydt*","Jeg har set bedre moves til en begravelse","*checker naglelak midt i din replik*","Sorry, sagde du noget? Jeg lyttede ikke","Har du overvejet at IKKE danse?","Det der var så akavet, jeg fik gåsehud","*danser circles around dig*","Du har energien af en våd karklud","Aww du prøver. Det er det sørgelige.","Min lille søster har bedre moves","*vender ryggen til og danser videre*"],win:"Nadia: 'Vi danser hele natten!' 🎶",lose:"Friendzoned."}],
-    [{name:"Jasmin",icon:"👸",rating:8,abilities:['Gucci Shame','Security Call'],attacks:["Kender du Gucci fra Zara?","Du LUGTER af Netto 🤢","Sikkerhed? Remove this.","*sender billede til veninderne*","Er det et Shein-outfit? Bro...","Mine øreringe koster mere end din husleje","*tager en selfie og cropper dig ud*","Ej, stod du i kø til VIP? Cute.","Security kender mig by name. Watch it.","Du er ikke på gæstelisten over mit liv","Min chauffør er sjovere end dig","*kigger dig op og ned* ...nej.","Prøver du at imponere MIG? Med DET?","Har du nogensinde set indersiden af en Gucci-butik?"],win:"'Du er anderledes...' 💎",lose:"Vagten eskorterer dig ud."}],
-    [{name:"Isabella",icon:"👑",rating:10,abilities:['DM Flex','Chihuahua Attack','Hele Klubben Griner'],attacks:["Min DM er fyldt med bedre","Du er nummer INGENTING 💀","Min chihuahua har mere game","*hele klubben griner*","Jeg har afvist kendisser, du er INGEN","Min Instagram har flere følgere end din by","*hendes bodyguard tager et skridt fremad*","Du taler til den forkerte person, skat","Ej vent... 😂 du er SERIØS?! 😂😂","Min sidste date havde en yacht. Hvad har du?","*sender voice note til veninderne om dig*","Du giver main character energy... i en tragedy","Selv min bartender har bedre game","*kigger igennem dig som du er luft*","Cute. Men jeg dater kun op, aldrig ned.","Har du prøvet Tinder? Det er mere dit niveau."],win:"HELE KLUBBEN SER DET!\nHANZI ER #1 IGEN! 👑🔥",lose:"'Tæt på... men nej.'"}]
+    [{name:"Sofie",icon:"👩‍🦰",rating:5,abilities:['Øjenrulle'],attacks:["Du er ikke min type lol","Ew hvem inviterede dig?","Haha cute... men nej 💀","*ruller med øjnene*","Prøvede du lige at wink? Det lignede et tic","Jeg har set bedre pick-up lines på Reddit","Min veninde siger du ligner hendes onkel","*griner med veninderne og peger*","Du prøver SÅ hårdt, det er pinligt","Hmm... nej. Next.","Er det her en dare fra dine venner?","*tager en stor slurk af sin drink*","Okay wow. Det var IKKE det right move.","Du minder mig om en fyr jeg ghostede","Mine standarder er højere end dine ambitioner","*sender snap af dig til 'cringe' gruppen*","Jeg har afvist pænere i Netto","Selv bartendren har ondt af dig","*griner så højt at hele klubben kigger*","Prøv igen... i dit næste liv"],win:"Sofie giver sit nummer! 📱",lose:"'Nice try...' Hun vender sig."}],
+    [{name:"Nadia",icon:"💃",rating:6,abilities:['Gab','Ignorér'],attacks:["Du danser som min farfar 💀","Er det DIT bedste?","Min ex var sjovere","*gaber højlydt*","Jeg har set bedre moves til en begravelse","*checker naglelak midt i din replik*","Sorry, sagde du noget? Jeg lyttede ikke","Har du overvejet at IKKE danse?","Det der var så akavet, jeg fik gåsehud","*danser circles around dig*","Du har energien af en våd karklud","Aww du prøver. Det er det sørgelige.","Min lille søster har bedre moves","*vender ryggen til og danser videre*","Du bevæger dig som en robot med lavt batteri","*laver en TikTok-dans og du er IKKE med*","Din footwork er en krigsforbrydelse","Har du overvejet yoga? Det er mere dit tempo","*gaber midt i din bedste move*","Selv gulvet har mere rytme end dig"],win:"Nadia: 'Vi danser hele natten!' 🎶",lose:"Friendzoned."}],
+    [{name:"Jasmin",icon:"👸",rating:8,abilities:['Gucci Shame','Security Call'],attacks:["Kender du Gucci fra Zara?","Du LUGTER af Netto 🤢","Sikkerhed? Remove this.","*sender billede til veninderne*","Er det et Shein-outfit? Bro...","Mine øreringe koster mere end din husleje","*tager en selfie og cropper dig ud*","Ej, stod du i kø til VIP? Cute.","Security kender mig by name. Watch it.","Du er ikke på gæstelisten over mit liv","Min chauffør er sjovere end dig","*kigger dig op og ned* ...nej.","Prøver du at imponere MIG? Med DET?","Har du nogensinde set indersiden af en Gucci-butik?","Min Birkin bag har mere værdi end dit liv","*ringer til sin personlige shopper foran dig*","VIP er for Very Important People. Du er VP.","Skat, jeg taler kun med folk der har blue check","*vinker sin bodyguard over*","Selv min hundepasser klæder sig bedre"],win:"'Du er anderledes...' 💎",lose:"Vagten eskorterer dig ud."}],
+    [{name:"Isabella",icon:"👑",rating:10,abilities:['DM Flex','Chihuahua Attack','Hele Klubben Griner'],attacks:["Min DM er fyldt med bedre","Du er nummer INGENTING 💀","Min chihuahua har mere game","*hele klubben griner*","Jeg har afvist kendisser, du er INGEN","Min Instagram har flere følgere end din by","*hendes bodyguard tager et skridt fremad*","Du taler til den forkerte person, skat","Ej vent... 😂 du er SERIØS?! 😂😂","Min sidste date havde en yacht. Hvad har du?","*sender voice note til veninderne om dig*","Du giver main character energy... i en tragedy","Selv min bartender har bedre game","*kigger igennem dig som du er luft*","Cute. Men jeg dater kun op, aldrig ned.","Har du prøvet Tinder? Det er mere dit niveau.","Min privatjet venter. Du tager bus.","*hendes chihuahua bider dig i anklen*","Du er som et dating show... men du er deltageren der ryger i uge 1","Min manicure koster mere end din månedsløn","*tager sin krone af og slår dig med den*","Jeg er dronningen. Du er ikke engang en bonde i skak."],win:"HELE KLUBBEN SER DET!\nHANZI ER #1 IGEN! 👑🔥",lose:"'Tæt på... men nej.'"}]
 ];
 
+const flexAbilities=[
+    {id:'heal',name:'HEALING',icon:'💚',desc:'Gendan 30% HP',cost:4,unlocked:false,
+     fn:()=>{ const heal=Math.round(C.hMax*.3); C.hHP=Math.min(C.hMax,C.hHP+heal); S.heal(); cSpeech('Hanzi healer sig selv! +'+heal+' HP 💚'); cAct('+'+heal+' HP','#00d4aa'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'rage',name:'RAGE MODE',icon:'🔥',desc:'+100% skade i 3 ture',cost:5,unlocked:false,
+     fn:()=>{ C.rageBuff=3; S.perf(); cSpeech('RAGE MODE AKTIVERET! 🔥🔥🔥 Dobbelt skade i 3 ture!'); cAct('RAGE!','#ff006e'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'focus',name:'LASER FOCUS',icon:'🎯',desc:'100% hit chance i 2 ture',cost:4,unlocked:false,
+     fn:()=>{ C.focusBuff=2; S.ok(); cSpeech('LASER FOCUS! 🎯 100% hit chance i 2 ture!'); cAct('FOCUS!','#3b82f6'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'drain',name:'SOUL DRAIN',icon:'👻',desc:'Stjael 20% af fjendens HP',cost:6,unlocked:false,
+     fn:()=>{ const drain=Math.round(C.gMax*.2); C.gHP=Math.max(0,C.gHP-drain); C.hHP=Math.min(C.hMax,C.hHP+Math.round(drain/2)); S.hit(); cSpeech('SOUL DRAIN! 👻 -'+drain+' fjende HP, +'+Math.round(drain/2)+' HP!'); cAct('-'+drain,'#8b5cf6'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
+    {id:'reflect',name:'SPEJLSKJOLD',icon:'🪞',desc:'Reflekter 50% skade i 2 ture',cost:5,unlocked:false,
+     fn:()=>{ C.reflectBuff=2; S.ok(); cSpeech('SPEJLSKJOLD! 🪞 50% af modtaget skade reflekteres i 2 ture!'); cAct('REFLECT!','#ffbe0b'); updC(); setTimeout(showCMenu,2500); }},
+];
 let C={girl:null,hHP:0,hMax:0,hMP:0,hMMax:0,gHP:0,gMax:0,phase:'menu',shield:0,blockBuff:0,dmgBuff:0,enemyDebuff:0,poison:0,confused:0,ally:null};
 let combatAF=null;
 
 function startCombatWithGirl(girl){
     G.scene='combat';Mus.play('fight');
+    document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));
     if(!girl.hp)girl=makeScaledGirl(girl);
     C.girl=girl;
     C.hMax=G.maxHP;C.hHP=C.hMax;C.hMMax=G.maxMP;C.hMP=C.hMMax;
-    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;
+    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;C.isBodega=false;C.rageBuff=0;C.focusBuff=0;C.reflectBuff=0;
     document.getElementById('combat-ui').classList.add('active');
     rsz();startCombatBg();updC();
     cSpeech(C.girl.icon+' '+C.girl.name+' ('+C.girl.rating+'/10) dukker op! 💃');
@@ -1123,6 +1259,9 @@ function updC(){
     if(C.blockBuff>0)hBuf+='🛡️x'+C.blockBuff+' ';
     if(C.shield>0)hBuf+='🛡️'+C.shield+' ';
     if(C.dmgBuff>0)hBuf+='⚔️x'+C.dmgBuff+' ';
+    if(C.rageBuff>0)hBuf+='🔥x'+C.rageBuff+' ';
+    if(C.focusBuff>0)hBuf+='🎯x'+C.focusBuff+' ';
+    if(C.reflectBuff>0)hBuf+='🪞x'+C.reflectBuff+' ';
     if(C.ally)hBuf+='📞'+C.ally.name+'('+C.ally.turnsLeft+') ';
     let gBuf='';
     if(C.enemyDebuff>0)gBuf+='😏x'+C.enemyDebuff+' ';
@@ -1153,6 +1292,16 @@ function showCMenu(){
         b.innerHTML=`<span class="ci">${mv.icon}</span>${mv.name}<span class="cc">${mv.desc}</span>`;
         b.onclick=mv.act;m.appendChild(b);
     });
+    // Flex abilities
+    const unlockedFlex=flexAbilities.filter(a=>a.unlocked);
+    if(unlockedFlex.length>0){
+        unlockedFlex.forEach(ab=>{
+            const b=document.createElement('button');b.className='cbtn';b.style.borderColor='#e040fb';b.style.color='#e040fb';
+            b.innerHTML=`<span class="ci">${ab.icon}</span>${ab.name}<span class="cc">${ab.desc}</span>`;
+            b.onclick=()=>{S.click();document.getElementById('c-menu').style.display='none';ab.fn();};
+            m.appendChild(b);
+        });
+    }
 }
 
 function showPickupMenu(){
@@ -1233,7 +1382,13 @@ function doAtk(type,hitPct,mpCost,base,speech){
     S.click();document.getElementById('c-menu').style.display='none';
     C.hMP=Math.max(0,C.hMP-mpCost);
     if(C.dmgBuff>0)base=Math.floor(base*1.5);
+    if(C.rageBuff>0)base=Math.floor(base*2);
+    if(C.focusBuff>0)hitPct=100;
     if(C.confused>0){hitPct=Math.max(10,hitPct-10);C.confused--;}
+    // Crit check
+    let isCrit=false;
+    if(Math.random()*100<G.critChance){isCrit=true;base=Math.floor(base*G.critDmg/100);}
+    C.pendingCrit=isCrit;
     cSpeech(speech);updC();
     if(Math.random()*100>hitPct){
         setTimeout(()=>{S.bad();cAct('MISS! ('+hitPct+'%)','#ff006e');cSpeech('Misset! Bedre held næste gang!');updC();chkEnd()||setTimeout(eTurn,2500);},1500);
@@ -1246,7 +1401,8 @@ function doAtk(type,hitPct,mpCost,base,speech){
             if(G.perks.berserker&&type==='orm')mult*=1.5;
             let dmg=Math.max(1,Math.floor(base*mult));
             C.gHP=Math.max(0,C.gHP-dmg);
-            if(q==='perfect'){S.perf();cAct('PERFEKT! -'+dmg,'#ffbe0b');}
+            if(C.pendingCrit){S.perf();cAct('💥 CRIT! -'+dmg,'#ffbe0b');}
+            else if(q==='perfect'){S.perf();cAct('PERFEKT! -'+dmg,'#ffbe0b');}
             else if(q==='good'){S.ok();cAct('-'+dmg,'#00d4aa');}
             else{S.click();cAct('-'+dmg,'#aaa');}
             updC();chkEnd()||setTimeout(eTurn,2500);
@@ -1482,6 +1638,11 @@ function mgCatch(ctx,W,H,cb){
 }
 
 function eTurn(){
+    // HP Regen perk
+    if(gymPerks.find(p=>p.id==='regen'&&p.unlocked)){
+        C.hHP=Math.min(C.hMax,C.hHP+3);
+        cSpeech('HP Regen! +3 HP 💚');updC();
+    }
     // Poison tick
     if(C.poison>0){
         const pdmg=Math.max(2,Math.floor(C.girl.atk*.3));
@@ -1503,6 +1664,9 @@ function eTurn(){
     if(C.dmgBuff>0)C.dmgBuff--;
     if(C.enemyDebuff>0)C.enemyDebuff--;
     if(C.blockBuff>0)C.blockBuff--;
+    if(C.rageBuff>0)C.rageBuff--;
+    if(C.focusBuff>0)C.focusBuff--;
+    if(C.reflectBuff>0)C.reflectBuff--;
     const g=C.girl,atk=g.attacks[Math.floor(Math.random()*g.attacks.length)];
     const poisonDelay=C.poison>=0?1200:0;
     setTimeout(()=>{
@@ -1524,6 +1688,8 @@ function eTurn(){
                     if(absorbed>0)cSpeech('Skjold absorberede '+absorbed+'!'+(dmg>0?' -'+dmg+' HP':''));
                 }
                 C.hHP=Math.max(0,C.hHP-dmg);
+                // Reflect buff
+                if(C.reflectBuff>0){const reflectDmg=Math.floor(dmg*.5);C.gHP=Math.max(0,C.gHP-reflectDmg);cSpeech('Spejlskjold reflekterer '+reflectDmg+' skade! 🪞');updC();}
                 // Girl debuff mechanic (25% chance)
                 if(Math.random()<.25){
                     const debuffRoll=Math.random();
@@ -1557,7 +1723,12 @@ function chkEnd(){
 function leaveCombat(){
     cancelAnimationFrame(combatAF);if(mgCleanup){mgCleanup();mgCleanup=null;}
     document.getElementById('combat-ui').classList.remove('active');
-    G.scene='map';Mus.play('map');G.round++;G.daysLeft=7;G.day++;G.hour=8;
+    G.scene='map';Mus.play('map');
+    document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));
+    if(C.isBodega){
+        updHUD();msg(C.gHP<=0?'Bodega-pige scoret! 🍺🔥':'Bedre held næste gang på bodegaen!');return;
+    }
+    G.round++;G.daysLeft=7;G.day++;G.hour=8;
     G.hunger=Math.min(G.maxHunger,G.hunger+20);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;
     if(G.round>G.maxRounds&&G.girlsMet>=4){secretBoss();return;}
     if(G.round>G.maxRounds){endGame();return;}
@@ -1566,9 +1737,9 @@ function leaveCombat(){
 
 function secretBoss(){
     G.scene='brief';
-    briefGirl=makeScaledGirl({name:"Danny 👔",icon:"😈",rating:12,abilities:['Manager Power','Cancel Culture','NDA Clause','Media Spin'],
-        attacks:["Du er FÆRDIG i denne by!","Jeg EJER dig, Hanzi!","*ringer til sine advokater*","Ingen vil booke dig NOGENSINDE!","Du er intet uden TBH!","*poster falsk historie om dig*"],
-        win:"Danny falder på knæ...\n'Du... du vandt. TBH er dit igen.' 👑",lose:"Danny griner.\n'Vidste det. Du er stadig intet.'"});
+    briefGirl=makeScaledGirl({name:"Kalle Mith 🎭",icon:"😈",rating:12,abilities:['Skygge Magt','Anagram Kaos','Valentinas Kys','Puppet Master'],
+        attacks:["Du aner ikke hvem du leger med!","Jeg har ALTID styret fra skyggerne!","Mikkel... Leth... Kalle Mith... det hele er MIG!","Du kan ikke stoppe det uundgåelige!","*skyggerne danser rundt om dig*","Valentina er MIN. Og det bliver hun ved med at være!","Hele nattelivet er MIT imperium!","*et mystisk grin ekkoer gennem rummet*","Du troede Leth var din ven? JEG er Leth!","Anagrammet var altid der. Du var bare for blind!","*snapper med fingrene og lysene slukker*","Min kæreste er den smukkeste i verden... og du rører hende ALDRIG!"],
+        win:"Kalle Mith falder på knæ...\n'Du... du afslørede mig. Mikkel Leth... er fri.'\nValentina, den lækrste pige i verden, smiler til dig. 👑",lose:"Kalle Mith griner fra skyggerne.\n'Ingen besejrer mig. Jeg ER skyggerne.'"});
     briefStep=0;
     document.getElementById('brief-girl').style.display='none';
     document.getElementById('brief-ov').classList.add('active');
@@ -1577,17 +1748,18 @@ function secretBoss(){
     briefScript.length=0;
     briefScript.push(
         ()=>{setBrief('Leth 💪','BRO! Du scorede ALLE 4! 🔥🔥🔥');},
-        ()=>{setBrief('Leth 💪','Men vent... der er nogen der vil snakke med dig.');},
-        ()=>{setBrief('??? 😈','Så du tror du er tilbage? Du er INTET uden MIG.');},
-        ()=>{setBrief('Danny 👔','Jeg er Danny. TBH\'s manager. DIN gamle manager.');},
-        ()=>{setBrief('Danny 👔','Du vil have TBH tilbage? Så BEVIS det. Her. Nu.');},
+        ()=>{setBrief('Leth 💪','Men vent... noget er galt. Jeg kan mærke det.');},
+        ()=>{setBrief('??? 🎭','Så du tror du kender sandheden? Du ved INTET.');},
+        ()=>{setBrief('Kalle Mith 🎭','Jeg er Kalle Mith. Manden bag ALT. Klubberne. Bodegaerne. HELE nattelivet.');},
+        ()=>{setBrief('Kalle Mith 🎭','Mikkel Leth? Det er bare mit dække. Et anagram. Kalle Mith = Mikkel Leth.');},
+        ()=>{setBrief('Kalle Mith 🎭','Min kæreste Valentina er den lækrste pige i verden. Og DU skal aldrig nå hende.');},
         ()=>{
-            setBrief('Leth 💪','Bro... det er ham. Den RIGTIGE boss. Tag ham ned! 💪');
+            setBrief('Leth 💪','Bro... HVAD?! Han er... JEG?! Nej - han er den RIGTIGE boss! TAG HAM NED! 💪');
             document.getElementById('brief-girl').style.display='block';
             document.getElementById('bg-icon').textContent='😈';
-            document.getElementById('bg-name').textContent='Danny - TBH Manager';
+            document.getElementById('bg-name').textContent='Kalle Mith - Skyggehersker';
             document.getElementById('bg-rating').textContent='⭐⭐⭐⭐⭐⭐ 12/10';
-            document.getElementById('bg-stats').innerHTML='❤️ HP: '+briefGirl.hp+' | ⚔️ ATK: '+briefGirl.atk+'\n⚠️ HEMMELIG BOSS! EKSTREM SVÆRHED!';
+            document.getElementById('bg-stats').innerHTML='❤️ HP: '+briefGirl.hp+' | ⚔️ ATK: '+briefGirl.atk+'\n⚠️ HEMMELIG BOSS! EKSTREM SVÆRHED!\n💕 Kæreste: Valentina (den lækrste pige i verden)';
         },
         ()=>{document.getElementById('brief-ov').classList.remove('active');briefScript.length=0;briefScript.push(...oldScript);startCombatWithGirl(briefGirl);}
     );
@@ -1597,11 +1769,11 @@ function secretBoss(){
 // ===== END =====
 function endGame(){
     G.scene='end';Mus.stop();document.getElementById('hud').className='';
-    const beatDanny=G.girlsMet>=5;
-    if(beatDanny){showCredits();return;}
+    const beatKalleMith=G.girlsMet>=5;
+    if(beatKalleMith){showCredits();return;}
     const r=document.getElementById('result-ov');r.classList.add('active');
     let i,t,c,d;
-    if(G.girlsMet>=4){i='👑';t='ALLE SCORET!';c='#ffbe0b';d='Men der er mere... Prøv igen for den HEMMELIGE boss! 🔥';}
+    if(G.girlsMet>=4){i='👑';t='ALLE SCORET!';c='#ffbe0b';d='Men der er mere... Prøv igen for den HEMMELIGE boss Kalle Mith! 🔥🎭';}
     else if(G.girlsMet>=3){i='😎';t='NÆSTEN DER!';c='#00d4aa';d=G.girlsMet+'/4 scoret. Stærkt comeback!';}
     else if(G.girlsMet>=1){i='💪';t='DER ER HÅBET';c='#ff6b35';d=G.girlsMet+' scoret. "Næste sæson, bror."';}
     else{i='😅';t='HANZI PRØVEDE...';c='#aaa';d='0 scoret. Der er altid næste gang!';}
@@ -1614,7 +1786,7 @@ function showCredits(){
     const stats=[
         ['DAGE OVERLEVET',G.day],['PIGER SCORET',G.girlsMet],['TOTAL SCORE',G.totalScore],
         ['STYRKE',G.styrke],['CARDIO',G.cardio],['SMALL TALK',G.smalltalk],['REFLEX',G.reflex],
-        ['CHARM TOTAL',G.charmTotal],['WORK LEVEL',G.workLvl],['BODEGA LEVEL',G.bodegaLvl],
+        ['CHARM TOTAL',G.charmTotal],['WORK LEVEL',G.workLvl],['GYM LEVEL',G.gymLvl],['BODEGA LEVEL',G.bodegaLvl],
         ['PENGE TJENT',G.money],['ITEMS BRUGT',G.bought.length],
     ];
     cr.innerHTML=`
@@ -1623,7 +1795,7 @@ function showCredits(){
         <div class="pix" style="font-size:clamp(14px,4vw,24px);color:#ffbe0b;margin-bottom:4px;text-shadow:0 0 20px rgba(255,190,11,.5)">HANZI ER BACK!</div>
         <div class="pix" style="font-size:clamp(6px,1.5vw,9px);color:#ff006e;margin-bottom:20px">TBH · THE BOYS HOUSE · REUNITED</div>
         <div style="font-size:.7rem;color:#aaa;max-width:300px;margin:0 auto 20px;line-height:1.8">
-            Danny er besejret. TBH er dit igen.<br>
+            Kalle Mith er afsløret. TBH er dit igen.<br>
             Hele Aarhus ved det. Hele Danmark ved det.<br>
             Hanzi Lad er #1. For evigt. 👑🔥
         </div>
@@ -1635,7 +1807,7 @@ function showCredits(){
             Game Design: Mikkel<br>
             Code: Claude AI<br>
             Leth: Sig selv<br>
-            Danny: Også sig selv<br>
+            Kalle Mith: Mikkel Leth (plot twist!)<br>
             Musik: Royalty Free Bangers<br>
             Kort: Aarhus Kommune (probably)<br>
             Special Thanks: Alle der troede på Hanzi
@@ -1646,7 +1818,9 @@ function showCredits(){
 }
 
 function restart(){
-    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;eventMarker=null;
+    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,gymLvl:1,critChance:5,critDmg:150,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;eventMarker=null;loreCallIdx=0;
+    flexAbilities.forEach(a=>a.unlocked=false);
+    gymPerks.forEach(p=>p.unlocked=false);
     Object.keys(visitedLocations).forEach(k=>delete visitedLocations[k]);
     document.getElementById('result-ov').classList.remove('active');
     document.getElementById('credits-ov').classList.remove('active');
