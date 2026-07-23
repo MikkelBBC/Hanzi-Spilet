@@ -22,7 +22,9 @@ eat(){this.n(300,.05,'sine');setTimeout(()=>this.n(500,.05,'sine'),40);}};
 
 // ===== GAME STATE =====
 const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:5,
-styrke:0,cardio:0,smalltalk:0,reflex:0,gymLvl:1,critChance:5,critDmg:150,
+styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,
+get critChance(){return 5+this.critLvl*2},get critDmg(){return 150+this.critDmgLvl*10},
+get regenAmt(){return this.regenLvl>0?Math.floor(1+this.regenLvl*0.8):0},
 get dmg(){return 5+this.styrke*2},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*3},
 get blockChance(){return Math.min(50,5+this.reflex*3)},get hitBonus(){return this.reflex*2},
 charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
@@ -526,18 +528,14 @@ function drawWorkBg(){
 
 // ===== GYM =====
 const gymUpgradeCost=[0, 300, 600, 1200, 2500];
-const gymPerks=[
-    {id:'regen',name:'HP REGEN',icon:'💚',desc:'Gendan 3 HP per tur i kamp',cost:500,unlocked:false},
-    {id:'critUp',name:'CRIT CHANCE+',icon:'🎯',desc:'+10% crit chance',cost:400,unlocked:false},
-    {id:'critDmgUp',name:'CRIT SKADE+',icon:'💥',desc:'+50% crit skade (200% total)',cost:600,unlocked:false},
-    {id:'warmup',name:'OPVARMNING',icon:'🔥',desc:'+2 til alle stats fra træning',cost:800,unlocked:false},
-    {id:'ironWill',name:'JERNVILJE',icon:'🛡️',desc:'+15% block chance',cost:700,unlocked:false},
-];
 const exercises=[
     {id:'str',name:'STYRKE',icon:'🏋️',desc:'⚔️ +Skade',stat:'styrke',game:'mash'},
     {id:'crd',name:'CARDIO',icon:'🏃',desc:'❤️ +Max HP',stat:'cardio',game:'runner'},
     {id:'tlk',name:'SMALL TALK',icon:'💬',desc:'💬 +Max Mana',stat:'smalltalk',game:'memory'},
     {id:'ref',name:'REFLEX',icon:'🛡️',desc:'🛡️ +Block/Hit',stat:'reflex',game:'reaction'},
+    {id:'crit',name:'CRIT CHANCE',icon:'🎯',desc:'🎯 +Crit%',stat:'critLvl',game:'precision'},
+    {id:'critd',name:'CRIT SKADE',icon:'💥',desc:'💥 +Crit Dmg',stat:'critDmgLvl',game:'powerslam'},
+    {id:'regen',name:'HP REGEN',icon:'💚',desc:'💚 +Heal/tur',stat:'regenLvl',game:'breathe'},
 ];
 function openGym(){
     G.scene='gym';Mus.play('gym');drawGymBg();
@@ -558,18 +556,6 @@ function openGym(){
         u.onclick=()=>{if(G.money<cost){msg('Ikke nok penge!');S.bad();return;}G.money-=cost;G.gymLvl++;S.perf();float('GYM LVL '+G.gymLvl+'!','#ffbe0b');openGym();updHUD();};
         g.appendChild(u);
     }
-    // Gym perks
-    gymPerks.filter(p=>!p.unlocked).forEach(p=>{
-        const pk=document.createElement('div');pk.className='gym-c';
-        pk.style.borderColor='rgba(0,212,170,.3)';
-        pk.innerHTML=`<div class="gi">${p.icon}</div><div class="gn">${p.name}</div><div class="gd">${p.desc}</div><div class="gl">${p.cost} KR</div>`;
-        pk.onclick=()=>{if(G.money<p.cost){msg('Ikke nok penge!');S.bad();return;}G.money-=p.cost;p.unlocked=true;S.perf();float(p.name+' UNLOCKED!','#00d4aa');
-            if(p.id==='critUp')G.critChance+=10;
-            if(p.id==='critDmgUp')G.critDmg+=50;
-            if(p.id==='ironWill')G.reflex+=5;
-            openGym();updHUD();};
-        g.appendChild(pk);
-    });
     document.getElementById('gym-ov').classList.add('active');
 }
 
@@ -587,6 +573,9 @@ function startTrain(ex){
         case'runner':trainRunner(tc);break;
         case'memory':trainMemory(tc);break;
         case'reaction':trainReaction(tc);break;
+        case'precision':trainPrecision(tc);break;
+        case'powerslam':trainPowerslam(tc);break;
+        case'breathe':trainBreathe(tc);break;
     }
 }
 
@@ -595,7 +584,6 @@ function endTrain(){
     const ex=tState.ex,sc=tState.score;
     const baseGain=Math.max(1, Math.floor(sc * (0.5 + G.gymLvl * 0.3)));
     let gain=baseGain;
-    if(gymPerks.find(p=>p.id==='warmup'&&p.unlocked))gain+=2;
     G[ex.stat]+=gain;G.charmPts+=1;G.charmTotal+=1;
     float('+'+gain+' '+ex.name,'#ffbe0b');
     let gr,gc;
@@ -605,7 +593,8 @@ function endTrain(){
     else if(sc>=3){gr='OK';gc='#ff6b35';S.click();}
     else{gr='SVAGT...';gc='#888';S.bad();}
     document.getElementById('ti').textContent='';
-    document.getElementById('tr').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:${gc};margin-bottom:5px">${gr}</div><div class="pix" style="font-size:clamp(5px,1.2vw,8px);color:#ffbe0b;margin-bottom:3px">+${gain} ${ex.stat.toUpperCase()} (Score: ${sc})</div><div class="pix" style="font-size:clamp(3px,.8vw,5px);color:#888;margin-bottom:10px">DMG:${G.dmg} HP:${G.maxHP} MP:${G.maxMP} BLK:${G.blockChance}%</div><button class="btn btn-s" onclick="document.getElementById('train-ov').classList.remove('active');openGym();updHUD();">VIDERE</button></div>`;
+    const statLine=ex.stat==='critLvl'?'CRIT:'+G.critChance+'%':ex.stat==='critDmgLvl'?'CRIT DMG:'+G.critDmg+'%':ex.stat==='regenLvl'?'REGEN:'+G.regenAmt+'/tur':'DMG:'+G.dmg+' HP:'+G.maxHP+' MP:'+G.maxMP+' BLK:'+G.blockChance+'%';
+    document.getElementById('tr').innerHTML=`<div style="text-align:center;margin-top:10px"><div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:${gc};margin-bottom:5px">${gr}</div><div class="pix" style="font-size:clamp(5px,1.2vw,8px);color:#ffbe0b;margin-bottom:3px">+${gain} ${ex.stat.toUpperCase()} (Score: ${sc})</div><div class="pix" style="font-size:clamp(3px,.8vw,5px);color:#888;margin-bottom:10px">${statLine}</div><button class="btn btn-s" onclick="document.getElementById('train-ov').classList.remove('active');openGym();updHUD();">VIDERE</button></div>`;
 }
 
 // GAME 1: BUTTON MASH (styrke)
@@ -756,6 +745,147 @@ function trainReaction(tc){
             x.fillStyle='#fff';x.font='12px serif';x.textAlign='center';x.fillText('🎯',t.x,t.y+4);
             x.shadowBlur=0;x.globalAlpha=1;return true;
         });
+        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText('Score: '+score,W-8,16);
+        x.fillStyle='#ff006e';x.fillText('Miss: '+misses+'/3',W-8,30);
+        document.getElementById('ts').textContent='Score: '+score;
+        tAF=requestAnimationFrame(draw);
+    })();
+}
+
+// GAME 5: PRECISION (crit chance) - Hit bullseyes, shrinking targets
+function trainPrecision(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let score=0,misses=0,round=0,target=null,startTime=0;
+    document.getElementById('ti').textContent='Ram centrum! 🎯 3 miss = slut';
+    function spawnTarget(){
+        round++;
+        const sz=Math.max(12,40-round*2);
+        const inner=Math.max(4,sz*.3);
+        target={x:30+Math.random()*(W-60),y:40+Math.random()*(H-80),r:sz,inner:inner,born:Date.now(),life:Math.max(1200,3000-round*150)};
+    }
+    spawnTarget();
+    const tap=e=>{if(tState.done||!target)return;
+        const rect=tc.getBoundingClientRect();
+        const mx=((e.clientX||e.touches[0].clientX)-rect.left)*(tc.width/rect.width);
+        const my=((e.clientY||e.touches[0].clientY)-rect.top)*(tc.height/rect.height);
+        const dist=Math.hypot(mx-target.x,my-target.y);
+        if(dist<target.r){
+            if(dist<target.inner){score+=2;S.perf();float('BULLSEYE! +2','#ffbe0b');}
+            else{score++;S.click();float('+1','#00d4aa');}
+            tState.score=score;spawnTarget();
+        } else{misses++;S.bad();if(misses>=3){tState.score=score;endTrain();}}
+    };
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);return;}
+        x.clearRect(0,0,W,H);
+        if(target){
+            const elapsed=Date.now()-target.born;
+            const life=1-elapsed/target.life;
+            if(life<=0){misses++;S.bad();if(misses>=3){tState.score=score;endTrain();return;}spawnTarget();}
+            else{
+                x.globalAlpha=.2+life*.8;
+                x.strokeStyle='#ff006e';x.lineWidth=2;x.beginPath();x.arc(target.x,target.y,target.r,0,Math.PI*2);x.stroke();
+                x.strokeStyle='#ffbe0b';x.beginPath();x.arc(target.x,target.y,target.r*.6,0,Math.PI*2);x.stroke();
+                x.fillStyle='#ff006e';x.beginPath();x.arc(target.x,target.y,target.inner,0,Math.PI*2);x.fill();
+                x.globalAlpha=1;
+                x.fillStyle='rgba(255,255,255,.1)';x.fillRect(target.x-target.r,target.y+target.r+4,target.r*2*life,3);
+            }
+        }
+        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText('Score: '+score,W-8,16);
+        x.fillStyle='#ff006e';x.fillText('Miss: '+misses+'/3',W-8,30);
+        x.fillStyle='#888';x.fillText('Runde: '+round,W-8,44);
+        document.getElementById('ts').textContent='Score: '+score;
+        tAF=requestAnimationFrame(draw);
+    })();
+}
+
+// GAME 6: POWERSLAM (crit damage) - Timing bar, stop at peak for max score
+function trainPowerslam(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let score=0,round=0,phase='charging',barPos=0,barSpd=0.03,barDir=1,sweetSpot=.15,hitZone=.85;
+    document.getElementById('ti').textContent='Stop baren i den røde zone! 💥';
+    function nextRound(){
+        round++;phase='charging';barPos=0;barDir=1;
+        barSpd=0.03+round*0.005;
+        sweetSpot=Math.max(0.06,0.15-round*0.008);
+        hitZone=0.85;
+    }
+    nextRound();
+    const tap=()=>{if(tState.done||phase!=='charging')return;
+        S.click();phase='hit';
+        const dist=Math.abs(barPos-hitZone);
+        if(dist<sweetSpot){score+=3;S.perf();float('PERFEKT! +3','#ffbe0b');}
+        else if(dist<sweetSpot*2.5){score+=2;S.ok();float('GODT! +2','#00d4aa');}
+        else if(dist<sweetSpot*4){score+=1;S.click();float('+1','#ff6b35');}
+        else{S.bad();float('MISS!','#ff006e');tState.score=score;setTimeout(endTrain,500);return;}
+        tState.score=score;
+        setTimeout(()=>{if(!tState.done)nextRound();},600);
+    };
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);document.addEventListener('keydown',tap);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);document.removeEventListener('keydown',tap);return;}
+        x.clearRect(0,0,W,H);
+        if(phase==='charging'){
+            barPos+=barSpd*barDir;
+            if(barPos>=1){barDir=-1;barPos=1;}
+            if(barPos<=0){barDir=1;barPos=0;}
+        }
+        const barY=H*.5,barH=30,barW=W*.8,barX=(W-barW)/2;
+        x.fillStyle='rgba(255,255,255,.05)';x.fillRect(barX,barY,barW,barH);
+        const zoneX=barX+hitZone*barW-sweetSpot*barW;
+        const zoneW=sweetSpot*2*barW;
+        x.fillStyle='rgba(255,0,110,.3)';x.fillRect(zoneX,barY,zoneW,barH);
+        x.strokeStyle='#ff006e';x.lineWidth=2;x.strokeRect(zoneX,barY,zoneW,barH);
+        const curX=barX+barPos*barW;
+        x.fillStyle='#ffbe0b';x.fillRect(curX-2,barY-4,4,barH+8);
+        x.shadowColor='#ffbe0b';x.shadowBlur=8;x.fillRect(curX-2,barY-4,4,barH+8);x.shadowBlur=0;
+        x.font="bold 20px serif";x.textAlign='center';x.fillText('💥',W/2,barY-20);
+        x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText('Score: '+score,W-8,16);
+        x.fillStyle='#888';x.fillText('Runde: '+round,W-8,30);
+        x.font="bold 7px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#aaa';x.fillText('TAP NÅR BAREN ER I ZONEN!',W/2,barY+barH+20);
+        document.getElementById('ts').textContent='Score: '+score;
+        tAF=requestAnimationFrame(draw);
+    })();
+}
+
+// GAME 7: BREATHE (regen) - Rhythm tapping, match the pulse
+function trainBreathe(tc){
+    const x=tc.getContext('2d'),W=tc.width,H=tc.height;
+    let score=0,misses=0,round=0,pulsePhase=0,pulseSpd=0.04,lastPulseHit=0;
+    document.getElementById('ti').textContent='Tap når cirklen pulserer! 💚 3 miss = slut';
+    const tap=()=>{if(tState.done)return;
+        const pulse=Math.sin(pulsePhase);
+        if(pulse>0.7){
+            score++;tState.score=score;S.ok();float('+1 💚','#00d4aa');
+            if(Date.now()-lastPulseHit<200)return;
+            lastPulseHit=Date.now();
+        } else if(pulse>0.3){
+            score++;tState.score=score;S.click();float('+1','#ff6b35');lastPulseHit=Date.now();
+        } else{
+            misses++;S.bad();float('MISS!','#ff006e');
+            if(misses>=3){tState.score=score;endTrain();return;}
+        }
+        round++;
+        pulseSpd=0.04+round*0.003;
+    };
+    tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);document.addEventListener('keydown',tap);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);document.removeEventListener('keydown',tap);return;}
+        pulsePhase+=pulseSpd;
+        x.clearRect(0,0,W,H);
+        const pulse=Math.sin(pulsePhase);
+        const normPulse=(pulse+1)/2;
+        const baseR=30,maxR=60;
+        const r=baseR+normPulse*(maxR-baseR);
+        const cx2=W/2,cy=H*.45;
+        const isGood=pulse>0.7;
+        const isOk=pulse>0.3;
+        x.globalAlpha=.15;x.fillStyle='#00d4aa';x.beginPath();x.arc(cx2,cy,maxR+5,0,Math.PI*2);x.fill();
+        x.globalAlpha=1;
+        x.fillStyle=isGood?'#00d4aa':isOk?'#ff6b35':'rgba(255,255,255,.1)';
+        x.shadowColor=isGood?'#00d4aa':'transparent';x.shadowBlur=isGood?20:0;
+        x.beginPath();x.arc(cx2,cy,r,0,Math.PI*2);x.fill();
+        x.shadowBlur=0;
+        x.font="bold 20px serif";x.textAlign='center';x.fillText('💚',cx2,cy+6);
+        if(isGood){x.font="bold 8px 'Press Start 2P'";x.fillStyle='#fff';x.fillText('TAP NU!',cx2,cy+maxR+20);}
         x.font="bold 9px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#ffbe0b';x.fillText('Score: '+score,W-8,16);
         x.fillStyle='#ff006e';x.fillText('Miss: '+misses+'/3',W-8,30);
         document.getElementById('ts').textContent='Score: '+score;
@@ -1638,10 +1768,10 @@ function mgCatch(ctx,W,H,cb){
 }
 
 function eTurn(){
-    // HP Regen perk
-    if(gymPerks.find(p=>p.id==='regen'&&p.unlocked)){
-        C.hHP=Math.min(C.hMax,C.hHP+3);
-        cSpeech('HP Regen! +3 HP 💚');updC();
+    // HP Regen from training
+    if(G.regenAmt>0){
+        C.hHP=Math.min(C.hMax,C.hHP+G.regenAmt);
+        cSpeech('HP Regen! +'+G.regenAmt+' HP 💚');updC();
     }
     // Poison tick
     if(C.poison>0){
@@ -1786,7 +1916,7 @@ function showCredits(){
     const stats=[
         ['DAGE OVERLEVET',G.day],['PIGER SCORET',G.girlsMet],['TOTAL SCORE',G.totalScore],
         ['STYRKE',G.styrke],['CARDIO',G.cardio],['SMALL TALK',G.smalltalk],['REFLEX',G.reflex],
-        ['CHARM TOTAL',G.charmTotal],['WORK LEVEL',G.workLvl],['GYM LEVEL',G.gymLvl],['BODEGA LEVEL',G.bodegaLvl],
+        ['CHARM TOTAL',G.charmTotal],['CRIT CHANCE',G.critChance+'%'],['CRIT DMG',G.critDmg+'%'],['HP REGEN',G.regenAmt+'/tur'],['WORK LEVEL',G.workLvl],['GYM LEVEL',G.gymLvl],['BODEGA LEVEL',G.bodegaLvl],
         ['PENGE TJENT',G.money],['ITEMS BRUGT',G.bought.length],
     ];
     cr.innerHTML=`
@@ -1818,9 +1948,8 @@ function showCredits(){
 }
 
 function restart(){
-    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,gymLvl:1,critChance:5,critDmg:150,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;eventMarker=null;loreCallIdx=0;
+    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;eventMarker=null;loreCallIdx=0;
     flexAbilities.forEach(a=>a.unlocked=false);
-    gymPerks.forEach(p=>p.unlocked=false);
     Object.keys(visitedLocations).forEach(k=>delete visitedLocations[k]);
     document.getElementById('result-ov').classList.remove('active');
     document.getElementById('credits-ov').classList.remove('active');
