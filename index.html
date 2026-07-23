@@ -416,6 +416,19 @@ function drawMap(){
         if(b.id==='club'){const gl=Math.sin(mapT*4)*.3+.4;cx.shadowColor='#7c3aed';cx.shadowBlur=6;cx.strokeStyle=`rgba(124,58,237,${gl})`;cx.lineWidth=2;cx.strokeRect(bx-1,by-1,bw+2,bh+2);cx.shadowBlur=0;}
         if(b.id==='bodega'){const gl=Math.sin(mapT*3)*.2+.3;cx.shadowColor='#f59e0b';cx.shadowBlur=5;cx.strokeStyle=`rgba(245,158,11,${gl})`;cx.lineWidth=2;cx.strokeRect(bx-1,by-1,bw+2,bh+2);cx.shadowBlur=0;}
     });
+    // Event marker "?"
+    if(eventMarker){
+        const mx=eventMarker.x*W,my=eventMarker.y*H,mt=(Date.now()-eventMarker.t)*.003;
+        const bounce=Math.sin(mt*3)*4,pulse=.7+Math.sin(mt*2)*.3;
+        cx.save();cx.globalAlpha=pulse;
+        cx.shadowColor='#ffbe0b';cx.shadowBlur=12+Math.sin(mt*4)*5;
+        cx.fillStyle='rgba(0,0,0,.6)';cx.beginPath();cx.arc(mx,my+bounce,16,0,Math.PI*2);cx.fill();
+        cx.fillStyle='#ffbe0b';cx.beginPath();cx.arc(mx,my+bounce,14,0,Math.PI*2);cx.fill();
+        cx.shadowBlur=0;cx.fillStyle='#000';cx.font=`bold ${Math.max(12,W*.028)}px 'Press Start 2P'`;cx.textAlign='center';cx.textBaseline='middle';
+        cx.fillText('?',mx,my+bounce+1);
+        cx.restore();
+        cx.fillStyle='rgba(255,190,11,.15)';cx.beginPath();cx.arc(mx,my,22+Math.sin(mt*2)*6,0,Math.PI*2);cx.fill();
+    }
     // Hanzi (top-down sprite) - bigger on mobile
     const hx=G.px*W,hy=G.py*H;
     const bob=G.walking?Math.sin(Date.now()*.015)*2:0;
@@ -452,6 +465,11 @@ function drawMap(){
 cv.addEventListener('click',e=>{
     if(G.scene!=='map'||G.walking)return;
     const rx=e.clientX/cv.width,ry=e.clientY/cv.height;
+    // Check event marker click
+    if(eventMarker){
+        const dx=rx-eventMarker.x,dy=ry-eventMarker.y;
+        if(Math.sqrt(dx*dx+dy*dy)<.05){S.click();goTo({x:eventMarker.x-.03,y:eventMarker.y-.03,w:.06,h:.06,id:'event_marker'});return;}
+    }
     // Check building click
     for(const b of blds){
         if(rx>=b.x-.02&&rx<=b.x+b.w+.02&&ry>=b.y-.02&&ry<=b.y+b.h+.02){
@@ -467,12 +485,11 @@ function goTo(b){
 
 function onArrived(){
     const id=arriveId;arriveId=null;
-    if(tryDailyEvent())return;
+    if(id==='event_marker'){showRandomEvent();return;}
     if(id&&locationIntros[id]&&!visitedLocations[id]){visitedLocations[id]=true;msg(locationIntros[id]);setTimeout(()=>{onArrivedInner(id);},3500);return;}
     onArrivedInner(id);
 }
 function onArrivedInner(id){
-    loreTimer++;if(loreTimer%3===0)setTimeout(showLore,1000);
     switch(id){
         case'gym':if(G.hunger<20){msg('For sulten til at træne! Spis noget.');return;}openGym();break;
         case'shop':openShop();break;
@@ -486,7 +503,7 @@ function onArrivedInner(id){
     }
 }
 
-function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}
+function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;eventMarker=null;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}spawnEventMarker();
 showDayFlash();if(G.daysLeft===0)setTimeout(forceClub,2500);}
 function showDayFlash(){
     const f=document.getElementById('day-flash');
@@ -525,7 +542,13 @@ const locationIntros={
     club:'🪩 KLUBBEN\nDen store boss fight!\nHer møder du rundens pige.',
 };
 function advTime(h){G.hour+=h;if(G.hour>=24){newDay();}}
-function tryDailyEvent(){if(!G.eventDoneToday&&Math.random()<.5){G.eventDoneToday=true;showRandomEvent();return true;}return false;}
+let eventMarker=null;
+function spawnEventMarker(){
+    if(G.eventDoneToday||Math.random()>.5)return;
+    const spots=[{x:.25,y:.35},{x:.55,y:.55},{x:.15,y:.55},{x:.60,y:.30},{x:.35,y:.25},{x:.45,y:.60},{x:.30,y:.70},{x:.20,y:.48}];
+    const s=spots[Math.floor(Math.random()*spots.length)];
+    eventMarker={x:s.x,y:s.y,t:Date.now(),id:'event_marker'};
+}
 function closeOv(){document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));G.scene='map';Mus.play('map');updHUD();}
 
 // ===== FORCE CLUB =====
@@ -573,15 +596,16 @@ function drawBriefLeth(){
 }
 const briefScript=[
     ()=>{setBrief('Leth 💪','Yo bror! Tiden er inde. Klubben venter! 🪩');},
+    ()=>{setBrief('Leth 💪',lethLore[Math.floor(Math.random()*lethLore.length)].replace('Leth: "','').replace('"',''));},
     ()=>{setBrief('Leth 💪','Lad mig hjælpe dig med at blive klar til byen...');},
     ()=>{
-        // Play club video
         document.getElementById('brief-ov').classList.remove('active');
         playVid('video/club.mp4',()=>{
             document.getElementById('brief-ov').classList.add('active');
             advBrief();
         });
     },
+    ()=>{drawBriefLeth();const l2=lethLore[Math.floor(Math.random()*lethLore.length)].replace('Leth: "','').replace('"','');setBrief('Leth 💪',l2);},
     ()=>{drawBriefLeth();setBrief('Leth 💪','NU er du klar til byen! Du ser SKARP ud! 🔥');},
     ()=>{
         // Show girl info
@@ -616,7 +640,7 @@ function doRest(){
     newDay();G.hunger=Math.min(G.maxHunger,G.hunger+20);
     if(G.daysLeft<=0){forceClub();return;}
     msg(`Dag ${G.day}. ${G.daysLeft} dage til klubben. +20 sult.`);updHUD();
-    if(!tryDailyEvent()&&!G.wheelUsedToday){setTimeout(()=>msg('💡 Besøg kortet for lykkehjulet!'),2000);}
+    if(!G.wheelUsedToday){setTimeout(()=>msg('💡 Besøg Hjem for lykkehjulet!'),2000);}
 }
 
 // ===== HUD =====
@@ -1058,26 +1082,34 @@ function drawBodegaBg(){
     x.fillStyle='#fff';x.beginPath();x.arc(W-30,H*.35,3,0,Math.PI*2);x.fill();
 }
 
+function pickBodegaGirl(){
+    const maxR=G.bodegaLvl+1;
+    const pool=bodegaPool.filter(g=>g.rating<=maxR);
+    const weighted=[];
+    pool.forEach(g=>{const w=Math.max(1,maxR+1-g.rating);for(let i=0;i<w;i++)weighted.push(g);});
+    return weighted[Math.floor(Math.random()*weighted.length)];
+}
 function openBodega(){
     G.scene='bodega';advTime(2);drawBodegaBg();
     const sub=document.getElementById('bodega-sub');
     const l=document.getElementById('bodega-list');l.innerHTML='';
     if(bodegaUsedToday){sub.textContent='Du har allerede prøvet i dag! Kom igen i morgen.';
         document.getElementById('bodega-ov').classList.add('active');return;}
-    const maxR=G.bodegaLvl+1;
-    sub.textContent=`LVL ${G.bodegaLvl} · Piger op til ${maxR}/10 · Vælg en! (1/dag)`;
-    const pool=bodegaPool.filter(g=>g.rating<=maxR).sort(()=>Math.random()-.5).slice(0,3);
-    pool.forEach(base=>{
-        const g=makeScaledGirl(base);
-        const d=document.createElement('div');d.className='si';
-        d.innerHTML=`<div class="si-l"><span class="si-i">${g.icon}</span><div><div class="si-n">${g.name}</div><div class="si-d">${g.rating}/10 · HP:${g.hp} · ATK:${g.atk}</div></div></div><div class="si-p" style="color:#f59e0b">⭐${g.rating}</div>`;
-        d.onclick=()=>{bodegaUsedToday=true;document.getElementById('bodega-ov').classList.remove('active');startCombatWithGirl(g);};
-        l.appendChild(d);
-    });
+    const base=pickBodegaGirl();
+    const g=makeScaledGirl(base);
+    sub.textContent=`LVL ${G.bodegaLvl} · Tilfældig pige! (1/dag)`;
+    const d=document.createElement('div');d.className='si';
+    d.innerHTML=`<div class="si-l"><span class="si-i">${g.icon}</span><div><div class="si-n">${g.name}</div><div class="si-d">${g.rating}/10 · ⭐${'⭐'.repeat(g.rating)}</div></div></div><div class="si-p" style="color:#f59e0b">⭐${g.rating}</div>`;
+    d.onclick=()=>{bodegaUsedToday=true;document.getElementById('bodega-ov').classList.remove('active');startCombatWithGirl(g);};
+    l.appendChild(d);
+    const skip=document.createElement('div');skip.className='si';skip.style.borderColor='rgba(255,255,255,.1)';
+    skip.innerHTML=`<div class="si-l"><span class="si-i">🚪</span><div><div class="si-n">GÅ IGEN</div><div class="si-d">Gem dit forsøg til i morgen</div></div></div>`;
+    skip.onclick=()=>{document.getElementById('bodega-ov').classList.remove('active');G.scene='map';};
+    l.appendChild(skip);
     if(G.bodegaLvl<4){
         const cost=bodegaUpgradeCost[G.bodegaLvl];
         const u=document.createElement('div');u.className='si';u.style.borderColor='rgba(245,158,11,.3)';
-        u.innerHTML=`<div class="si-l"><span class="si-i">⬆️</span><div><div class="si-n">OPGRADER BODEGA</div><div class="si-d">LVL ${G.bodegaLvl+1} · Pænere piger + bedre rewards</div></div></div><div class="si-p" style="color:#f59e0b">${cost} KR</div>`;
+        u.innerHTML=`<div class="si-l"><span class="si-i">⬆️</span><div><div class="si-n">OPGRADER BODEGA</div><div class="si-d">LVL ${G.bodegaLvl+1} · Sjældnere + stærkere piger</div></div></div><div class="si-p" style="color:#f59e0b">${cost} KR</div>`;
         u.onclick=()=>{if(G.money<cost){msg('Ikke nok penge!');S.bad();return;}G.money-=cost;G.bodegaLvl++;S.perf();float('BODEGA LVL '+G.bodegaLvl+'!','#f59e0b');openBodega();updHUD();};
         l.appendChild(u);
     }
@@ -1195,6 +1227,7 @@ const eventScenarios=[
 ];
 
 function showRandomEvent(){
+    eventMarker=null;G.eventDoneToday=true;
     const friend=eventFriends[Math.floor(Math.random()*eventFriends.length)];
     const scenario={...eventScenarios[Math.floor(Math.random()*eventScenarios.length)]};
     G.scene='event';
@@ -1289,7 +1322,7 @@ function updC(){
 }
 
 function cSpeech(t){const s=document.getElementById('c-speech');s.textContent=t;s.classList.add('show');
-    const dur=Math.max(3000,t.length*80);clearTimeout(cSpeech._t);cSpeech._t=setTimeout(()=>s.classList.remove('show'),dur);}
+    const dur=Math.max(4000,t.length*120);clearTimeout(cSpeech._t);cSpeech._t=setTimeout(()=>s.classList.remove('show'),dur);}
 function cAct(t,c='#fff'){const e=document.getElementById('c-act');e.textContent=t;e.style.color=c;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1500);}
 
 function showCMenu(){
@@ -1710,7 +1743,7 @@ function advPh(){if(phI>=phoneScript.length){document.getElementById('phone-ov')
     m.appendChild(d);m.scrollTop=m.scrollHeight;S.click();phI++;}
 
 // ===== MAP START =====
-function startMap(){G.scene='map';G.px=.35;G.py=.45;Mus.play('map');updHUD();
+function startMap(){G.scene='map';G.px=.35;G.py=.45;Mus.play('map');spawnEventMarker();updHUD();
     if(G.tutorial===0){G.tutorial=1;msg('Tryk på en bygning for at gå derhen! Start med GYM! 💪');}}
 
 // ===== MAIN LOOP =====
