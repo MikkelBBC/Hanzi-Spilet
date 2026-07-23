@@ -139,18 +139,33 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 #vid-skip{position:fixed;bottom:20px;right:20px;z-index:41;display:none}
 
 /* WHEEL */
-.wheel-ov{position:fixed;inset:0;z-index:26;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,15,.97)}
+.wheel-ov{position:fixed;inset:0;z-index:32;display:none;flex-direction:column;align-items:center;justify-content:center;background:#05050f}
 .wheel-ov.active{display:flex}
 .wheel-wrap{position:relative;width:min(280px,70vw);height:min(280px,70vw);margin:10px 0}
 .wheel-wrap canvas{width:100%;height:100%}
 .wheel-ptr{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:1.5rem;z-index:2}
 
 /* EVENT */
-.event-ov{position:fixed;inset:0;z-index:26;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,15,.97);padding:15px}
+.event-ov{position:fixed;inset:0;z-index:32;display:none;flex-direction:column;align-items:center;justify-content:center;background:#05050f;padding:15px}
 .event-ov.active{display:flex}
 .ev-choices{display:flex;flex-direction:column;gap:6px;max-width:320px;width:100%;margin-top:10px}
 .ev-btn{font-family:'Press Start 2P';font-size:clamp(6px,1.3vw,8px);padding:12px 10px;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.03);color:#ddd;cursor:pointer;text-align:left;line-height:1.8;transition:all .2s;-webkit-tap-highlight-color:transparent}
 .ev-btn:active{border-color:#ff006e;transform:scale(.97);background:rgba(255,0,110,.1)}
+
+/* DAY TRANSITION */
+.day-flash{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#cc0000;opacity:0;pointer-events:none;transition:opacity .3s}
+.day-flash.show{opacity:1;pointer-events:auto}
+.day-flash .df-day{font-family:'Press Start 2P';font-size:clamp(16px,5vw,32px);color:#fff;margin-bottom:8px;text-shadow:0 2px 0 #900}
+.day-flash .df-sub{font-family:'Press Start 2P';font-size:clamp(8px,2.2vw,14px);color:rgba(255,255,255,.85);text-align:center;line-height:2}
+
+/* LORE MSG */
+.lore-bar{position:fixed;top:50px;left:50%;transform:translateX(-50%);max-width:380px;width:88%;z-index:14;text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
+.lore-bar.show{opacity:1}
+.lore-bar .lore{font-family:'Press Start 2P';font-size:clamp(6px,1.3vw,8px);padding:10px 14px;background:rgba(0,180,120,.15);border:1px solid rgba(0,212,170,.3);color:#00d4aa;line-height:2}
+
+/* CREDITS */
+.credits-ov{position:fixed;inset:0;z-index:35;display:none;flex-direction:column;align-items:center;justify-content:center;background:#050510;overflow-y:auto;padding:20px}
+.credits-ov.active{display:flex}
 
 /* FLOATS */
 .float{position:fixed;font-family:'Press Start 2P';font-size:clamp(5px,1.4vw,8px);pointer-events:none;z-index:100;animation:fUp 1s ease forwards;text-shadow:0 0 8px currentColor}
@@ -164,6 +179,9 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 <canvas id="cv"></canvas>
 <div id="hud"></div>
 <div class="msg-bar" id="msg-bar"><div class="msg" id="msg-text"></div></div>
+<div class="lore-bar" id="lore-bar"><div class="lore" id="lore-text"></div></div>
+<div class="day-flash" id="day-flash"><div class="df-day" id="df-day"></div><div class="df-sub" id="df-sub"></div></div>
+<div class="credits-ov" id="credits-ov"></div>
 
 <!-- VIDEO -->
 <video id="intro-vid" playsinline></video>
@@ -300,7 +318,7 @@ hit(){this.n(180,.07,'sawtooth',.25);},heal(){this.n(440,.06,'sine');setTimeout(
 eat(){this.n(300,.05,'sine');setTimeout(()=>this.n(500,.05,'sine'),40);}};
 
 // ===== GAME STATE =====
-const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:4,
+const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:5,
 styrke:0,cardio:0,smalltalk:0,reflex:0,
 get dmg(){return 5+this.styrke*2},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*3},
 get blockChance(){return Math.min(50,5+this.reflex*3)},get hitBonus(){return this.reflex*2},
@@ -450,6 +468,11 @@ function goTo(b){
 function onArrived(){
     const id=arriveId;arriveId=null;
     if(tryDailyEvent())return;
+    if(id&&locationIntros[id]&&!visitedLocations[id]){visitedLocations[id]=true;msg(locationIntros[id]);setTimeout(()=>{onArrivedInner(id);},3500);return;}
+    onArrivedInner(id);
+}
+function onArrivedInner(id){
+    loreTimer++;if(loreTimer%3===0)setTimeout(showLore,1000);
     switch(id){
         case'gym':if(G.hunger<20){msg('For sulten til at træne! Spis noget.');return;}openGym();break;
         case'shop':openShop();break;
@@ -463,7 +486,44 @@ function onArrived(){
     }
 }
 
-function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}if(G.daysLeft===0)forceClub();}
+function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}
+showDayFlash();if(G.daysLeft===0)setTimeout(forceClub,2500);}
+function showDayFlash(){
+    const f=document.getElementById('day-flash');
+    document.getElementById('df-day').textContent='DAG '+G.day;
+    const dl=G.daysLeft;
+    document.getElementById('df-sub').textContent=dl>0?dl+' DAGE TIL FREDAG 🪩':'FREDAG! KLUBBEN NU! 🔥';
+    f.classList.add('show');setTimeout(()=>f.classList.remove('show'),2200);
+}
+let loreTimer=0;
+const lethLore=[
+    'Leth: "TBH smed dig ud fordi du var i koma... kold business bror."',
+    'Leth: "Manager Danny sagde du var færdig. Beviser ham forkert!"',
+    'Leth: "De erstattede dig med en fyr der ikke engang kan danse..."',
+    'Leth: "TBH\'s nye lineup er svag. De mangler dig, bror."',
+    'Leth: "Husker du den aften i Royal Arena? 40.000 mennesker..."',
+    'Leth: "Danny tog alt - din plads, dine penge, endda din parkeringsplads."',
+    'Leth: "Rygtet siger TBH er ved at gå konkurs uden dig."',
+    'Leth: "Din motorcykel-ulykke var ikke tilfældig... bare siger."',
+    'Leth: "Scor den hotteste pige og hele byen snakker. Danny VED det."',
+    'Leth: "Jeg tror Danny er bange for dit comeback. Han burde være."',
+    'Leth: "TBH\'s fans savner dig. #BringHanziBack er trending."',
+    'Leth: "Vent... der sker noget stort efter klubben. Kan ikke sige mere."',
+];
+function showLore(){
+    const l=document.getElementById('lore-bar');
+    document.getElementById('lore-text').textContent=lethLore[Math.floor(Math.random()*lethLore.length)];
+    l.classList.add('show');setTimeout(()=>l.classList.remove('show'),5000);
+}
+const visitedLocations={};
+const locationIntros={
+    gym:'💪 LETH\'S GYM\nTræn dine stats her! Hver øvelse er et mini-game.\nSTYRKE = mere skade\nCARDIO = mere HP\nSMALL TALK = mere mana\nREFLEX = bedre hit/block',
+    shop:'🛒 GULLE\'S SHOP\nKøb mad for at fylde sult.\nKøb style for charm points.\nKøb kamp-items til combat.',
+    work:'💰 RITARDO\'S JOBS\nTjen penge her. Højere level = bedre jobs.\nKoster sult og tid.',
+    tree:'🌟 SKILL TREE\nBrug charm points til at unlocke perks.\nVælg mellem kamp, forsvar, eller social.',
+    bodega:'🍺 BODEGA\nMød og battle piger 1 gang om dagen.\nOpgrader for at møde pænere piger.\nNemmere end klubben!',
+    club:'🪩 KLUBBEN\nDen store boss fight!\nHer møder du rundens pige.',
+};
 function advTime(h){G.hour+=h;if(G.hour>=24){newDay();}}
 function tryDailyEvent(){if(!G.eventDoneToday&&Math.random()<.5){G.eventDoneToday=true;showRandomEvent();return true;}return false;}
 function closeOv(){document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));G.scene='map';Mus.play('map');updHUD();}
@@ -1028,12 +1088,12 @@ function openBodega(){
 const wheelSlices=[
     {label:'+50 KR',color:'#00d4aa',fn:()=>{G.money+=50;float('+50 KR','#00d4aa');msg('Du vandt 50 kr! 💰');}},
     {label:'+STR Buff',color:'#ff006e',fn:()=>{G.buff='str';G.buffDays=3;G.styrke+=3;float('+3 STR (3 dage)','#ff006e');msg('Styrke buff i 3 dage! 💪');}},
-    {label:'💀 DØD',color:'#000',fn:()=>{msg('💀 INSTANT DØD! Game over...');S.bad();setTimeout(()=>{G.hunger=0;C.hHP=0;endGame();},1500);}},
+    {label:'-ALL SULT',color:'#000',fn:()=>{G.hunger=Math.max(5,G.hunger-50);float('-50 SULT','#ff006e');S.bad();msg('Madforgiftning! -50 sult! 🤮');}},
     {label:'+100 KR',color:'#ffbe0b',fn:()=>{G.money+=100;float('+100 KR','#ffbe0b');msg('JACKPOT! 100 kr! 🎰');}},
     {label:'-50 KR',color:'#8b5cf6',fn:()=>{G.money=Math.max(0,G.money-50);float('-50 KR','#ff006e');S.bad();msg('Du tabte 50 kr! 😬');}},
-    {label:'+HP Buff',color:'#3b82f6',fn:()=>{G.buff='hp';G.buffDays=3;G.cardio+=3;float('+3 CRD (3 dage)','#3b82f6');msg('HP buff i 3 dage! ❤️');}},
+    {label:'+HP Buff',color:'#3b82f6',fn:()=>{G.buff='hp';G.buffDays=3;G.cardio+=3;float('HP Buff!','#3b82f6');msg('Buff i 3 dage! ❤️');}},
     {label:'+30 SULT',color:'#ff6b35',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+30);float('+30 SULT','#ff6b35');msg('+30 sult! 🍔');}},
-    {label:'💀 DØD',color:'#111',fn:()=>{msg('💀 INSTANT DØD! Game over...');S.bad();setTimeout(()=>{G.hunger=0;endGame();},1500);}},
+    {label:'-ALL PENGE',color:'#111',fn:()=>{const lost=Math.floor(G.money*.5);G.money-=lost;float('-'+lost+' KR','#ff006e');S.bad();msg('Bestjålet! Halve penge væk! 💸');}},
 ];
 let wheelSpinning=false;
 
@@ -1093,44 +1153,44 @@ const eventFriends=[
 ];
 const eventScenarios=[
     {text:'{name}: "Bro min hund er løbet væk! Hjælp mig!"',choices:[
-        {text:'🔍 Hjælp med at lede (+2 CHR, -2t)',fn:()=>{G.charmPts+=2;G.charmTotal+=2;advTime(2);float('+2 CHARM','#ffbe0b');msg('I fandt hunden! +2 Charm!');}},
-        {text:'💰 Betal en hundefanger (100 kr)',fn:()=>{if(G.money<100){msg('Ikke nok penge!');return false;}G.money-=100;G.charmPts+=3;G.charmTotal+=3;float('+3 CHARM','#ffbe0b');msg('Professionelt! +3 Charm!');}},
-        {text:'🤷 Ignorer det',fn:()=>{G.hunger-=10;float('-10 SULT','#ff006e');msg('Dårlig karma... -10 sult');S.bad();}},
+        {text:'🔍 Hjælp med at lede',fn:()=>{G.charmPts+=2;G.charmTotal+=2;advTime(2);msg('I fandt hunden!');}},
+        {text:'💰 Betal en hundefanger (100 kr)',fn:()=>{if(G.money<100){msg('Ikke nok penge!');return false;}G.money-=100;G.charmPts+=3;G.charmTotal+=3;msg('Professionelt håndteret!');}},
+        {text:'🤷 Ignorer det',fn:()=>{G.hunger-=10;S.bad();msg('Dårlig karma...');}},
     ]},
     {text:'{name}: "Skal vi tage en øl? Jeg giver!"',choices:[
-        {text:'🍺 Selvfølgelig! (+20 sult, -3t)',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+20);advTime(3);float('+20 SULT','#ff6b35');msg('Hyggelig aften! +20 sult');}},
-        {text:'💪 Nej, jeg skal træne (+1 STR)',fn:()=>{G.styrke+=1;float('+1 STR','#ff006e');msg('Disciplin! +1 Styrke');}},
-        {text:'💰 Kun hvis du låner mig penge',fn:()=>{if(Math.random()>.5){G.money+=75;float('+75 KR','#00d4aa');msg('Han gav dig 75 kr!');}else{msg('{name}: "Nej bro, det er omvendt" 😂');S.bad();}}},
+        {text:'🍺 Selvfølgelig!',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+20);advTime(3);msg('Hyggelig aften!');}},
+        {text:'💪 Nej, jeg skal træne',fn:()=>{G.styrke+=1;msg('Disciplin!');}},
+        {text:'💰 Kun hvis du låner mig penge',fn:()=>{if(Math.random()>.5){G.money+=75;msg('Han gav dig penge!');}else{msg('{name}: "Nej bro, det er omvendt" 😂');S.bad();}}},
     ]},
     {text:'{name}: "Der er en fyr der snakker lort om dig!"',choices:[
-        {text:'😤 Konfronter ham (+2 STR, risiko)',fn:()=>{if(Math.random()>.4){G.styrke+=2;float('+2 STR','#ff006e');msg('Du vandt respekt! +2 STR');}else{G.hunger-=25;float('-25 SULT','#ff006e');S.bad();msg('Det gik dårligt... -25 sult');}}},
-        {text:'😎 Ignorer det (+1 CHR)',fn:()=>{G.charmPts+=1;G.charmTotal+=1;float('+1 CHARM','#ffbe0b');msg('Cool og rolig. +1 Charm');}},
-        {text:'🗣️ Snak det ud (+2 TLK)',fn:()=>{G.smalltalk+=2;float('+2 TLK','#3b82f6');msg('Diplomatisk! +2 Small Talk');}},
+        {text:'😤 Konfronter ham',fn:()=>{if(Math.random()>.4){G.styrke+=2;msg('Du vandt respekt!');}else{G.hunger-=25;S.bad();msg('Det gik dårligt...');}}},
+        {text:'😎 Ignorer det',fn:()=>{G.charmPts+=1;G.charmTotal+=1;msg('Cool og rolig.');}},
+        {text:'🗣️ Snak det ud',fn:()=>{G.smalltalk+=2;msg('Diplomatisk løst!');}},
     ]},
     {text:'{name}: "Jeg har fundet en skrabelod! Vi deler!"',choices:[
-        {text:'🎰 Del gevinsten',fn:()=>{const w=[0,25,50,150][Math.floor(Math.random()*4)];G.money+=w;if(w>0){float('+'+w+' KR','#00d4aa');msg('I vandt '+w+' kr!');}else{msg('Ingenting... 😅');}}},
-        {text:'🤑 Tag det hele selv',fn:()=>{if(Math.random()>.5){G.money+=100;float('+100 KR','#ffbe0b');msg('100 kr! Men dårlig karma...');}else{msg('{name} er sur på dig. Ingen gevinst.');S.bad();}}},
-        {text:'🎁 Giv ham det hele',fn:()=>{G.charmPts+=2;G.charmTotal+=2;float('+2 CHARM','#ffbe0b');msg('Generøst! +2 Charm');}},
+        {text:'🎰 Del gevinsten',fn:()=>{const w=[0,25,50,150][Math.floor(Math.random()*4)];G.money+=w;msg(w>0?'I vandt '+w+' kr!':'Ingenting... 😅');}},
+        {text:'🤑 Tag det hele selv',fn:()=>{if(Math.random()>.5){G.money+=100;msg('Scoret!');}else{msg('{name} er sur på dig.');S.bad();}}},
+        {text:'🎁 Giv ham det hele',fn:()=>{G.charmPts+=2;G.charmTotal+=2;msg('Generøst!');}},
     ]},
     {text:'{name}: "Min ex ringer konstant. Hvad gør jeg?"',choices:[
-        {text:'📱 Bloker hende (+1 REF)',fn:()=>{G.reflex+=1;float('+1 REF','#00d4aa');msg('Godt råd! +1 Reflex');}},
-        {text:'💬 Snak med hende (+2 TLK)',fn:()=>{G.smalltalk+=2;float('+2 TLK','#3b82f6');msg('Emotional intelligence! +2 TLK');}},
-        {text:'😈 Giv mig hendes nummer',fn:()=>{if(Math.random()>.6){G.charmPts+=3;G.charmTotal+=3;float('+3 CHARM','#ffbe0b');msg('Bold move! +3 Charm!');}else{G.hunger-=15;float('-15 SULT','#ff006e');S.bad();msg('{name}: "Bro... det er min EX!" 😤');}}},
+        {text:'📱 Bloker hende',fn:()=>{G.reflex+=1;msg('Godt råd!');}},
+        {text:'💬 Snak med hende',fn:()=>{G.smalltalk+=2;msg('Emotional intelligence!');}},
+        {text:'😈 Giv mig hendes nummer',fn:()=>{if(Math.random()>.6){G.charmPts+=3;G.charmTotal+=3;msg('Bold move!');}else{G.hunger-=15;S.bad();msg('{name}: "Bro... det er min EX!" 😤');}}},
     ]},
     {text:'{name}: "Vil du være med i en eating contest?"',choices:[
-        {text:'🍔 JA! (Fyld sult, risiko)',fn:()=>{if(Math.random()>.3){G.hunger=G.maxHunger;float('FULD SULT!','#ff6b35');msg('Du vandt! Max sult! 🏆');}else{G.hunger=Math.max(0,G.hunger-30);float('-30 SULT','#ff006e');S.bad();msg('Du kastede op... -30 sult 🤮');}}},
-        {text:'👀 Bare se på',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+10);float('+10 SULT','#ff6b35');msg('Hyggeligt at se på. +10 sult');}},
-        {text:'💪 Nej, protein only',fn:()=>{G.styrke+=1;float('+1 STR','#ff006e');msg('Disciplin! +1 Styrke');}},
+        {text:'🍔 JA!',fn:()=>{if(Math.random()>.3){G.hunger=G.maxHunger;msg('Du vandt! 🏆');}else{G.hunger=Math.max(0,G.hunger-30);S.bad();msg('Du kastede op... 🤮');}}},
+        {text:'👀 Bare se på',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+10);msg('Hyggeligt!');}},
+        {text:'💪 Nej, protein only',fn:()=>{G.styrke+=1;msg('Disciplin!');}},
     ]},
     {text:'{name}: "Bro jeg har brug for 200 kr... ASAP!"',choices:[
-        {text:'💸 Giv ham pengene',fn:()=>{if(G.money<200){msg('Du har ikke 200 kr!');return false;}G.money-=200;if(Math.random()>.5){G.charmPts+=4;G.charmTotal+=4;float('+4 CHARM','#ffbe0b');msg('Han betaler dobbelt tilbage! +4 CHR');}else{msg('Du ser ham aldrig igen... 💸');S.bad();}}},
-        {text:'🤝 Lån ham halvdelen',fn:()=>{if(G.money<100){msg('Du har ikke 100 kr!');return false;}G.money-=100;G.charmPts+=2;G.charmTotal+=2;float('+2 CHARM','#ffbe0b');msg('Fair nok! +2 Charm');}},
+        {text:'💸 Giv ham pengene',fn:()=>{if(G.money<200){msg('Ikke nok penge!');return false;}G.money-=200;if(Math.random()>.5){G.charmPts+=4;G.charmTotal+=4;msg('Han betaler dobbelt tilbage!');}else{msg('Du ser ham aldrig igen... 💸');S.bad();}}},
+        {text:'🤝 Lån ham halvdelen',fn:()=>{if(G.money<100){msg('Ikke nok penge!');return false;}G.money-=100;G.charmPts+=2;G.charmTotal+=2;msg('Fair nok!');}},
         {text:'❌ Nej bro',fn:()=>{msg('{name}: "Falsk ven..." 😒');S.bad();}},
     ]},
     {text:'{name}: "Der er gratis mad i parken! Skynd dig!"',choices:[
-        {text:'🏃 LØØØB! (+40 sult, +1 CRD)',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+40);G.cardio+=1;float('+40 SULT +1 CRD','#ff6b35');msg('Sprint + gratis mad! 🏃🍔');}},
-        {text:'🚶 Gå stille og roligt (+20 sult)',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+20);float('+20 SULT','#ff6b35');msg('Nåede det lige! +20 sult');}},
-        {text:'🤔 Det lyder sketchy...',fn:()=>{if(Math.random()>.5){G.reflex+=1;float('+1 REF','#00d4aa');msg('God instinkt! +1 Reflex');}else{msg('Det var ægte... du missede gratis mad 😅');}}},
+        {text:'🏃 LØØØB!',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+40);G.cardio+=1;msg('Sprint + gratis mad! 🏃🍔');}},
+        {text:'🚶 Gå stille og roligt',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+20);msg('Nåede det!');}},
+        {text:'🤔 Det lyder sketchy...',fn:()=>{if(Math.random()>.5){G.reflex+=1;msg('God instinkt!');}else{msg('Det var ægte... du missede gratis mad 😅');}}},
     ]},
 ];
 
@@ -1266,7 +1326,7 @@ function pAtk(type){
     else{base=G.dmg+G.styrke*2;C.hMP=Math.max(0,C.hMP-8);cSpeech('Hanzi: *flexer biceps* 💪🔥');}
     if(G.perks.berserker&&type==='flex')base*=2;
     updC();
-    const hitChance=55+G.hitBonus;
+    const hitChance=40+G.hitBonus;
     if(Math.random()*100>hitChance){
         setTimeout(()=>{S.bad();cAct('MISS!','#ff006e');cSpeech('Misset! Ingen chance! 😤');updC();chkEnd()||setTimeout(eTurn,2200);},1200);
         return;
@@ -1533,25 +1593,97 @@ function leaveCombat(){
     document.getElementById('combat-ui').classList.remove('active');
     G.scene='map';Mus.play('map');G.round++;G.daysLeft=7;G.day++;G.hour=8;
     G.hunger=Math.min(G.maxHunger,G.hunger+20);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;
+    if(G.round>G.maxRounds&&G.girlsMet>=4){secretBoss();return;}
     if(G.round>G.maxRounds){endGame();return;}
     updHUD();msg(C.gHP<=0?'SCORET! 🔥 Næste runde om 7 dage!':'Træn hårdere! Runde '+G.round+' om 7 dage.');
+}
+
+function secretBoss(){
+    G.scene='brief';
+    briefGirl=makeScaledGirl({name:"Danny 👔",icon:"😈",rating:12,abilities:['Manager Power','Cancel Culture','NDA Clause','Media Spin'],
+        attacks:["Du er FÆRDIG i denne by!","Jeg EJER dig, Hanzi!","*ringer til sine advokater*","Ingen vil booke dig NOGENSINDE!","Du er intet uden TBH!","*poster falsk historie om dig*"],
+        win:"Danny falder på knæ...\n'Du... du vandt. TBH er dit igen.' 👑",lose:"Danny griner.\n'Vidste det. Du er stadig intet.'"});
+    briefStep=0;
+    document.getElementById('brief-girl').style.display='none';
+    document.getElementById('brief-ov').classList.add('active');
+    drawBriefLeth();
+    const oldScript=[...briefScript];
+    briefScript.length=0;
+    briefScript.push(
+        ()=>{setBrief('Leth 💪','BRO! Du scorede ALLE 4! 🔥🔥🔥');},
+        ()=>{setBrief('Leth 💪','Men vent... der er nogen der vil snakke med dig.');},
+        ()=>{setBrief('??? 😈','Så du tror du er tilbage? Du er INTET uden MIG.');},
+        ()=>{setBrief('Danny 👔','Jeg er Danny. TBH\'s manager. DIN gamle manager.');},
+        ()=>{setBrief('Danny 👔','Du vil have TBH tilbage? Så BEVIS det. Her. Nu.');},
+        ()=>{
+            setBrief('Leth 💪','Bro... det er ham. Den RIGTIGE boss. Tag ham ned! 💪');
+            document.getElementById('brief-girl').style.display='block';
+            document.getElementById('bg-icon').textContent='😈';
+            document.getElementById('bg-name').textContent='Danny - TBH Manager';
+            document.getElementById('bg-rating').textContent='⭐⭐⭐⭐⭐⭐ 12/10';
+            document.getElementById('bg-stats').innerHTML='❤️ HP: '+briefGirl.hp+' | ⚔️ ATK: '+briefGirl.atk+'\n⚠️ HEMMELIG BOSS! EKSTREM SVÆRHED!';
+        },
+        ()=>{document.getElementById('brief-ov').classList.remove('active');briefScript.length=0;briefScript.push(...oldScript);startCombatWithGirl(briefGirl);}
+    );
+    advBrief();
 }
 
 // ===== END =====
 function endGame(){
     G.scene='end';Mus.stop();document.getElementById('hud').className='';
+    const beatDanny=G.girlsMet>=5;
+    if(beatDanny){showCredits();return;}
     const r=document.getElementById('result-ov');r.classList.add('active');
     let i,t,c,d;
-    if(G.girlsMet>=4){i='👑';t='HANZI ER LEGENDEN!';c='#ffbe0b';d='ALLE 4 SCORET! TBH er dit igen! 🔥👑';}
+    if(G.girlsMet>=4){i='👑';t='ALLE SCORET!';c='#ffbe0b';d='Men der er mere... Prøv igen for den HEMMELIGE boss! 🔥';}
     else if(G.girlsMet>=3){i='😎';t='NÆSTEN DER!';c='#00d4aa';d=G.girlsMet+'/4 scoret. Stærkt comeback!';}
     else if(G.girlsMet>=1){i='💪';t='DER ER HÅBET';c='#ff6b35';d=G.girlsMet+' scoret. "Næste sæson, bror."';}
-    else{i='😅';t='HANZI PRØVEDE...';c='#aaa';d='0 scoret. Men der er altid næste gang!';}
+    else{i='😅';t='HANZI PRØVEDE...';c='#aaa';d='0 scoret. Der er altid næste gang!';}
     r.innerHTML=`<div style="text-align:center"><div style="font-size:3.5rem;margin-bottom:10px">${i}</div><div class="pix" style="font-size:clamp(10px,3.5vw,20px);color:${c};margin-bottom:6px">${t}</div><div style="font-size:.65rem;color:#aaa;max-width:300px;margin:0 auto 14px;line-height:1.6">${d}</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#ffbe0b;margin-bottom:16px">SCORE: ${G.totalScore} | DAMER: ${G.girlsMet}/4</div><button class="btn" onclick="restart()">PRØV IGEN</button></div>`;
 }
 
+function showCredits(){
+    G.scene='credits';
+    const cr=document.getElementById('credits-ov');cr.classList.add('active');
+    const stats=[
+        ['DAGE OVERLEVET',G.day],['PIGER SCORET',G.girlsMet],['TOTAL SCORE',G.totalScore],
+        ['STYRKE',G.styrke],['CARDIO',G.cardio],['SMALL TALK',G.smalltalk],['REFLEX',G.reflex],
+        ['CHARM TOTAL',G.charmTotal],['WORK LEVEL',G.workLvl],['BODEGA LEVEL',G.bodegaLvl],
+        ['PENGE TJENT',G.money],['ITEMS BRUGT',G.bought.length],
+    ];
+    cr.innerHTML=`
+    <div style="text-align:center;animation:mIn 1s ease">
+        <div style="font-size:4rem;margin-bottom:10px">👑</div>
+        <div class="pix" style="font-size:clamp(14px,4vw,24px);color:#ffbe0b;margin-bottom:4px;text-shadow:0 0 20px rgba(255,190,11,.5)">HANZI ER BACK!</div>
+        <div class="pix" style="font-size:clamp(6px,1.5vw,9px);color:#ff006e;margin-bottom:20px">TBH · THE BOYS HOUSE · REUNITED</div>
+        <div style="font-size:.7rem;color:#aaa;max-width:300px;margin:0 auto 20px;line-height:1.8">
+            Danny er besejret. TBH er dit igen.<br>
+            Hele Aarhus ved det. Hele Danmark ved det.<br>
+            Hanzi Lad er #1. For evigt. 👑🔥
+        </div>
+        <div style="max-width:280px;margin:0 auto 20px">
+            ${stats.map(s=>`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span class="pix" style="font-size:clamp(5px,1.1vw,7px);color:#888">${s[0]}</span><span class="pix" style="font-size:clamp(5px,1.1vw,7px);color:#ffbe0b">${s[1]}</span></div>`).join('')}
+        </div>
+        <div class="pix" style="font-size:clamp(4px,1vw,6px);color:#555;margin-bottom:6px">— CREDITS —</div>
+        <div style="font-size:.6rem;color:#666;line-height:2;margin-bottom:20px">
+            Game Design: Mikkel<br>
+            Code: Claude AI<br>
+            Leth: Sig selv<br>
+            Danny: Også sig selv<br>
+            Musik: Royalty Free Bangers<br>
+            Kort: Aarhus Kommune (probably)<br>
+            Special Thanks: Alle der troede på Hanzi
+        </div>
+        <div class="pix" style="font-size:clamp(6px,1.3vw,8px);color:#ffbe0b;margin-bottom:16px">TOTAL SCORE: ${G.totalScore}</div>
+        <button class="btn" onclick="document.getElementById('credits-ov').classList.remove('active');restart()">🔄 SPIL IGEN</button>
+    </div>`;
+}
+
 function restart(){
-    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;
+    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;loreTimer=0;
+    Object.keys(visitedLocations).forEach(k=>delete visitedLocations[k]);
     document.getElementById('result-ov').classList.remove('active');
+    document.getElementById('credits-ov').classList.remove('active');
     document.getElementById('title-ov').style.display='flex';
 }
 
