@@ -277,7 +277,7 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 <div class="ov-t" style="color:#ffbe0b">🎰 LYKKEHJUL</div>
 <div class="ov-s" id="wheel-sub">Spin og test din lykke!</div>
 <div class="wheel-wrap"><div class="wheel-ptr">▼</div><canvas id="wheel-cv" width="280" height="280"></canvas></div>
-<button class="btn" id="wheel-spin-btn" onclick="spinWheel()">🎰 SPIN!</button>
+<button class="btn" id="wheel-spin-btn" onclick="superWheelActive?spinSuperWheel():spinWheel()">🎰 SPIN!</button>
 <div class="pix" id="wheel-result" style="font-size:clamp(7px,1.6vw,10px);margin-top:10px;text-align:center;line-height:2;max-width:300px"></div>
 </div>
 
@@ -299,6 +299,6 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 <!-- RESULT -->
 <div class="ov" id="result-ov" style="justify-content:center;background:rgba(5,5,12,.97)"></div>
 
-<script src="game.js?v=3"></script>
+<script src="game.js?v=9"></script>
 </body>
 </html>

@@ -21,18 +21,18 @@ hit(){this.n(180,.07,'sawtooth',.25);},heal(){this.n(440,.06,'sine');setTimeout(
 eat(){this.n(300,.05,'sine');setTimeout(()=>this.n(500,.05,'sine'),40);}};
 
 // ===== GAME STATE =====
-const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:5,
+const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:7,
 styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,
 get critChance(){return 5+this.critLvl*2},get critDmg(){return 150+this.critDmgLvl*10},
 get regenAmt(){return this.regenLvl>0?Math.floor(1+this.regenLvl*0.8):0},
 get dmg(){return 5+this.styrke*2},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*3},
 get blockChance(){return Math.min(50,5+this.reflex*3)},get hitBonus(){return this.reflex*2},
 charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
-inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,
+inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,currentHP:-1,firstClubDone:false,kbhUnlocked:false,
 bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,
 px:.5,py:.5,tx:.5,ty:.5,walking:false};
 
-function girlScale(base,rating){return Math.round(base*Math.pow(1.3,rating-1));}
+function girlScale(base,rating){return Math.round(base*(1+(rating-1)*.35));}
 
 // ===== HELPERS =====
 function float(t,c='#fff'){const e=document.createElement('div');e.className='float';e.textContent=t;e.style.color=c;e.style.left=(innerWidth/2-30)+'px';e.style.top=(innerHeight/2-30)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1000);}
@@ -158,6 +158,22 @@ function drawMap(){
         cx.fillStyle='rgba(255,0,110,.5)';cx.beginPath();cx.arc(G.tx*W,G.ty*H,6,0,Math.PI*2);cx.fill();
         cx.strokeStyle='rgba(255,0,110,.3)';cx.lineWidth=2;cx.beginPath();cx.arc(G.tx*W,G.ty*H,10+Math.sin(mapT*8)*3,0,Math.PI*2);cx.stroke();
     }
+    // København unlock arrow (bottom-right water area)
+    if(G.firstClubDone&&!G.kbhUnlocked){
+        const ax=W*.88,ay=H*.85,pulse=Math.sin(mapT*5)*.15+.85;
+        cx.save();cx.globalAlpha=pulse;
+        cx.fillStyle='#ff006e';cx.shadowColor='#ff006e';cx.shadowBlur=12;
+        cx.beginPath();cx.moveTo(ax,ay-18);cx.lineTo(ax+10,ay-8);cx.lineTo(ax+4,ay-8);cx.lineTo(ax+4,ay+6);cx.lineTo(ax-4,ay+6);cx.lineTo(ax-4,ay-8);cx.lineTo(ax-10,ay-8);cx.closePath();cx.fill();
+        cx.shadowBlur=0;cx.font="bold "+Math.max(5,W*.012)+"px 'Press Start 2P'";cx.textAlign='center';
+        cx.fillStyle='#fff';cx.fillText('UNLOCK',ax,ay+16);cx.fillText('KØBENHAVN',ax,ay+26);
+        cx.fillStyle='#ffbe0b';cx.fillText('1000 KR',ax,ay+36);
+        cx.restore();
+    }
+    if(G.kbhUnlocked){
+        const kx=W*.88,ky=H*.85;
+        cx.font="bold "+Math.max(5,W*.012)+"px 'Press Start 2P'";cx.textAlign='center';
+        cx.fillStyle='rgba(0,212,170,.5)';cx.fillText('KØBENHAVN',kx,ky);cx.fillText('COMING SOON...',kx,ky+12);
+    }
     // Walk
     if(G.walking){
         const dx=G.tx-G.px,dy=G.ty-G.py,dist=Math.sqrt(dx*dx+dy*dy);
@@ -170,6 +186,12 @@ function drawMap(){
 cv.addEventListener('click',e=>{
     if(G.scene!=='map'||G.walking)return;
     const rx=e.clientX/cv.width,ry=e.clientY/cv.height;
+    // Check København unlock click
+    if(G.firstClubDone&&!G.kbhUnlocked&&rx>.8&&ry>.75){
+        if(G.money<1000){msg('Du mangler penge! Koster 1000 KR.');S.bad();return;}
+        G.money-=1000;G.kbhUnlocked=true;S.perf();float('KØBENHAVN UNLOCKED!','#ffbe0b');
+        msg('København er unlocked! 🏙️ (Coming soon i næste opdatering!)');updHUD();return;
+    }
     // Check event marker click
     if(eventMarker){
         const dx=rx-eventMarker.x,dy=ry-eventMarker.y;
@@ -190,8 +212,10 @@ function goTo(b){
 
 function onArrived(){
     const id=arriveId;arriveId=null;
+    if(G.scene!=='map'){return;}
     if(id==='event_marker'){showRandomEvent();return;}
-    if(id&&locationIntros[id]&&!visitedLocations[id]){visitedLocations[id]=true;msg(locationIntros[id]);setTimeout(()=>{onArrivedInner(id);},3500);return;}
+    advTime(1);
+    if(id&&locationIntros[id]&&!visitedLocations[id]){visitedLocations[id]=true;msg(locationIntros[id]);setTimeout(()=>{if(G.scene==='map')onArrivedInner(id);},3500);return;}
     onArrivedInner(id);
 }
 function onArrivedInner(id){
@@ -200,7 +224,7 @@ function onArrivedInner(id){
         case'shop':openShop();break;
         case'tree':openTree();break;
         case'work':openWork();break;
-        case'rest':if(!G.wheelUsedToday){openWheel();return;}doRest();break;
+        case'rest':doRest();break;
         case'bodega':openBodega();break;
         case'club':
             if(G.daysLeft>0){msg('Klubben åbner om '+G.daysLeft+' dage!');return;}
@@ -208,9 +232,11 @@ function onArrivedInner(id){
     }
 }
 
-function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;eventMarker=null;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}spawnEventMarker();
-showDayFlash();if(G.daysLeft===0)setTimeout(forceClub,2500);
-if(G.day%3===0){const lc=loreCalls.find(c=>c.day===G.day)||loreCalls[loreCallIdx%loreCalls.length];loreCallIdx++;setTimeout(()=>showLoreCall(lc),2500);}}
+function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;eventMarker=null;gamblesToday=0;foodBoughtToday=0;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}stockPrices.hanzi=Math.max(10,stockPrices.hanzi+Math.floor((Math.random()-.45)*30));stockPrices.tbh=Math.max(5,stockPrices.tbh+Math.floor((Math.random()-.45)*20));stockPrices.leth=Math.max(8,stockPrices.leth+Math.floor((Math.random()-.45)*25));spawnEventMarker();
+showDayFlash();
+if(G.daysLeft===0){setTimeout(forceClub,2500);return;}
+setTimeout(()=>{if(G.scene==='map')openWheel();},2500);
+if(G.day%3===0){const lc=loreCalls.find(c=>c.day===G.day)||loreCalls[loreCallIdx%loreCalls.length];loreCallIdx++;setTimeout(()=>{if(G.scene==='map')showLoreCall(lc);},4500);}}
 function showDayFlash(){
     const f=document.getElementById('day-flash');
     document.getElementById('df-day').textContent='DAG '+G.day;
@@ -233,6 +259,16 @@ const lethLore=[
     'Leth: "Vent... der sker noget stort efter klubben. Kan ikke sige mere."',
     'Leth: "Kalle Mith har en kæreste... den smukkeste pige i verden, siger de."',
     'Leth: "Kalle Mith... Mikkel Leth... mærkeligt, de ligner hinanden, ik?"',
+    'Leth: "Bror, jeg havde en drøm... jeg VAR Kalle Mith. Creepy."',
+    'Leth: "Valentina... de siger hun er fra Milano. Ingen ved hvem hun virkelig er."',
+    'Leth: "Kalle Mith kontrollerer bodegaerne. Hver pige du møder... det er HANS test."',
+    'Leth: "Motorcykel-ulykken... der var INGEN motorcykel. Det var et setup."',
+    'Leth: "Nogen slettede 6 måneder af dit liv. Komaen var FAKE, bror."',
+    'Leth: "TBH\'s manager forsvandt samme nat som dig. Tilfælde?"',
+    'Leth: "Kalle Miths imperium strækker sig til København. Han ejer ALT."',
+    'Leth: "Der er folk der siger Valentina ikke er menneskelig. Som en engel."',
+    'Leth: "Hvis du scorer alle 7 piger... siger de Kalle Mith SELV dukker op."',
+    'Leth: "Bror... hvad hvis JEG er den onde? Hvad hvis jeg bare ikke VED det?"',
 ];
 const visitedLocations={};
 const locationIntros={
@@ -243,7 +279,8 @@ const locationIntros={
     bodega:'🍺 BODEGA\nMød og battle piger 1 gang om dagen.\nOpgrader for at møde pænere piger.\nNemmere end klubben!',
     club:'🪩 KLUBBEN\nDen store boss fight!\nHer møder du rundens pige.',
 };
-function advTime(h){G.hour+=h;if(G.hour>=24){newDay();}}
+let pendingNewDay=false;
+function advTime(h){G.hour+=h;if(G.hour>=24){if(G.scene==='map'){newDay();}else{G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);pendingNewDay=true;}}}
 
 // ===== LORE CALLS =====
 const loreCalls=[
@@ -313,12 +350,15 @@ function spawnEventMarker(){
     const s=spots[Math.floor(Math.random()*spots.length)];
     eventMarker={x:s.x,y:s.y,t:Date.now(),id:'event_marker'};
 }
-function closeOv(){document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));G.scene='map';Mus.play('map');updHUD();}
+function flushPendingDay(){if(pendingNewDay){pendingNewDay=false;bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;eventMarker=null;gamblesToday=0;foodBoughtToday=0;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}stockPrices.hanzi=Math.max(10,stockPrices.hanzi+Math.floor((Math.random()-.45)*30));stockPrices.tbh=Math.max(5,stockPrices.tbh+Math.floor((Math.random()-.45)*20));stockPrices.leth=Math.max(8,stockPrices.leth+Math.floor((Math.random()-.45)*25));spawnEventMarker();showDayFlash();}}
+function closeOv(){document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));G.scene='map';Mus.play('map');updHUD();flushPendingDay();}
 
 // ===== FORCE CLUB =====
 function forceClub(){
+    if(G.scene==='combat'){msg('⚠️ KLUBBEN VENTER! Færdiggør din kamp først! 🪩');return;}
     msg('⚠️ KLUBBEN ER ÅBEN! DU SKAL DERUD! 🪩');
     setTimeout(()=>{
+        if(G.scene==='combat')return;
         if(G.scene==='map'){goClub();}
         else{document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));G.scene='map';setTimeout(()=>goClub(),500);}
     },1500);
@@ -328,7 +368,7 @@ let briefStep=0,briefGirl=null;
 function goClub(){
     document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));
     G.scene='brief';
-    const rg=girlsByRound[Math.min(G.round-1,3)];
+    const rg=girlsByRound[Math.min(G.round-1,girlsByRound.length-1)];
     briefGirl=makeScaledGirl(rg[Math.floor(Math.random()*rg.length)]);
     briefStep=0;
     document.getElementById('brief-girl').style.display='none';
@@ -401,23 +441,71 @@ function setBrief(name,text){
 
 // ===== REST =====
 function doRest(){
-    newDay();G.hunger=Math.min(G.maxHunger,G.hunger+20);
-    if(G.daysLeft<=0){forceClub();return;}
-    msg(`Dag ${G.day}. ${G.daysLeft} dage til klubben. +20 sult.`);updHUD();
-    if(!G.wheelUsedToday){setTimeout(()=>msg('💡 Besøg Hjem for lykkehjulet!'),2000);}
+    G.scene='rest_anim';
+    const ov=document.createElement('div');ov.id='rest-anim-ov';ov.className='ov active';
+    ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#02020a;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    const cv2=document.createElement('canvas');cv2.width=300;cv2.height=200;cv2.style.cssText='border:1px solid rgba(255,255,255,.05);border-radius:8px;margin-bottom:16px;';
+    const txt=document.createElement('div');txt.className='pix';txt.style.cssText='color:#3b82f6;font-size:clamp(7px,2vw,12px);';txt.textContent='Sover... 💤';
+    ov.appendChild(cv2);ov.appendChild(txt);document.body.appendChild(ov);
+    const x2=cv2.getContext('2d'),W=cv2.width,H=cv2.height;
+    const phrases=['Zzz...','💤 Drømmer om piger...','Snorker...','Godt sovet! 😴'];
+    let frame=0,phIdx=0,zParts=[];
+    const anim=()=>{
+        frame++;x2.clearRect(0,0,W,H);
+        x2.fillStyle='#050510';x2.fillRect(0,0,W,H);
+        const dark=Math.min(1,frame/60)*.3;
+        x2.fillStyle=`rgba(20,20,60,${dark})`;x2.fillRect(0,0,W,H);
+        x2.fillStyle='#1a1a30';x2.fillRect(W*.2,H*.55,W*.6,H*.3);
+        x2.fillStyle='#2a2a50';x2.fillRect(W*.22,H*.55,W*.56,8);
+        x2.fillStyle='#4a4a70';x2.fillRect(W*.6,H*.45,W*.15,H*.12);
+        const bob=Math.sin(frame*.03)*2;
+        x2.fillStyle='#c68642';x2.beginPath();x2.arc(W*.55,H*.58+bob,8,0,Math.PI*2);x2.fill();
+        x2.fillStyle='#475569';x2.fillRect(W*.45,H*.62+bob,20,12);
+        x2.fillStyle='#111';x2.lineWidth=2;
+        x2.beginPath();x2.moveTo(W*.52,H*.56+bob);x2.lineTo(W*.58,H*.56+bob);x2.stroke();
+        if(frame%30===0)zParts.push({x:W*.58,y:H*.5,sz:8,a:1});
+        zParts=zParts.filter(z=>{z.y-=.5;z.x+=.3;z.a-=.01;z.sz+=.1;
+            x2.font=`bold ${Math.floor(z.sz)}px 'Press Start 2P'`;x2.textAlign='center';x2.fillStyle=`rgba(59,130,246,${z.a})`;x2.fillText('Z',z.x,z.y);
+            return z.a>0;});
+        const moonGlow=.6+Math.sin(frame*.02)*.2;
+        x2.fillStyle=`rgba(255,255,200,${moonGlow})`;x2.beginPath();x2.arc(W*.85,H*.15,12,0,Math.PI*2);x2.fill();
+        x2.fillStyle='#050510';x2.beginPath();x2.arc(W*.88,H*.13,10,0,Math.PI*2);x2.fill();
+        for(let i=0;i<5;i++){const sx=30+i*60,sy=15+Math.sin(frame*.01+i)*8;x2.fillStyle=`rgba(255,255,255,${.3+Math.sin(frame*.02+i)*.2})`;x2.fillRect(sx,sy,2,2);}
+        const prog=Math.min(1,frame/180);
+        x2.fillStyle='rgba(255,255,255,.1)';x2.fillRect(30,H-20,W-60,8);
+        x2.fillStyle='#3b82f6';x2.fillRect(30,H-20,(W-60)*prog,8);
+        x2.font="bold 7px 'Press Start 2P'";x2.textAlign='center';x2.fillStyle='#3b82f6';x2.fillText(Math.floor(prog*100)+'%',W/2,H-24);
+        if(frame%60===0&&phIdx<phrases.length){txt.textContent=phrases[phIdx];phIdx++;}
+        if(frame<180){requestAnimationFrame(anim);}
+        else{
+            advTime(6);G.hunger=Math.min(G.maxHunger,G.hunger+30);
+            const hpHeal=Math.floor(G.maxHP*.5);
+            if(G.currentHP<0)G.currentHP=G.maxHP;
+            G.currentHP=Math.min(G.maxHP,G.currentHP+hpHeal);
+            S.heal();float('+'+hpHeal+' HP','#00d4aa');float('+30 SULT','#ff006e');
+            txt.textContent='Udhvilet! +'+hpHeal+' HP, +30 sult 🏠';txt.style.color='#00d4aa';
+            msg('Hvilede hjemme. +'+hpHeal+' HP, +30 sult! 🏠');
+            setTimeout(()=>{ov.remove();G.scene='map';updHUD();},1500);
+        }
+    };
+    anim();
 }
 
 // ===== HUD =====
 function updHUD(){
     const h=document.getElementById('hud');h.className='show';
+    const hp=G.currentHP<0?G.maxHP:G.currentHP;
     h.innerHTML=`<div class="hr"><div class="hl">
-        <div class="hb"><span class="l" style="color:#ff006e">SULT</span><div class="t"><div class="f" style="width:${G.hunger/G.maxHunger*100}%;background:#ff006e"></div></div><span class="v">${G.hunger}</span></div>
+        <div class="hb"><span class="l" style="color:#ff006e">HP</span><div class="t"><div class="f" style="width:${hp/G.maxHP*100}%;background:#ff006e"></div></div><span class="v">${hp}/${G.maxHP}</span></div>
+        <div class="hb"><span class="l" style="color:#ff6b35">SULT</span><div class="t"><div class="f" style="width:${G.hunger/G.maxHunger*100}%;background:#ff6b35"></div></div><span class="v">${G.hunger}</span></div>
         <div class="hstats">
             <div class="hs"><span class="si">⚔️</span><span class="sl">STR</span><span class="sv" style="color:#ff006e">${G.styrke}</span></div>
             <div class="hs"><span class="si">❤️</span><span class="sl">CRD</span><span class="sv" style="color:#ff4d8d">${G.cardio}</span></div>
             <div class="hs"><span class="si">💬</span><span class="sl">TLK</span><span class="sv" style="color:#3b82f6">${G.smalltalk}</span></div>
             <div class="hs"><span class="si">🛡️</span><span class="sl">REF</span><span class="sv" style="color:#00d4aa">${G.reflex}</span></div>
             <div class="hs"><span class="si">🌟</span><span class="sl">CHR</span><span class="sv" style="color:#ffbe0b">${G.charmPts}</span></div>
+            <div class="hs"><span class="si">🎯</span><span class="sl">CRT</span><span class="sv" style="color:#ffbe0b">${G.critChance}%</span></div>
+            <div class="hs"><span class="si">💚</span><span class="sl">REG</span><span class="sv" style="color:#00d4aa">${G.regenAmt}</span></div>
         </div></div><div class="hright">
         <div class="ck">${String(G.hour).padStart(2,'0')}:00</div>
         <div class="dy">DAG ${G.day} ${G.daysLeft>0?'(KLUB: '+G.daysLeft+'D)':'⚠️ KLUB NU!'}</div>
@@ -426,8 +514,24 @@ function updHUD(){
     // Settings gear
     if(!document.getElementById('settings-btn')){
         const sb=document.createElement('div');sb.id='settings-btn';sb.textContent='⚙️';
-        sb.style.cssText='position:fixed;top:6px;right:6px;z-index:15;font-size:1.3rem;cursor:pointer;background:rgba(0,0,0,.5);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;';
+        sb.style.cssText='position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:15;font-size:1.3rem;cursor:pointer;background:rgba(0,0,0,.5);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;';
         sb.onclick=openSettings;document.body.appendChild(sb);
+    }
+    // Music icon bottom right
+    if(!document.getElementById('music-btn')){
+        const mb=document.createElement('div');mb.id='music-btn';
+        mb.style.cssText='position:fixed;bottom:12px;right:12px;z-index:15;font-size:1.5rem;cursor:pointer;background:rgba(0,0,0,.6);border:1px solid rgba(255,190,11,.3);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;';
+        mb.textContent=Mus.cur?'🎵':'🔇';
+        mb.onclick=()=>{if(Mus.cur){Mus.stop();mb.textContent='🔇';}else{Mus.play('map');mb.textContent='🎵';}};
+        document.body.appendChild(mb);
+    }else{document.getElementById('music-btn').textContent=Mus.cur?'🎵':'🔇';}
+    // Phone icon bottom left
+    if(!document.getElementById('phone-btn')){
+        const pb=document.createElement('div');pb.id='phone-btn';
+        pb.style.cssText='position:fixed;bottom:12px;left:12px;z-index:15;font-size:1.5rem;cursor:pointer;background:rgba(0,0,0,.6);border:1px solid rgba(59,130,246,.3);border-radius:12px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;';
+        pb.textContent='📱';
+        pb.onclick=()=>{if(G.scene==='map')openPhoneApps();};
+        document.body.appendChild(pb);
     }
 }
 
@@ -529,22 +633,28 @@ function drawWorkBg(){
 // ===== GYM =====
 const gymUpgradeCost=[0, 300, 600, 1200, 2500];
 const exercises=[
-    {id:'str',name:'STYRKE',icon:'🏋️',desc:'⚔️ +Skade',stat:'styrke',game:'mash'},
-    {id:'crd',name:'CARDIO',icon:'🏃',desc:'❤️ +Max HP',stat:'cardio',game:'runner'},
-    {id:'tlk',name:'SMALL TALK',icon:'💬',desc:'💬 +Max Mana',stat:'smalltalk',game:'memory'},
-    {id:'ref',name:'REFLEX',icon:'🛡️',desc:'🛡️ +Block/Hit',stat:'reflex',game:'reaction'},
-    {id:'crit',name:'CRIT CHANCE',icon:'🎯',desc:'🎯 +Crit%',stat:'critLvl',game:'precision'},
-    {id:'critd',name:'CRIT SKADE',icon:'💥',desc:'💥 +Crit Dmg',stat:'critDmgLvl',game:'powerslam'},
-    {id:'regen',name:'HP REGEN',icon:'💚',desc:'💚 +Heal/tur',stat:'regenLvl',game:'breathe'},
+    {id:'str',name:'STYRKE',icon:'🏋️',desc:'⚔️ +Skade',stat:'styrke',game:'mash',reqGym:1},
+    {id:'crd',name:'CARDIO',icon:'🏃',desc:'❤️ +Max HP',stat:'cardio',game:'runner',reqGym:1},
+    {id:'tlk',name:'SMALL TALK',icon:'💬',desc:'💬 +Max Mana',stat:'smalltalk',game:'memory',reqGym:1},
+    {id:'ref',name:'REFLEX',icon:'🛡️',desc:'🛡️ +Block/Hit',stat:'reflex',game:'reaction',reqGym:2},
+    {id:'crit',name:'CRIT CHANCE',icon:'🎯',desc:'🎯 +Crit%',stat:'critLvl',game:'precision',reqGym:3},
+    {id:'critd',name:'CRIT SKADE',icon:'💥',desc:'💥 +Crit Dmg',stat:'critDmgLvl',game:'powerslam',reqGym:4},
+    {id:'regen',name:'HP REGEN',icon:'💚',desc:'💚 +Heal/tur',stat:'regenLvl',game:'breathe',reqGym:3},
 ];
 function openGym(){
     G.scene='gym';Mus.play('gym');drawGymBg();
     document.getElementById('gym-sub').textContent=`Leth: "GYM LVL ${G.gymLvl}!" | Sult: ${G.hunger}`;
     const g=document.getElementById('gym-g');g.innerHTML='';
     exercises.forEach(ex=>{
-        const c=document.createElement('div');c.className='gym-c';
-        c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gd">${ex.desc}</div><div class="gl">${G[ex.stat]} pts</div>`;
-        c.onclick=()=>{if(G.hunger<20){msg('For sulten!');return;}G.hunger-=20;advTime(2);startTrain(ex);};
+        const locked=G.gymLvl<ex.reqGym;
+        const c=document.createElement('div');c.className='gym-c'+(locked?' dis':'');
+        if(locked){
+            c.innerHTML=`<div class="gi">🔒</div><div class="gn">${ex.name}</div><div class="gd">Kræver GYM LVL ${ex.reqGym}</div><div class="gl">LÅST</div>`;
+            c.style.opacity='.4';
+        }else{
+            c.innerHTML=`<div class="gi">${ex.icon}</div><div class="gn">${ex.name}</div><div class="gd">${ex.desc}</div><div class="gl">${G[ex.stat]} pts</div>`;
+            c.onclick=()=>{if(G.hunger<20){msg('For sulten!');return;}G.hunger-=20;advTime(2);startTrain(ex);};
+        }
         g.appendChild(c);
     });
     // Gym upgrade
@@ -602,7 +712,7 @@ function trainMash(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
     let count=0,timeLeft=5,started=false,lastT=Date.now();
     document.getElementById('ti').textContent='TAP SÅ HURTIGT DU KAN! 💪';
-    const tap=()=>{if(tState.done)return;if(!started){started=true;lastT=Date.now();}count++;tState.score=count;S.click();};
+    const tap=(e)=>{if(tState.done)return;if(e&&e.repeat)return;if(!started){started=true;lastT=Date.now();}count++;tState.score=Math.floor(count/4);S.click();};
     tc.addEventListener('mousedown',tap);tc.addEventListener('touchstart',tap);document.addEventListener('keydown',tap);
     (function draw(){if(tState.done){tc.removeEventListener('mousedown',tap);tc.removeEventListener('touchstart',tap);document.removeEventListener('keydown',tap);return;}
         if(started){timeLeft=5-(Date.now()-lastT)/1000;if(timeLeft<=0){tState.score=count;endTrain();return;}}
@@ -618,39 +728,55 @@ function trainMash(tc){
     })();
 }
 
-// GAME 2: RUNNER (cardio)
+// GAME 2: FLAPPY BIRD (cardio)
 function trainRunner(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
-    let py=H*.7,vy=0,onG=true,obs=[],score=0,dist=0,spd=2,alive=true;
-    document.getElementById('ti').textContent='TAP FOR AT HOPPE! 🏃';
-    for(let i=0;i<5;i++)obs.push({x:W+i*120+Math.random()*60,h:15+Math.random()*15});
-    const jump=()=>{if(!alive||tState.done)return;if(onG){vy=-8;onG=false;S.click();}};
-    tc.addEventListener('mousedown',jump);tc.addEventListener('touchstart',jump);document.addEventListener('keydown',jump);
-    (function draw(){if(tState.done){tc.removeEventListener('mousedown',jump);tc.removeEventListener('touchstart',jump);document.removeEventListener('keydown',jump);return;}
+    let birdY=H/2,birdVY=0,pipes=[],score=0,alive=true,dist=0,spd=2,started=false;
+    const birdX=W*.2,birdR=10,gravity=0.35,flapPow=-5.5,gapH=80,pipeW=30;
+    document.getElementById('ti').textContent='TAP for at flyve! 🐦 Undgå rørene!';
+    function spawnPipe(){
+        const gapY=50+Math.random()*(H-100-gapH);
+        pipes.push({x:W+10,gapY:gapY,scored:false});
+    }
+    spawnPipe();
+    const flap=()=>{if(!alive||tState.done)return;if(!started)started=true;birdVY=flapPow;S.click();};
+    tc.addEventListener('mousedown',flap);tc.addEventListener('touchstart',flap);document.addEventListener('keydown',flap);
+    (function draw(){if(tState.done){tc.removeEventListener('mousedown',flap);tc.removeEventListener('touchstart',flap);document.removeEventListener('keydown',flap);return;}
         x.clearRect(0,0,W,H);
-        // Ground
-        const gY=H*.78;x.fillStyle='#2a2a2a';x.fillRect(0,gY,W,H-gY);
-        x.strokeStyle='rgba(255,255,255,.06)';for(let i=0;i<W;i+=20){x.beginPath();x.moveTo(((i-dist*2)%W+W)%W,gY);x.lineTo(((i-dist*2)%W+W)%W,gY+3);x.stroke();}
-        // Player
-        vy+=.4;py+=vy;if(py>=gY-16){py=gY-16;vy=0;onG=true;}
-        const legOff=Math.sin(dist*.1)*4;
-        x.fillStyle='#ff006e';x.fillRect(50,py,12,16);// body
-        x.fillStyle='#c68642';x.beginPath();x.arc(56,py-5,6,0,Math.PI*2);x.fill();// head
-        x.fillStyle='#1e293b';x.fillRect(50,py+16+legOff,5,6);x.fillRect(57,py+16-legOff,5,6);// legs
-        // Obstacles
-        obs.forEach(o=>{
-            o.x-=spd;if(o.x<-20){o.x=W+50+Math.random()*80;o.h=15+Math.random()*20;score++;tState.score=score;
-                // Speed up every 3 obstacles
-                if(score%3===0)spd+=0.4;
-            }
-            x.fillStyle='#ffbe0b';x.fillRect(o.x,gY-o.h,12,o.h);
-            // Collision
-            if(alive&&o.x>40&&o.x<70&&py+16>gY-o.h){alive=false;S.bad();tState.score=score;setTimeout(endTrain,500);}
-        });
-        dist+=spd;
-        // Score
+        x.fillStyle='#0a1a2a';x.fillRect(0,0,W,H);
+        if(started){birdVY+=gravity;birdY+=birdVY;}
+        if(birdY<birdR)birdY=birdR;
+        if(birdY>H-birdR){birdY=H-birdR;if(alive&&started){alive=false;S.bad();tState.score=score;setTimeout(endTrain,500);}}
+        x.fillStyle='#ffbe0b';x.shadowColor='#ffbe0b';x.shadowBlur=6;
+        x.beginPath();x.arc(birdX,birdY,birdR,0,Math.PI*2);x.fill();x.shadowBlur=0;
+        x.fillStyle='#fff';x.beginPath();x.arc(birdX+3,birdY-2,3,0,Math.PI*2);x.fill();
+        x.fillStyle='#111';x.beginPath();x.arc(birdX+4,birdY-2,1.5,0,Math.PI*2);x.fill();
+        x.fillStyle='#ff6b35';x.beginPath();x.moveTo(birdX+birdR,birdY);x.lineTo(birdX+birdR+6,birdY+2);x.lineTo(birdX+birdR,birdY+4);x.closePath();x.fill();
+        const wingY=birdVY<0?-4:3;
+        x.fillStyle='#e0a800';x.beginPath();x.ellipse(birdX-4,birdY+wingY,7,4,-.3,0,Math.PI*2);x.fill();
+        if(started){
+            pipes.forEach(p=>{
+                p.x-=spd;
+                x.fillStyle='#00d4aa';
+                x.fillRect(p.x,0,pipeW,p.gapY);
+                x.fillRect(p.x,p.gapY+gapH,pipeW,H-p.gapY-gapH);
+                x.fillStyle='#00eebb';
+                x.fillRect(p.x-3,p.gapY-8,pipeW+6,8);
+                x.fillRect(p.x-3,p.gapY+gapH,pipeW+6,8);
+                if(!p.scored&&p.x+pipeW<birdX){p.scored=true;score++;tState.score=score;S.ok();
+                    if(score%5===0){spd+=0.3;gapH=Math.max(50,gapH-3);}
+                }
+                if(alive&&p.x<birdX+birdR&&p.x+pipeW>birdX-birdR){
+                    if(birdY-birdR<p.gapY||birdY+birdR>p.gapY+gapH){alive=false;S.bad();tState.score=score;setTimeout(endTrain,500);}
+                }
+            });
+            pipes=pipes.filter(p=>p.x>-pipeW-10);
+            dist+=spd;
+            if(pipes.length===0||pipes[pipes.length-1].x<W-120-Math.random()*60)spawnPipe();
+        }else{
+            x.font="bold 9px 'Press Start 2P'";x.textAlign='center';x.fillStyle='#fff';x.fillText('TAP FOR AT STARTE!',W/2,H*.75);
+        }
         x.font="bold 10px 'Press Start 2P'";x.textAlign='right';x.fillStyle='#00d4aa';x.fillText('SCORE: '+score,W-10,20);
-        x.font="bold 8px 'Press Start 2P'";x.fillStyle='#ffbe0b';x.fillText('SPD: '+spd.toFixed(1),W-10,35);
         document.getElementById('ts').textContent='Score: '+score;
         tAF=requestAnimationFrame(draw);
     })();
@@ -811,7 +937,7 @@ function trainPowerslam(tc){
         hitZone=0.85;
     }
     nextRound();
-    const tap=()=>{if(tState.done||phase!=='charging')return;
+    const tap=(e)=>{if(tState.done||phase!=='charging')return;if(e&&e.repeat)return;
         S.click();phase='hit';
         const dist=Math.abs(barPos-hitZone);
         if(dist<sweetSpot){score+=3;S.perf();float('PERFEKT! +3','#ffbe0b');}
@@ -852,12 +978,12 @@ function trainBreathe(tc){
     const x=tc.getContext('2d'),W=tc.width,H=tc.height;
     let score=0,misses=0,round=0,pulsePhase=0,pulseSpd=0.04,lastPulseHit=0;
     document.getElementById('ti').textContent='Tap når cirklen pulserer! 💚 3 miss = slut';
-    const tap=()=>{if(tState.done)return;
+    const tap=(e)=>{if(tState.done)return;if(e&&e.repeat)return;
         const pulse=Math.sin(pulsePhase);
         if(pulse>0.7){
-            score++;tState.score=score;S.ok();float('+1 💚','#00d4aa');
             if(Date.now()-lastPulseHit<200)return;
             lastPulseHit=Date.now();
+            score++;tState.score=score;S.ok();float('+1 💚','#00d4aa');
         } else if(pulse>0.3){
             score++;tState.score=score;S.click();float('+1','#ff6b35');lastPulseHit=Date.now();
         } else{
@@ -894,10 +1020,19 @@ function trainBreathe(tc){
 }
 
 // ===== SHOP =====
-const foodItems=[{name:'Kebab',icon:'🥙',price:25,hunger:30},{name:'Protein Shake',icon:'🥤',price:40,hunger:45},{name:'Pizza',icon:'🍕',price:30,hunger:35},{name:'Energi Drik',icon:'⚡',price:20,hunger:15},{name:'Sushi',icon:'🍣',price:55,hunger:55}];
+const foodItems=[
+    {name:'Kebab',icon:'🥙',price:40,hunger:30,buff:null,heal:0,buffDesc:'+30 sult'},
+    {name:'Protein Shake',icon:'🥤',price:65,hunger:25,buff:'str',buffAmt:2,heal:15,buffDesc:'+25 sult, +2 STR, +15 HP'},
+    {name:'Pizza',icon:'🍕',price:50,hunger:40,buff:null,heal:10,buffDesc:'+40 sult, +10 HP'},
+    {name:'Energi Drik',icon:'⚡',price:45,hunger:10,buff:'ref',buffAmt:2,heal:0,buffDesc:'+10 sult, +2 REF'},
+    {name:'Sushi',icon:'🍣',price:90,hunger:50,buff:'tlk',buffAmt:2,heal:20,buffDesc:'+50 sult, +2 TLK, +20 HP'},
+    {name:'Steak',icon:'🥩',price:120,hunger:60,buff:'str',buffAmt:4,heal:30,buffDesc:'+60 sult, +4 STR, +30 HP'},
+    {name:'Smoothie Bowl',icon:'🥣',price:80,hunger:35,buff:'crd',buffAmt:3,heal:25,buffDesc:'+35 sult, +3 CRD, +25 HP'},
+    {name:'Guldkaffe',icon:'☕',price:100,hunger:15,buff:'all',buffAmt:1,heal:20,buffDesc:'+15 sult, +1 ALL, +20 HP'},
+];
 const gearItems=[{name:'Barbertrim',icon:'💈',price:50},{name:'Ny T-shirt',icon:'👕',price:80},{name:'Fresh Sneakers',icon:'👟',price:120},{name:'Guld-kæde',icon:'⛓️',price:200},{name:'Solbriller',icon:'🕶️',price:180},{name:'Designer Jakke',icon:'🧥',price:300}];
 const combatItems=[{name:'Cocktail',icon:'🍹',price:60,item:'drink',desc:'Skade i kamp'},{name:'Energy Shot',icon:'⚡',price:80,item:'energy',desc:'+MP i kamp'},{name:'Proteinbar',icon:'🍫',price:50,item:'heal',desc:'+HP i kamp'}];
-let shopTab='food';
+let shopTab='food';let foodBoughtToday=0;const maxFoodPerDay=3;
 function openShop(){G.scene='shop';advTime(1);drawShopBg();renderShop();document.getElementById('shop-ov').classList.add('active');}
 function renderShop(){
     document.getElementById('shop-tabs').innerHTML=['food','gear','combat'].map(t=>`<button class="stab${shopTab===t?' act':''}" onclick="shopTab='${t}';renderShop()">${t==='food'?'🍕 MAD':t==='gear'?'👔 STYLE':'⚔️ KAMP'}</button>`).join('');
@@ -906,13 +1041,23 @@ function renderShop(){
     items.forEach((it,i)=>{
         const bk=shopTab==='gear'&&G.bought.includes('g'+i);
         const d=document.createElement('div');d.className='si'+(bk?' dis':'');
-        const desc=shopTab==='food'?'+'+it.hunger+' sult':shopTab==='gear'?'+2 CHARM pts':(it.desc||'');
+        const desc=shopTab==='food'?it.buffDesc:shopTab==='gear'?'+1 STR (permanent)':(it.desc||'');
         d.innerHTML=`<div class="si-l"><span class="si-i">${it.icon}</span><div><div class="si-n">${it.name}</div><div class="si-d">${desc}</div></div></div><div class="si-p">${bk?'KØBT':it.price+' KR'}</div>`;
         if(!bk)d.onclick=()=>{
             if(G.money<it.price){msg('Gulle: "Ingen penge, ingen drip!"');S.bad();return;}
+            if(shopTab==='food'&&foodBoughtToday>=maxFoodPerDay){msg('Gulle: "Du har spist nok i dag bror!" 🍕');S.bad();return;}
             G.money-=it.price;S.coin();
-            if(shopTab==='food'){G.hunger=Math.min(G.maxHunger,G.hunger+it.hunger);S.eat();float('+'+it.hunger+' SULT','#ff006e');msg('+'+it.hunger+' sult!');}
-            else if(shopTab==='gear'){G.bought.push('g'+i);G.charmPts+=2;G.charmTotal+=2;float('+2 CHARM','#ffbe0b');}
+            if(shopTab==='food'){foodBoughtToday++;
+                G.hunger=Math.min(G.maxHunger,G.hunger+it.hunger);S.eat();float('+'+it.hunger+' SULT','#ff006e');
+                if(it.heal&&it.heal>0){if(G.currentHP<0)G.currentHP=G.maxHP;G.currentHP=Math.min(G.maxHP,G.currentHP+it.heal);float('+'+it.heal+' HP','#00d4aa');}
+                if(it.buff==='all'){G.styrke+=it.buffAmt;G.cardio+=it.buffAmt;G.smalltalk+=it.buffAmt;G.reflex+=it.buffAmt;float('+'+it.buffAmt+' ALL STATS!','#ffbe0b');msg(it.name+': +'+it.buffAmt+' til alle stats! (permanent)');}
+                else if(it.buff==='str'){G.styrke+=it.buffAmt;float('+'+it.buffAmt+' STR','#ff006e');msg(it.name+': +'+it.buffAmt+' styrke! (permanent)');}
+                else if(it.buff==='crd'){G.cardio+=it.buffAmt;float('+'+it.buffAmt+' CRD','#3b82f6');msg(it.name+': +'+it.buffAmt+' cardio! (permanent)');}
+                else if(it.buff==='ref'){G.reflex+=it.buffAmt;float('+'+it.buffAmt+' REF','#00d4aa');msg(it.name+': +'+it.buffAmt+' reflex! (permanent)');}
+                else if(it.buff==='tlk'){G.smalltalk+=it.buffAmt;float('+'+it.buffAmt+' TLK','#3b82f6');msg(it.name+': +'+it.buffAmt+' small talk! (permanent)');}
+                else{msg('+'+it.hunger+' sult!'+(it.heal?(' +'+it.heal+' HP!'):''));}
+            }
+            else if(shopTab==='gear'){G.bought.push('g'+i);G.styrke+=1;float('+1 STR','#ff006e');msg(it.name+': +1 styrke! (permanent)');}
             else{G.inv.push(it.item);float('+1 '+it.name,'#8b5cf6');}
             renderShop();updHUD();};
         l.appendChild(d);
@@ -1005,17 +1150,57 @@ function openWork(){
     allJobs.forEach(j=>{
         const lk=G.workLvl<j.req;
         const d=document.createElement('div');d.className='si'+(lk?' dis':'');
-        d.innerHTML=`<div class="si-l"><span class="si-i">${lk?'🔒':'💼'}</span><div><div class="si-n">${j.name}</div><div class="si-d">${lk?'Kræver LVL '+j.req:j.pay[0]+'-'+j.pay[1]+' kr | -15 sult | 3t'}</div></div></div><div class="si-p"></div>`;
+        d.innerHTML=`<div class="si-l"><span class="si-i">${lk?'🔒':'💼'}</span><div><div class="si-n">${j.name}</div><div class="si-d">${lk?'Kræver LVL '+j.req:j.pay[0]+'-'+j.pay[1]+' kr | -15 sult | 6t'}</div></div></div><div class="si-p"></div>`;
         if(!lk)d.onclick=()=>{
             if(G.hunger<15){msg('For sulten!');return;}
-            G.hunger-=15;advTime(3);
-            const earn=j.pay[0]+Math.floor(Math.random()*(j.pay[1]-j.pay[0]));
-            G.money+=earn;G.workXP++;
-            if(G.workXP>=G.workNeed()){G.workXP=0;G.workLvl++;float('WORK LVL UP!','#00d4aa');msg('Ritardo: "Forfremmet! LVL '+G.workLvl+'!" 🎉');}
-            S.coin();float('+'+earn+' KR','#00d4aa');closeOv();};
+            G.hunger-=15;
+            document.getElementById('work-ov').classList.remove('active');
+            showWorkAnim(j);
+        };
         l.appendChild(d);
     });
     document.getElementById('work-ov').classList.add('active');
+}
+
+function showWorkAnim(job){
+    G.scene='work_anim';
+    const ov=document.createElement('div');ov.id='work-anim-ov';ov.className='ov active';
+    ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#05050f;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    const cv2=document.createElement('canvas');cv2.width=300;cv2.height=200;cv2.style.cssText='border:1px solid rgba(255,255,255,.1);border-radius:8px;margin-bottom:16px;';
+    const txt=document.createElement('div');txt.className='pix';txt.style.cssText='color:#ffbe0b;font-size:clamp(7px,2vw,12px);';txt.textContent='Arbejder...';
+    ov.appendChild(cv2);ov.appendChild(txt);document.body.appendChild(ov);
+    const x2=cv2.getContext('2d'),W=cv2.width,H=cv2.height;
+    const phrases=['Hårdt arbejde...','Svedende...','Næsten færdig...','Tjener penge! 💰'];
+    let frame=0,phIdx=0;
+    const anim=()=>{
+        frame++;x2.clearRect(0,0,W,H);
+        x2.fillStyle='#0a1510';x2.fillRect(0,0,W,H);
+        x2.fillStyle='#152520';x2.fillRect(0,H*.7,W,H*.3);
+        x2.fillStyle='#3a3020';x2.fillRect(50,H*.5,100,8);
+        const bob=Math.sin(frame*.08)*3;
+        drawNPC(x2,W*.5,H*.68,'ritardo',frame*.02);
+        x2.fillStyle='#c68642';x2.beginPath();x2.arc(W*.25,H*.48+bob,7,0,Math.PI*2);x2.fill();
+        x2.fillStyle='#475569';x2.fillRect(W*.25-6,H*.48+bob+7,12,14);
+        const armX=W*.25+(Math.sin(frame*.12)*8);
+        x2.fillStyle='#c68642';x2.fillRect(armX+4,H*.48+bob+8,10,4);
+        const prog=Math.min(1,frame/180);
+        x2.fillStyle='rgba(255,255,255,.1)';x2.fillRect(30,H-20,W-60,8);
+        x2.fillStyle='#00d4aa';x2.fillRect(30,H-20,(W-60)*prog,8);
+        x2.font="bold 7px 'Press Start 2P'";x2.textAlign='center';x2.fillStyle='#ffbe0b';
+        x2.fillText(Math.floor(prog*100)+'%',W/2,H-24);
+        if(frame%60===0&&phIdx<phrases.length){txt.textContent=phrases[phIdx];phIdx++;}
+        if(frame<180){requestAnimationFrame(anim);}
+        else{
+            advTime(6);
+            const earn=job.pay[0]+Math.floor(Math.random()*(job.pay[1]-job.pay[0]));
+            G.money+=earn;G.workXP++;
+            if(G.workXP>=G.workNeed()){G.workXP=0;G.workLvl++;float('WORK LVL UP!','#00d4aa');msg('Ritardo: "Forfremmet! LVL '+G.workLvl+'!" 🎉');}
+            S.coin();float('+'+earn+' KR','#00d4aa');
+            txt.textContent='+'+earn+' KR tjent! 💰';txt.style.color='#00d4aa';
+            setTimeout(()=>{ov.remove();G.scene='map';updHUD();},1500);
+        }
+    };
+    anim();
 }
 
 // ===== BODEGA =====
@@ -1032,9 +1217,20 @@ const bodegaPool=[
 let bodegaUsedToday=false;
 const bodegaUpgradeCost=[0,200,500,1000];
 
+function rollGirlLevel(){
+    const r=Math.random();
+    if(r<.40)return 1;if(r<.65)return 2;if(r<.82)return 3;if(r<.94)return 4;return 5;
+}
+const lvlColors=['#aaa','#3b82f6','#a855f7','#ffbe0b','#ff006e'];
+const lvlNames=['','⭐','⭐⭐','⭐⭐⭐','👑'];
+
 function makeScaledGirl(base){
     const r=base.rating;
-    return {...base,hp:girlScale(20,r),atk:girlScale(3,r)};
+    const lvl=base.lvl||rollGirlLevel();
+    const lvlMult=1+lvl*.15;
+    const hp=Math.round(girlScale(20,r)*lvlMult);
+    const atk=Math.round(girlScale(3,r)*lvlMult);
+    return {...base,lvl,hp,atk};
 }
 
 function drawBodegaBg(){
@@ -1071,7 +1267,8 @@ function openBodega(){
     const g=makeScaledGirl(base);
     sub.textContent=`LVL ${G.bodegaLvl} · Tilfældig pige! (1/dag)`;
     const d=document.createElement('div');d.className='si';
-    d.innerHTML=`<div class="si-l"><span class="si-i">${g.icon}</span><div><div class="si-n">${g.name}</div><div class="si-d">${g.rating}/10 · ⭐${'⭐'.repeat(g.rating)}</div></div></div><div class="si-p" style="color:#f59e0b">⭐${g.rating}</div>`;
+    const lc=lvlColors[g.lvl-1]||'#aaa';
+    d.innerHTML=`<div class="si-l"><span class="si-i">${g.icon}</span><div><div class="si-n">${g.name} <span style="color:${lc}">LVL ${g.lvl}</span></div><div class="si-d">${g.rating}/10 · ${g.lvl>=4?'💎 SJÆLDEN!':g.lvl>=3?'⭐ Stærk':'Normal'} · HP:${g.hp} ATK:${g.atk}</div></div></div><div class="si-p" style="color:${lc}">${g.lvl>=5?'👑':'⭐'}${g.lvl}</div>`;
     d.onclick=()=>{bodegaUsedToday=true;l.innerHTML='';document.getElementById('bodega-ov').classList.remove('active');startCombatWithGirl(g);C.isBodega=true;};
     l.appendChild(d);
     const skip=document.createElement('div');skip.className='si';skip.style.borderColor='rgba(255,255,255,.1)';
@@ -1093,11 +1290,21 @@ const wheelSlices=[
     {label:'+50 KR',color:'#00d4aa',fn:()=>{G.money+=50;float('+50 KR','#00d4aa');msg('Du vandt 50 kr! 💰');}},
     {label:'+STR Buff',color:'#ff006e',fn:()=>{G.buff='str';G.buffDays=3;G.styrke+=3;float('+3 STR (3 dage)','#ff006e');msg('Styrke buff i 3 dage! 💪');}},
     {label:'-ALL SULT',color:'#000',fn:()=>{G.hunger=Math.max(5,G.hunger-50);float('-50 SULT','#ff006e');S.bad();msg('Madforgiftning! -50 sult! 🤮');}},
-    {label:'+100 KR',color:'#ffbe0b',fn:()=>{G.money+=100;float('+100 KR','#ffbe0b');msg('JACKPOT! 100 kr! 🎰');}},
+    {label:'⭐ SUPER!',color:'#e040fb',fn:()=>{S.perf();msg('🌟 SUPER LYKKEHJUL! 🌟');setTimeout(()=>openSuperWheel(),1500);}},
     {label:'-50 KR',color:'#8b5cf6',fn:()=>{G.money=Math.max(0,G.money-50);float('-50 KR','#ff006e');S.bad();msg('Du tabte 50 kr! 😬');}},
     {label:'+HP Buff',color:'#3b82f6',fn:()=>{G.buff='hp';G.buffDays=3;G.cardio+=3;float('HP Buff!','#3b82f6');msg('Buff i 3 dage! ❤️');}},
     {label:'+30 SULT',color:'#ff6b35',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+30);float('+30 SULT','#ff6b35');msg('+30 sult! 🍔');}},
     {label:'-ALL PENGE',color:'#111',fn:()=>{const lost=Math.floor(G.money*.5);G.money-=lost;float('-'+lost+' KR','#ff006e');S.bad();msg('Bestjålet! Halve penge væk! 💸');}},
+];
+const superWheelSlices=[
+    {label:'+5 ALL STATS',color:'#ffbe0b',fn:()=>{G.styrke+=5;G.cardio+=5;G.smalltalk+=5;G.reflex+=5;float('+5 ALLE STATS!','#ffbe0b');msg('MEGA BUFF! +5 til alt! 🔥');}},
+    {label:'+500 KR',color:'#00d4aa',fn:()=>{G.money+=500;float('+500 KR!','#00d4aa');msg('JACKPOT! 500 kr! 💰💰💰');}},
+    {label:'+10 STR',color:'#ff006e',fn:()=>{G.styrke+=10;float('+10 STYRKE!','#ff006e');msg('BEASTMODE! +10 styrke! 💪🔥');}},
+    {label:'+10 CRD',color:'#3b82f6',fn:()=>{G.cardio+=10;float('+10 CARDIO!','#3b82f6');msg('MARATHON! +10 cardio! ❤️🔥');}},
+    {label:'+5 CRIT LVL',color:'#e040fb',fn:()=>{G.critLvl+=5;float('+5 CRIT!','#e040fb');msg('CRIT MASTER! +10% crit chance! 🎯');}},
+    {label:'+8 CHARM',color:'#ffbe0b',fn:()=>{G.charmPts+=8;G.charmTotal+=8;float('+8 CHARM!','#ffbe0b');msg('MEGA CHARM! +8 charm points! 🌟');}},
+    {label:'+5 REGEN',color:'#00d4aa',fn:()=>{G.regenLvl+=5;float('+5 REGEN!','#00d4aa');msg('MEGA REGEN! Healer som en gud! 💚');}},
+    {label:'MAX SULT+KR',color:'#ff6b35',fn:()=>{G.hunger=G.maxHunger;G.money+=300;float('MAX ALT!','#ff6b35');msg('Fuld mave + 300 kr! 🍔💰');}},
 ];
 let wheelSpinning=false;
 
@@ -1147,7 +1354,59 @@ function spinWheel(){
             S.perf();document.getElementById('wheel-result').innerHTML=`<span style="color:${result.color}">${result.label}</span>`;
             setTimeout(()=>{result.fn();updHUD();
                 setTimeout(()=>{document.getElementById('wheel-ov').classList.remove('active');
-                    if(G.scene!=='end'){G.scene='map';doRest();}},2000);
+                    if(G.scene!=='end'){G.scene='map';Mus.play('map');}},2000);
+            },800);
+        }
+    })();
+}
+
+function openSuperWheel(){
+    G.scene='wheel';
+    document.getElementById('wheel-sub').textContent='⭐ SUPER LYKKEHJUL! Crazy stats! ⭐';
+    document.getElementById('wheel-result').textContent='';
+    document.getElementById('wheel-spin-btn').style.display='block';
+    wheelSpinning=false;superWheelActive=true;
+    const wc=document.getElementById('wheel-cv');
+    const maxSz=Math.min(innerWidth-40,innerHeight*.4,300);
+    wc.width=maxSz;wc.height=maxSz;wc.style.width=maxSz+'px';wc.style.height=maxSz+'px';
+    drawSuperWheel(0);
+    document.getElementById('wheel-ov').classList.add('active');
+}
+let superWheelActive=false;
+function drawSuperWheel(angle){
+    const c=document.getElementById('wheel-cv'),x=c.getContext('2d'),sz=c.width/2;
+    x.clearRect(0,0,c.width,c.height);
+    x.save();x.translate(sz,sz);x.rotate(angle);
+    const slices=superWheelSlices,n=slices.length,step=Math.PI*2/n;
+    slices.forEach((s,i)=>{
+        x.beginPath();x.moveTo(0,0);x.arc(0,0,sz-4,i*step,(i+1)*step);x.closePath();
+        x.fillStyle=s.color;x.fill();x.strokeStyle='rgba(255,255,255,.3)';x.lineWidth=2;x.stroke();
+        x.save();x.rotate(i*step+step/2);x.textAlign='center';x.font="bold 6px 'Press Start 2P'";
+        x.fillStyle='#fff';x.fillText(s.label,sz*.6,3);x.restore();
+    });
+    x.restore();
+    x.shadowColor='#e040fb';x.shadowBlur=15;x.fillStyle='#e040fb';
+    x.beginPath();x.moveTo(sz-8,4);x.lineTo(sz+8,4);x.lineTo(sz,18);x.closePath();x.fill();x.shadowBlur=0;
+}
+
+function spinSuperWheel(){
+    if(wheelSpinning)return;wheelSpinning=true;S.click();
+    document.getElementById('wheel-spin-btn').style.display='none';
+    const target=Math.random()*Math.PI*2,totalSpin=Math.PI*10+target;
+    let angle=0,t=0;
+    (function anim(){
+        t+=.016;const ease=1-Math.pow(1-Math.min(1,t/3.5),3);
+        angle=totalSpin*ease;drawSuperWheel(angle);
+        if(t<3.5){requestAnimationFrame(anim);}
+        else{
+            const finalAngle=(angle%(Math.PI*2));
+            const sliceAngle=Math.PI*2/superWheelSlices.length;
+            const idx=Math.floor(((Math.PI*2-finalAngle+Math.PI/2)%(Math.PI*2))/sliceAngle)%superWheelSlices.length;
+            const result=superWheelSlices[idx];
+            S.perf();document.getElementById('wheel-result').innerHTML=`<span style="color:${result.color}">${result.label}</span>`;
+            setTimeout(()=>{result.fn();updHUD();superWheelActive=false;
+                setTimeout(()=>{document.getElementById('wheel-ov').classList.remove('active');
+                    if(G.scene!=='end'){G.scene='map';Mus.play('map');}},2000);
             },800);
         }
     })();
@@ -1159,6 +1418,7 @@ const eventFriends=[
     {name:'Malte',icon:'🍺',color:'#ffbe0b'},
     {name:'Marius',icon:'🎮',color:'#3b82f6'},
     {name:'Thomas',icon:'⚽',color:'#00d4aa'},
+    {name:'Leth',icon:'💪',color:'#dc2626'},
 ];
 const eventScenarios=[
     {text:'{name}: "Bro min hund er løbet væk! Hjælp mig!"',choices:[
@@ -1266,6 +1526,26 @@ const eventScenarios=[
         {text:'👀 Jeg ser bare på',fn:()=>{advTime(2);G.smalltalk+=1;msg('Sjov aften! Lærte nye jokes.');}},
         {text:'📝 Hjælp mig skrive materiale',fn:()=>{G.smalltalk+=2;msg('{name} hjalp dig! Du har nu killer jokes!');}},
     ]},
+    {text:'💎 {name}: "Bro, der er en HEMMELIG underground fight club!"',choices:[
+        {text:'🥊 Tag mig med!',fn:()=>{advTime(3);if(G.styrke>=5||Math.random()>.4){G.styrke+=4;G.reflex+=3;G.money+=200;G.charmPts+=4;G.charmTotal+=4;msg('DU VANDT! +4 STR, +3 REF, +200 KR, +4 CHARM! 🏆🔥');}else{G.currentHP=Math.max(1,G.currentHP-20);S.bad();msg('Tæsk... -20 HP. Men du lærte noget.');G.styrke+=2;}}},
+        {text:'🎯 Scout det ud først',fn:()=>{G.reflex+=3;G.smalltalk+=2;msg('Smart tilgang! Lærte deres teknikker. +3 REF, +2 TLK!');}},
+        {text:'🚫 Nej tak, for farligt',fn:()=>{msg('{name}: "Du missede noget VILDT bro..." 😒');}},
+    ]},
+    {text:'🌟 {name}: "Yo, en BERØMT producer vil møde dig!"',choices:[
+        {text:'🎵 LET\'S GO!',fn:()=>{if(G.money<100){msg('Ingen penge til outfit!');return false;}G.money-=100;G.charmPts+=6;G.charmTotal+=6;G.smalltalk+=3;msg('MEGA CONNECTION! +6 CHARM, +3 TLK! Han vil samarbejde! 🎶🔥');}},
+        {text:'😎 Spil det cool',fn:()=>{G.charmPts+=3;G.charmTotal+=3;msg('Han respekterer din attitude! +3 CHARM!');}},
+        {text:'💪 Vis ham din workout',fn:()=>{G.styrke+=3;G.cardio+=2;G.charmPts+=2;G.charmTotal+=2;msg('Han er imponeret! +3 STR, +2 CRD, +2 CHARM!');}},
+    ]},
+    {text:'👻 {name}: "Der er en mystisk krypt under byen... skatte!"',choices:[
+        {text:'⚔️ Udforsk den!',fn:()=>{advTime(4);const roll=Math.random();if(roll>.6){G.money+=500;G.styrke+=3;G.reflex+=2;msg('SKAT FUNDET! +500 KR, +3 STR, +2 REF! 💰⚔️');}else if(roll>.3){G.cardio+=4;G.money+=150;msg('Fandt noget! +4 CRD, +150 KR!');}else{G.currentHP=Math.max(1,G.currentHP-15);G.reflex+=2;msg('Fælde! -15 HP men +2 REF for refleksen!');};}},
+        {text:'🗺️ Lav en plan først',fn:()=>{G.reflex+=3;G.smalltalk+=2;G.money+=100;msg('Planlagt perfekt! +3 REF, +2 TLK, +100 KR!');}},
+        {text:'📞 Ring efter backup',fn:()=>{G.styrke+=2;G.cardio+=2;G.smalltalk+=2;G.reflex+=2;msg('Teamwork! +2 til ALLE stats!');}},
+    ]},
+    {text:'⚡ {name}: "Bro, Kalle Miths håndlanger er spottet i byen!"',choices:[
+        {text:'🕵️ Følg efter ham!',fn:()=>{advTime(3);G.reflex+=4;G.styrke+=2;G.charmPts+=5;G.charmTotal+=5;msg('Du opdagede Kalle Miths hemmelige base! +4 REF, +2 STR, +5 CHARM! 🕵️🔥');}},
+        {text:'📸 Tag et billede som bevis',fn:()=>{G.smalltalk+=3;G.charmPts+=3;G.charmTotal+=3;msg('Bevis sikret! +3 TLK, +3 CHARM!');}},
+        {text:'💪 Konfronter ham!',fn:()=>{if(G.styrke>=8){G.styrke+=5;G.money+=300;msg('DU SLOG HAM! +5 STR, +300 KR! 💪🔥');}else{G.currentHP=Math.max(1,G.currentHP-25);G.styrke+=2;msg('Han var for stærk... -25 HP, +2 STR');};}},
+    ]},
 ];
 
 function showRandomEvent(){
@@ -1308,7 +1588,10 @@ const girlsByRound=[
     [{name:"Sofie",icon:"👩‍🦰",rating:5,abilities:['Øjenrulle'],attacks:["Du er ikke min type lol","Ew hvem inviterede dig?","Haha cute... men nej 💀","*ruller med øjnene*","Prøvede du lige at wink? Det lignede et tic","Jeg har set bedre pick-up lines på Reddit","Min veninde siger du ligner hendes onkel","*griner med veninderne og peger*","Du prøver SÅ hårdt, det er pinligt","Hmm... nej. Next.","Er det her en dare fra dine venner?","*tager en stor slurk af sin drink*","Okay wow. Det var IKKE det right move.","Du minder mig om en fyr jeg ghostede","Mine standarder er højere end dine ambitioner","*sender snap af dig til 'cringe' gruppen*","Jeg har afvist pænere i Netto","Selv bartendren har ondt af dig","*griner så højt at hele klubben kigger*","Prøv igen... i dit næste liv"],win:"Sofie giver sit nummer! 📱",lose:"'Nice try...' Hun vender sig."}],
     [{name:"Nadia",icon:"💃",rating:6,abilities:['Gab','Ignorér'],attacks:["Du danser som min farfar 💀","Er det DIT bedste?","Min ex var sjovere","*gaber højlydt*","Jeg har set bedre moves til en begravelse","*checker naglelak midt i din replik*","Sorry, sagde du noget? Jeg lyttede ikke","Har du overvejet at IKKE danse?","Det der var så akavet, jeg fik gåsehud","*danser circles around dig*","Du har energien af en våd karklud","Aww du prøver. Det er det sørgelige.","Min lille søster har bedre moves","*vender ryggen til og danser videre*","Du bevæger dig som en robot med lavt batteri","*laver en TikTok-dans og du er IKKE med*","Din footwork er en krigsforbrydelse","Har du overvejet yoga? Det er mere dit tempo","*gaber midt i din bedste move*","Selv gulvet har mere rytme end dig"],win:"Nadia: 'Vi danser hele natten!' 🎶",lose:"Friendzoned."}],
     [{name:"Jasmin",icon:"👸",rating:8,abilities:['Gucci Shame','Security Call'],attacks:["Kender du Gucci fra Zara?","Du LUGTER af Netto 🤢","Sikkerhed? Remove this.","*sender billede til veninderne*","Er det et Shein-outfit? Bro...","Mine øreringe koster mere end din husleje","*tager en selfie og cropper dig ud*","Ej, stod du i kø til VIP? Cute.","Security kender mig by name. Watch it.","Du er ikke på gæstelisten over mit liv","Min chauffør er sjovere end dig","*kigger dig op og ned* ...nej.","Prøver du at imponere MIG? Med DET?","Har du nogensinde set indersiden af en Gucci-butik?","Min Birkin bag har mere værdi end dit liv","*ringer til sin personlige shopper foran dig*","VIP er for Very Important People. Du er VP.","Skat, jeg taler kun med folk der har blue check","*vinker sin bodyguard over*","Selv min hundepasser klæder sig bedre"],win:"'Du er anderledes...' 💎",lose:"Vagten eskorterer dig ud."}],
-    [{name:"Isabella",icon:"👑",rating:10,abilities:['DM Flex','Chihuahua Attack','Hele Klubben Griner'],attacks:["Min DM er fyldt med bedre","Du er nummer INGENTING 💀","Min chihuahua har mere game","*hele klubben griner*","Jeg har afvist kendisser, du er INGEN","Min Instagram har flere følgere end din by","*hendes bodyguard tager et skridt fremad*","Du taler til den forkerte person, skat","Ej vent... 😂 du er SERIØS?! 😂😂","Min sidste date havde en yacht. Hvad har du?","*sender voice note til veninderne om dig*","Du giver main character energy... i en tragedy","Selv min bartender har bedre game","*kigger igennem dig som du er luft*","Cute. Men jeg dater kun op, aldrig ned.","Har du prøvet Tinder? Det er mere dit niveau.","Min privatjet venter. Du tager bus.","*hendes chihuahua bider dig i anklen*","Du er som et dating show... men du er deltageren der ryger i uge 1","Min manicure koster mere end din månedsløn","*tager sin krone af og slår dig med den*","Jeg er dronningen. Du er ikke engang en bonde i skak."],win:"HELE KLUBBEN SER DET!\nHANZI ER #1 IGEN! 👑🔥",lose:"'Tæt på... men nej.'"}]
+    [{name:"Isabella",icon:"👑",rating:10,abilities:['DM Flex','Chihuahua Attack','Hele Klubben Griner'],attacks:["Min DM er fyldt med bedre","Du er nummer INGENTING 💀","Min chihuahua har mere game","*hele klubben griner*","Jeg har afvist kendisser, du er INGEN","Min Instagram har flere følgere end din by","*hendes bodyguard tager et skridt fremad*","Du taler til den forkerte person, skat","Ej vent... 😂 du er SERIØS?! 😂😂","Min sidste date havde en yacht. Hvad har du?","*sender voice note til veninderne om dig*","Du giver main character energy... i en tragedy","Selv min bartender har bedre game","*kigger igennem dig som du er luft*","Cute. Men jeg dater kun op, aldrig ned.","Har du prøvet Tinder? Det er mere dit niveau.","Min privatjet venter. Du tager bus.","*hendes chihuahua bider dig i anklen*","Du er som et dating show... men du er deltageren der ryger i uge 1","Min manicure koster mere end din månedsløn","*tager sin krone af og slår dig med den*","Jeg er dronningen. Du er ikke engang en bonde i skak."],win:"HELE KLUBBEN SER DET!\nHANZI ER #1 IGEN! 👑🔥",lose:"'Tæt på... men nej.'"}],
+    [{name:"Freya",icon:"🔮",rating:11,abilities:['Mystic Aura','Mind Games','Fortune Curse'],attacks:["Jeg vidste du ville prøve. Stjernerne sagde det.","*hendes øjne lyser i mørket*","Du er en Stenbuk. Det ville ALDRIG virke.","Min aura er for stærk til dig","*kaster en krystal mod dig*","Merkur er retrograd. Gå hjem.","Jeg læste dine tarotkort... de sagde 'nej'","*hvisker noget på latin og du føler dig svimmel*","Dit chakra er HELT forkert aligned","Mine krystaller vibrerer af cringe","*hendes tredje øje dømmer dig*","Jeg manifesterede allerede min soulmate. Det er IKKE dig.","*brænder salvie og vifter dig væk*","Du har energien af en sprukken krystal","Min spirituelle guide siger du er en 2","*laver en hex-gestus* Held og lykke med DÉT","Du er som en horoskop-app... upålidelig og generisk","Min coven ville ALDRIG acceptere dig"],win:"Freya: 'Stjernerne har talt... du er den udvalgte.' 🔮✨",lose:"'Universet siger nej. Og jeg også.'"}],
+    [{name:"Victoria",icon:"💎",rating:11,abilities:['Diamond Shield','VIP Ejection','Model Walk'],attacks:["Jeg er bogstaveligt talt en model. Du er... hvad?","*hendes heels er højere end din selvtillid*","Security kender mig. De kender IKKE dig.","Min agent ringer. Du er ikke vigtig nok til at vente.","*tager en selfie der er bedre end dit profilbillede*","Jeg har gået runway i Milano. Du går til Netto.","Selv mine øjenvipper er dyrere end dit outfit","*vinker til sin chauffør*","Min venteliste er længere end din levetid","Du er ikke engang god nok til min B-liste","*kigger på sit Cartier-ur* Spild af min tid.","Jeg datede en prins. Bogstaveligt. En PRINS.","*hendes diamant-øreringe blinder dig*","Du prøver at punch above your weight. WAY above.","Min hund har sin egen Instagram med 2M følgere","Kan du overhovedet stave til Louboutin?","*modellen ved siden af hende griner også*","Selv min stylist ville afvise dig"],win:"Victoria: 'Du er den første der imponerer mig i ÅR.' 💎👑",lose:"'Min agent booker mig ud. Permanent.'"}],
+    [{name:"Aleksandra",icon:"🌹",rating:12,abilities:['Heartbreaker','Dance Battle Supreme','Crowd Control','Kiss of Death'],attacks:["Jeg har knust hjerter i 15 lande. Du er nummer HVAD?","*hele rummet stopper og kigger på hende*","Min ex var en rockstjerne. Du er en ringtone.","*danser så godt at DU føler dig akavet bare ved at SE*","Jeg har afvist mere talent end du nogensinde vil have","*sender en drink TILBAGE til bartenderen* Ikke godt nok.","Folk betaler for at stå i min nærhed. Du prøver gratis.","Min skønhed er et våben. Og du er ubevæbnet.","*hvisker noget til DJen og din yndlingssang stopper*","Jeg er grunden til at folk har trust issues","*kaster et blik der kunne smelte is og knuse drømme*","Du minder mig om en fyr jeg glemte eksisterede","Selv mine fjender indrømmer jeg er smuk","*hendes røde læber smiler, men øjnene dømmer*","Jeg er legenden de andre piger advarer dig om","Min silhuet har sin egen Wikipedia-side","*klapper langsomt* Adorable forsøg. Næste.","Du er som et skib der sejler mod en isbjerg. Og JEG er isbjerget.","*tager en rose og river kronbladene af én for én*","Min næste date er i Dubai. Din er i Bilka-parkeringen."],win:"Aleksandra taber rosen...\n'Ingen har nogensinde...' 🌹\nHANZI LAD - UOVERVINDELIG! 👑🔥🔥🔥",lose:"'Du var tæt på at være noget. Tæt på.'"}]
 ];
 
 const flexAbilities=[
@@ -1323,16 +1606,16 @@ const flexAbilities=[
     {id:'reflect',name:'SPEJLSKJOLD',icon:'🪞',desc:'Reflekter 50% skade i 2 ture',cost:5,unlocked:false,
      fn:()=>{ C.reflectBuff=2; S.ok(); cSpeech('SPEJLSKJOLD! 🪞 50% af modtaget skade reflekteres i 2 ture!'); cAct('REFLECT!','#ffbe0b'); updC(); setTimeout(showCMenu,2500); }},
 ];
-let C={girl:null,hHP:0,hMax:0,hMP:0,hMMax:0,gHP:0,gMax:0,phase:'menu',shield:0,blockBuff:0,dmgBuff:0,enemyDebuff:0,poison:0,confused:0,ally:null};
+let C={girl:null,hHP:0,hMax:0,hMP:0,hMMax:0,gHP:0,gMax:0,phase:'menu',shield:0,blockBuff:0,dmgBuff:0,enemyDebuff:0,poison:0,confused:0,ally:null,isBoss:false};
 let combatAF=null;
 
 function startCombatWithGirl(girl){
-    G.scene='combat';Mus.play('fight');
+    G.scene='combat';G.walking=false;Mus.play('fight');
     document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));
     if(!girl.hp)girl=makeScaledGirl(girl);
     C.girl=girl;
-    C.hMax=G.maxHP;C.hHP=C.hMax;C.hMMax=G.maxMP;C.hMP=C.hMMax;
-    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;C.isBodega=false;C.rageBuff=0;C.focusBuff=0;C.reflectBuff=0;
+    C.hMax=G.maxHP;if(G.currentHP<0)G.currentHP=C.hMax;C.hHP=Math.min(G.currentHP,C.hMax);C.hMMax=G.maxMP;C.hMP=C.hMMax;
+    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;C.isBodega=false;C.isBoss=false;C.rageBuff=0;C.focusBuff=0;C.reflectBuff=0;
     document.getElementById('combat-ui').classList.add('active');
     rsz();startCombatBg();updC();
     cSpeech(C.girl.icon+' '+C.girl.name+' ('+C.girl.rating+'/10) dukker op! 💃');
@@ -1456,10 +1739,15 @@ function showPickupMenu(){
 function doCallAlly(){
     S.click();document.getElementById('c-menu').style.display='none';
     C.hMP=Math.max(0,C.hMP-1);
+    if(Math.random()>.5){
+        S.bad();cAct('📞 INGEN SVAR!','#ff006e');
+        cSpeech('Ingen tager telefonen... du er alene! 📵');
+        updC();setTimeout(eTurn,2500);return;
+    }
     const roll=Math.random();
-    if(roll<.3){C.ally={name:'Gulle',turnsLeft:3,type:'gulle'};S.ok();cAct('📞 GULLE!','#8b5cf6');cSpeech('Gulle dukker op! "Yo bro, jeg hjælper!" (svag skade i 3 ture)');}
-    else if(roll<.7){C.ally={name:'Ritardo',turnsLeft:3,type:'ritardo'};S.ok();cAct('📞 RITARDO!','#059669');cSpeech('Ritardo er her! "Jeg har styr på det!" (moderat skade/heal i 3 ture)');}
-    else{C.ally={name:'LETH',turnsLeft:2,type:'leth'};S.perf();cAct('📞 LETH! 💪','#dc2626');cSpeech('LETH stormer ind! "BRO JEG ER HER!" (mega skade + debuff i 2 ture) 🔥');}
+    if(roll<.3){C.ally={name:'Gulle',turnsLeft:99,type:'gulle',scale:.06};S.ok();cAct('📞 GULLE!','#8b5cf6');cSpeech('Gulle dukker op! "Yo bro, jeg er her HELE kampen!" 🍺');}
+    else if(roll<.7){C.ally={name:'Ritardo',turnsLeft:99,type:'ritardo',scale:.10};S.ok();cAct('📞 RITARDO!','#059669');cSpeech('Ritardo er her! "Jeg har styr på det hele vejen!" 💼');}
+    else{C.ally={name:'LETH',turnsLeft:99,type:'leth',scale:.15};S.perf();cAct('📞 LETH! 💪','#dc2626');cSpeech('LETH stormer ind! "BRO JEG BLIVER TIL VI VINDER!" 🔥💪');}
     updC();setTimeout(eTurn,2500);
 }
 
@@ -1514,6 +1802,7 @@ function doAtk(type,hitPct,mpCost,base,speech){
     if(C.dmgBuff>0)base=Math.floor(base*1.5);
     if(C.rageBuff>0)base=Math.floor(base*2);
     if(C.focusBuff>0)hitPct=100;
+    hitPct=Math.min(100,hitPct+G.hitBonus);
     if(C.confused>0){hitPct=Math.max(10,hitPct-10);C.confused--;}
     // Crit check
     let isCrit=false;
@@ -1531,6 +1820,10 @@ function doAtk(type,hitPct,mpCost,base,speech){
             if(G.perks.berserker&&type==='orm')mult*=1.5;
             let dmg=Math.max(1,Math.floor(base*mult));
             C.gHP=Math.max(0,C.gHP-dmg);
+            const cc=document.getElementById('c-cv');
+            combatSlash(cc.width*.75,cc.height*.5,C.pendingCrit?'#ffbe0b':'#ff006e');
+            combatFlash(C.pendingCrit?'#ffbe0b':'#ff006e','girl');
+            if(q==='perfect'||C.pendingCrit)combatParticles(cc.width*.75,cc.height*.5,C.pendingCrit?'#ffbe0b':'#00d4aa',12);
             if(C.pendingCrit){S.perf();cAct('💥 CRIT! -'+dmg,'#ffbe0b');}
             else if(q==='perfect'){S.perf();cAct('PERFEKT! -'+dmg,'#ffbe0b');}
             else if(q==='good'){S.ok();cAct('-'+dmg,'#00d4aa');}
@@ -1602,8 +1895,9 @@ function mgReaction(ctx,W,H,cb){
         }
         requestAnimationFrame(draw);
     }
+    let earlyTaps=0;
     const tap=()=>{if(!active)return;
-        if(phase==='wait'){active=false;clearTimeout(failsafe);cleanup();S.bad();cAct('FOR TIDLIGT!','#ff006e');cb('miss');return;}
+        if(phase==='wait'){earlyTaps++;S.bad();cAct('FOR TIDLIGT! Vent på GRØN!','#ff006e');if(earlyTaps>=3){active=false;clearTimeout(failsafe);cleanup();cb('miss');}return;}
         active=false;clearTimeout(failsafe);cleanup();
         const rt=Date.now()-startT;
         cb(rt<200?'perfect':rt<400?'good':rt<700?'ok':'miss');
@@ -1775,19 +2069,19 @@ function eTurn(){
     }
     // Poison tick
     if(C.poison>0){
-        const pdmg=Math.max(2,Math.floor(C.girl.atk*.3));
+        const pdmg=Math.max(3,Math.floor(C.gMax*.08));
         C.gHP=Math.max(0,C.gHP-pdmg);C.poison--;
         cAct('☠️ GIFT -'+pdmg,'#a855f7');
         cSpeech('Giften virker! -'+pdmg+' HP!'+(C.poison>0?' ('+C.poison+' ture tilbage)':''));
         updC();if(chkEnd())return;
     }
-    // Ally effects
-    if(C.ally&&C.ally.turnsLeft>0){
+    // Ally effects (scale with enemy max HP)
+    if(C.ally){
         let allyMsg='';
-        if(C.ally.type==='gulle'){const ad=1+Math.floor(Math.random()*2);C.gHP=Math.max(0,C.gHP-ad);allyMsg='Gulle kaster en øl! -'+ad+' HP!';}
-        else if(C.ally.type==='ritardo'){if(Math.random()>.5){const ad=3+Math.floor(Math.random()*4);C.gHP=Math.max(0,C.gHP-ad);allyMsg='Ritardo slår! -'+ad+' HP!';}else{const h=5;C.hHP=Math.min(C.hMax,C.hHP+h);allyMsg='Ritardo healer! +'+h+' HP!';}}
-        else if(C.ally.type==='leth'){const ad=6+Math.floor(Math.random()*5);C.gHP=Math.max(0,C.gHP-ad);C.enemyDebuff=Math.max(C.enemyDebuff,1);allyMsg='LETH SMADRER! -'+ad+' HP + debuff! 💪';}
-        C.ally.turnsLeft--;if(C.ally.turnsLeft<=0)C.ally=null;
+        const scaleDmg=Math.max(2,Math.floor(C.gMax*C.ally.scale));
+        if(C.ally.type==='gulle'){C.gHP=Math.max(0,C.gHP-scaleDmg);allyMsg='Gulle kaster en øl! -'+scaleDmg+' HP! 🍺';}
+        else if(C.ally.type==='ritardo'){if(Math.random()>.4){C.gHP=Math.max(0,C.gHP-scaleDmg);allyMsg='Ritardo slår! -'+scaleDmg+' HP!';}else{const h=Math.max(3,Math.floor(C.hMax*.08));C.hHP=Math.min(C.hMax,C.hHP+h);allyMsg='Ritardo healer! +'+h+' HP!';}}
+        else if(C.ally.type==='leth'){C.gHP=Math.max(0,C.gHP-scaleDmg);C.enemyDebuff=Math.max(C.enemyDebuff,1);allyMsg='LETH SMADRER! -'+scaleDmg+' HP + debuff! 💪';}
         cAct('📞 '+allyMsg,'#a855f7');updC();if(chkEnd())return;
     }
     // Tick down buffs
@@ -1801,11 +2095,12 @@ function eTurn(){
     const poisonDelay=C.poison>=0?1200:0;
     setTimeout(()=>{
         cSpeech(g.name+': "'+atk+'"');cAct('💬','#ff006e');
-        const readTime=Math.max(3500,atk.length*100+1200);
+        const readTime=Math.min(4000,Math.max(2000,atk.length*80+800));
         setTimeout(()=>{
             cSpeech('MINI-GAME! Reducer hendes skade! 🛡️');
             setTimeout(()=>runMiniGame(q=>{
                 let red=q==='perfect'?.5:q==='good'?.35:q==='ok'?.2:0;
+                if(Math.random()*100<G.blockChance){S.ok();cAct('DODGED!','#00d4aa');cSpeech('Hanzi undviger! 🛡️');updC();chkEnd()||setTimeout(showCMenu,2000);return;}
                 let rawAtk=g.atk;
                 if(C.enemyDebuff>0)rawAtk=Math.floor(rawAtk*.7);
                 let dmg=Math.max(1,Math.floor(rawAtk*(1-red)));
@@ -1830,22 +2125,54 @@ function eTurn(){
                 if(q==='perfect'){cAct('HALVERET! -'+dmg,'#00d4aa');if(!C.shield)cSpeech('Max block! Kun -'+dmg+'!');}
                 else if(q==='good'){S.click();cAct('-'+dmg,'#3b82f6');}
                 else{S.hit();cAct('-'+dmg+' OUCH!','#ff006e');
-                    document.getElementById('c-hanzi').style.animation='shake .3s';setTimeout(()=>document.getElementById('c-hanzi').style.animation='',300);}
+                    const cc2=document.getElementById('c-cv');combatFlash('#ff006e','hanzi');combatParticles(cc2.width*.25,cc2.height*.55,'#ff006e',8);}
                 updC();chkEnd()||setTimeout(showCMenu,2000);
             }),800);
         },readTime);
     },poisonDelay);
 }
 
+function combatFlash(color,side){
+    const el=document.getElementById(side==='hanzi'?'c-hanzi':'c-girl');
+    el.style.animation='shake .3s';el.style.boxShadow='0 0 20px '+color;
+    setTimeout(()=>{el.style.animation='';el.style.boxShadow='';},400);
+}
+function combatSlash(x,y,color){
+    const cc=document.getElementById('c-cv'),ctx=cc.getContext('2d');
+    let f=0;const W=cc.width;
+    const draw=()=>{f++;ctx.save();ctx.globalAlpha=1-f/12;
+        ctx.strokeStyle=color;ctx.lineWidth=3+Math.random()*2;ctx.shadowColor=color;ctx.shadowBlur=10;
+        ctx.beginPath();ctx.moveTo(x-15-f*2,y-15+f);ctx.lineTo(x+15+f*2,y+15-f);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x+15+f,y-15-f);ctx.lineTo(x-15-f,y+15+f);ctx.stroke();
+        ctx.restore();if(f<12)requestAnimationFrame(draw);};draw();
+}
+function combatParticles(x,y,color,count){
+    const cc=document.getElementById('c-cv'),ctx=cc.getContext('2d');
+    const parts=[];for(let i=0;i<count;i++)parts.push({x,y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6-2,life:20+Math.random()*10});
+    let f=0;const draw=()=>{f++;ctx.save();
+        parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.life--;
+            ctx.globalAlpha=Math.max(0,p.life/30);ctx.fillStyle=color;ctx.fillRect(p.x-2,p.y-2,4,4);});
+        ctx.restore();if(f<30&&parts.some(p=>p.life>0))requestAnimationFrame(draw);};draw();
+}
+
 function chkEnd(){
     if(C.gHP<=0){C.phase='done';S.perf();G.girlsMet++;G.totalScore+=100;
-        const reward=50+(C.girl.rating||1)*20;G.money+=reward;
-        const stats=['styrke','cardio','smalltalk','reflex'];const rs=stats[Math.floor(Math.random()*stats.length)];G[rs]+=1;G.charmPts+=2;G.charmTotal+=2;
-        const rsName=rs==='styrke'?'STR':rs==='cardio'?'CRD':rs==='smalltalk'?'TLK':'REF';
+        const gl=C.girl.lvl||1;
+        const reward=Math.floor((50+(C.girl.rating||1)*20)*(1+gl*.3));G.money+=reward;
+        const charmReward=Math.max(2,Math.floor((C.girl.rating||1)*1.5*gl));
+        G.charmPts+=charmReward;G.charmTotal+=charmReward;
+        const statBonus=gl>=4?3:gl>=3?2:gl>=2?1:0;
+        if(statBonus>0){const stats=['styrke','cardio','smalltalk','reflex'];stats.forEach(s=>G[s]+=statBonus);}
+        if(gl>=5){G.critLvl++;G.regenLvl++;float('+1 CRIT +1 REGEN!','#e040fb');}
+        const cc=document.getElementById('c-cv');
+        combatParticles(cc.width*.75,cc.height*.5,'#ffbe0b',20);
+        combatFlash('#ffbe0b','girl');
         cSpeech(C.girl.win);cAct('WIN! 🏆','#ffbe0b');
-        setTimeout(()=>{cSpeech('BELØNNING: +'+reward+' KR, +1 '+rsName+', +2 CHARM! 🎉');updHUD();},2000);
+        const bonusMsg=statBonus>0?' +'+statBonus+' ALL STATS!':'';
+        setTimeout(()=>{cSpeech('BELØNNING: +'+reward+' KR, +'+charmReward+' CHARM!'+bonusMsg+' 🎉');updHUD();},2000);
         setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 3">🏆 VICTORY!</button>`;document.getElementById('c-menu').style.display='grid';},4000);return true;}
     if(C.hHP<=0){C.phase='done';cSpeech(C.girl.lose);cAct('REJECTED 💔','#ff006e');S.bad();G.totalScore+=10;
+        combatFlash('#ff006e','hanzi');
         setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 3">💔 REJECTED...</button>`;document.getElementById('c-menu').style.display='grid';},1500);return true;}
     return false;
 }
@@ -1854,13 +2181,16 @@ function leaveCombat(){
     cancelAnimationFrame(combatAF);if(mgCleanup){mgCleanup();mgCleanup=null;}
     document.getElementById('combat-ui').classList.remove('active');
     G.scene='map';Mus.play('map');
+    G.currentHP=Math.max(1,C.hHP);
     document.querySelectorAll('.ov,.wheel-ov,.event-ov').forEach(o=>o.classList.remove('active'));
+    if(C.isBoss){if(C.gHP<=0){endGame();return;}G.scene='map';updHUD();msg('Kalle Mith vandt... Prøv igen! 🎭');return;}
     if(C.isBodega){
         updHUD();msg(C.gHP<=0?'Bodega-pige scoret! 🍺🔥':'Bedre held næste gang på bodegaen!');return;
     }
+    G.firstClubDone=true;
     G.round++;G.daysLeft=7;G.day++;G.hour=8;
-    G.hunger=Math.min(G.maxHunger,G.hunger+20);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;
-    if(G.round>G.maxRounds&&G.girlsMet>=4){secretBoss();return;}
+    bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;
+    if(G.round>G.maxRounds&&G.girlsMet>=7){secretBoss();return;}
     if(G.round>G.maxRounds){endGame();return;}
     updHUD();msg(C.gHP<=0?'SCORET! 🔥 Næste runde om 7 dage!':'Træn hårdere! Runde '+G.round+' om 7 dage.');
 }
@@ -1877,7 +2207,7 @@ function secretBoss(){
     const oldScript=[...briefScript];
     briefScript.length=0;
     briefScript.push(
-        ()=>{setBrief('Leth 💪','BRO! Du scorede ALLE 4! 🔥🔥🔥');},
+        ()=>{setBrief('Leth 💪','BRO! Du scorede ALLE 7! 🔥🔥🔥');},
         ()=>{setBrief('Leth 💪','Men vent... noget er galt. Jeg kan mærke det.');},
         ()=>{setBrief('??? 🎭','Så du tror du kender sandheden? Du ved INTET.');},
         ()=>{setBrief('Kalle Mith 🎭','Jeg er Kalle Mith. Manden bag ALT. Klubberne. Bodegaerne. HELE nattelivet.');},
@@ -1891,7 +2221,7 @@ function secretBoss(){
             document.getElementById('bg-rating').textContent='⭐⭐⭐⭐⭐⭐ 12/10';
             document.getElementById('bg-stats').innerHTML='❤️ HP: '+briefGirl.hp+' | ⚔️ ATK: '+briefGirl.atk+'\n⚠️ HEMMELIG BOSS! EKSTREM SVÆRHED!\n💕 Kæreste: Valentina (den lækrste pige i verden)';
         },
-        ()=>{document.getElementById('brief-ov').classList.remove('active');briefScript.length=0;briefScript.push(...oldScript);startCombatWithGirl(briefGirl);}
+        ()=>{document.getElementById('brief-ov').classList.remove('active');briefScript.length=0;briefScript.push(...oldScript);startCombatWithGirl(briefGirl);C.isBoss=true;}
     );
     advBrief();
 }
@@ -1899,15 +2229,16 @@ function secretBoss(){
 // ===== END =====
 function endGame(){
     G.scene='end';Mus.stop();document.getElementById('hud').className='';
-    const beatKalleMith=G.girlsMet>=5;
+    const beatKalleMith=G.girlsMet>=8;
     if(beatKalleMith){showCredits();return;}
     const r=document.getElementById('result-ov');r.classList.add('active');
     let i,t,c,d;
-    if(G.girlsMet>=4){i='👑';t='ALLE SCORET!';c='#ffbe0b';d='Men der er mere... Prøv igen for den HEMMELIGE boss Kalle Mith! 🔥🎭';}
-    else if(G.girlsMet>=3){i='😎';t='NÆSTEN DER!';c='#00d4aa';d=G.girlsMet+'/4 scoret. Stærkt comeback!';}
-    else if(G.girlsMet>=1){i='💪';t='DER ER HÅBET';c='#ff6b35';d=G.girlsMet+' scoret. "Næste sæson, bror."';}
+    if(G.girlsMet>=7){i='👑';t='ALLE 7 SCORET!';c='#ffbe0b';d='Men der er mere... Prøv igen for den HEMMELIGE boss Kalle Mith! 🔥🎭';}
+    else if(G.girlsMet>=5){i='😎';t='NÆSTEN DER!';c='#00d4aa';d=G.girlsMet+'/7 scoret. Stærkt comeback!';}
+    else if(G.girlsMet>=3){i='💪';t='DER ER HÅBET';c='#ff6b35';d=G.girlsMet+'/7 scoret. "Næste sæson, bror."';}
+    else if(G.girlsMet>=1){i='🙂';t='EN GOD START';c='#3b82f6';d=G.girlsMet+'/7 scoret. Bliv ved med at træne!';}
     else{i='😅';t='HANZI PRØVEDE...';c='#aaa';d='0 scoret. Der er altid næste gang!';}
-    r.innerHTML=`<div style="text-align:center"><div style="font-size:3.5rem;margin-bottom:10px">${i}</div><div class="pix" style="font-size:clamp(10px,3.5vw,20px);color:${c};margin-bottom:6px">${t}</div><div style="font-size:.65rem;color:#aaa;max-width:300px;margin:0 auto 14px;line-height:1.6">${d}</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#ffbe0b;margin-bottom:16px">SCORE: ${G.totalScore} | DAMER: ${G.girlsMet}/4</div><button class="btn" onclick="restart()">PRØV IGEN</button></div>`;
+    r.innerHTML=`<div style="text-align:center"><div style="font-size:3.5rem;margin-bottom:10px">${i}</div><div class="pix" style="font-size:clamp(10px,3.5vw,20px);color:${c};margin-bottom:6px">${t}</div><div style="font-size:.65rem;color:#aaa;max-width:300px;margin:0 auto 14px;line-height:1.6">${d}</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#ffbe0b;margin-bottom:16px">SCORE: ${G.totalScore} | DAMER: ${G.girlsMet}/7</div><button class="btn" onclick="restart()">PRØV IGEN</button></div>`;
 }
 
 function showCredits(){
@@ -1948,12 +2279,159 @@ function showCredits(){
 }
 
 function restart(){
-    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title'});bodegaUsedToday=false;eventMarker=null;loreCallIdx=0;
+    Object.assign(G,{day:1,daysLeft:7,hour:8,money:150,hunger:80,round:1,styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,inv:[],bought:[],girlsMet:0,totalScore:0,tutorial:0,bodegaLvl:1,wheelUsedToday:false,eventDoneToday:false,buff:null,buffDays:0,px:.35,py:.45,scene:'title',currentHP:-1,firstClubDone:false,kbhUnlocked:false});bodegaUsedToday=false;eventMarker=null;loreCallIdx=0;gamblesToday=0;foodBoughtToday=0;
+    stockPrices={hanzi:100,tbh:50,leth:75};stockOwned={hanzi:0,tbh:0,leth:0};
+    friendRel.lemming=0;friendRel.malte=0;friendRel.marius=0;friendRel.thomas=0;
     flexAbilities.forEach(a=>a.unlocked=false);
     Object.keys(visitedLocations).forEach(k=>delete visitedLocations[k]);
     document.getElementById('result-ov').classList.remove('active');
     document.getElementById('credits-ov').classList.remove('active');
     document.getElementById('title-ov').style.display='flex';
+}
+
+// ===== PHONE APPS =====
+let stockPrices={hanzi:100,tbh:50,leth:75};
+let stockOwned={hanzi:0,tbh:0,leth:0};
+function openPhoneApps(){
+    G.scene='phone_apps';
+    let ov=document.getElementById('phoneapps-ov');
+    if(ov)ov.remove();
+    ov=document.createElement('div');ov.id='phoneapps-ov';ov.className='ov active';
+    ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#05050f;z-index:20;display:flex;flex-direction:column;align-items:center;overflow-y:auto;padding:20px 10px;';
+    const apps=[
+        {name:'📈 AKTIER',desc:'Invester dine penge!',fn:openStocks},
+        {name:'📊 STATS',desc:'Se dine stats',fn:openStatsApp},
+        {name:'🎰 GAMBLING',desc:'Dobbelt eller intet!',fn:openGambling},
+        {name:'📞 KONTAKTER',desc:'Ring til vennerne',fn:openContacts},
+    ];
+    ov.innerHTML=`<div class="pix" style="font-size:clamp(10px,3vw,16px);color:#3b82f6;margin-bottom:6px">📱 HANZI'S TELEFON</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#888;margin-bottom:16px">${G.money} KR | DAG ${G.day}</div>`;
+    const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-width:300px;width:100%;';
+    apps.forEach(app=>{
+        const d=document.createElement('div');
+        d.style.cssText='background:rgba(255,255,255,.04);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:16px 10px;text-align:center;cursor:pointer;';
+        d.innerHTML=`<div style="font-size:1.5rem;margin-bottom:6px">${app.name.split(' ')[0]}</div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#fff">${app.name.split(' ').slice(1).join(' ')}</div><div style="font-size:.5rem;color:#888;margin-top:4px">${app.desc}</div>`;
+        d.onclick=app.fn;
+        grid.appendChild(d);
+    });
+    ov.appendChild(grid);
+    const back=document.createElement('button');back.className='btn btn-s';back.textContent='← TILBAGE';back.style.marginTop='16px';
+    back.onclick=()=>{ov.remove();G.scene='map';};
+    ov.appendChild(back);
+    document.body.appendChild(ov);
+}
+
+function openStocks(){
+    const ov=document.getElementById('phoneapps-ov');
+    const stocks=[
+        {id:'hanzi',name:'HANZI Inc.',icon:'🕺',price:stockPrices.hanzi},
+        {id:'tbh',name:'TBH Records',icon:'🎵',price:stockPrices.tbh},
+        {id:'leth',name:'Leth Fitness',icon:'💪',price:stockPrices.leth},
+    ];
+    const portfolio=stocks.reduce((sum,s)=>sum+stockOwned[s.id]*s.price,0);
+    ov.innerHTML=`<div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:#00d4aa;margin-bottom:4px">📈 AKTIER</div><div class="pix" style="font-size:clamp(5px,1.2vw,7px);color:#888;margin-bottom:12px">Portfolio: ${portfolio} KR | Cash: ${G.money} KR</div>`;
+    stocks.forEach(s=>{
+        const d=document.createElement('div');
+        d.style.cssText='background:rgba(255,255,255,.03);border:1px solid rgba(0,212,170,.2);border-radius:8px;padding:10px;margin-bottom:8px;max-width:300px;width:100%;';
+        const change=Math.random()>.5;
+        d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:1.2rem">${s.icon}</span> <span class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#fff">${s.name}</span></div><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:${change?'#00d4aa':'#ff006e'}">${s.price} KR ${change?'📈':'📉'}</div></div><div style="display:flex;gap:6px;margin-top:8px"><span class="pix" style="font-size:clamp(4px,1vw,6px);color:#ffbe0b">Ejer: ${stockOwned[s.id]}</span></div><div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-s" onclick="buyStock('${s.id}',${s.price})">KØB</button><button class="btn btn-s" onclick="sellStock('${s.id}',${s.price})">SÆLG</button></div>`;
+        ov.appendChild(d);
+    });
+    const back=document.createElement('button');back.className='btn btn-s';back.textContent='← TILBAGE';back.style.marginTop='12px';
+    back.onclick=openPhoneApps;ov.appendChild(back);
+}
+function buyStock(id,price){
+    if(G.money<price){msg('Ikke nok penge!');S.bad();return;}
+    G.money-=price;stockOwned[id]++;S.coin();float('Købt 1 aktie!','#00d4aa');updHUD();openStocks();
+}
+function sellStock(id,price){
+    if(stockOwned[id]<=0){msg('Ingen aktier at sælge!');S.bad();return;}
+    stockOwned[id]--;G.money+=price;S.coin();float('+'+price+' KR','#ffbe0b');updHUD();openStocks();
+}
+
+function openStatsApp(){
+    const ov=document.getElementById('phoneapps-ov');
+    const stats=[
+        ['Styrke',G.styrke,'#ff006e'],['Cardio',G.cardio,'#ff4d8d'],['Small Talk',G.smalltalk,'#3b82f6'],['Reflex',G.reflex,'#00d4aa'],
+        ['Crit Chance',G.critChance+'%','#ffbe0b'],['Crit Dmg',G.critDmg+'%','#ff6b35'],['HP Regen',G.regenAmt+'/tur','#00d4aa'],
+        ['Max HP',G.maxHP,'#ff006e'],['Max MP',G.maxMP,'#3b82f6'],['Skade',G.dmg,'#ff6b35'],['Block',G.blockChance+'%','#00d4aa'],
+        ['Gym LVL',G.gymLvl,'#ffbe0b'],['Work LVL',G.workLvl,'#059669'],['Bodega LVL',G.bodegaLvl,'#f59e0b'],
+        ['Piger scoret',G.girlsMet+'/7','#e040fb'],['Runde',G.round+'/'+G.maxRounds,'#fff'],
+    ];
+    ov.innerHTML=`<div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:#ffbe0b;margin-bottom:12px">📊 STATS</div>`;
+    const list=document.createElement('div');list.style.cssText='max-width:300px;width:100%;';
+    stats.forEach(s=>{
+        const d=document.createElement('div');
+        d.style.cssText='display:flex;justify-content:space-between;padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.06);';
+        d.innerHTML=`<span class="pix" style="font-size:clamp(4px,1.1vw,7px);color:#aaa">${s[0]}</span><span class="pix" style="font-size:clamp(4px,1.1vw,7px);color:${s[2]}">${s[1]}</span>`;
+        list.appendChild(d);
+    });
+    ov.appendChild(list);
+    const back=document.createElement('button');back.className='btn btn-s';back.textContent='← TILBAGE';back.style.marginTop='12px';
+    back.onclick=openPhoneApps;ov.appendChild(back);
+}
+
+let gamblesToday=0;const maxGamblesPerDay=5;
+function openGambling(){
+    const ov=document.getElementById('phoneapps-ov');
+    ov.innerHTML=`<div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:#e040fb;margin-bottom:12px">🎰 GAMBLING</div><div class="pix" style="font-size:clamp(5px,1.2vw,7px);color:#888;margin-bottom:16px">Cash: ${G.money} KR | Spil i dag: ${gamblesToday}/${maxGamblesPerDay}</div>`;
+    const bets=[50,100,250,500];
+    bets.forEach(bet=>{
+        const d=document.createElement('button');d.className='btn';d.style.cssText='margin:4px;min-width:200px;';
+        d.textContent=`🎲 ${bet} KR - Dobbelt eller intet!`;
+        d.onclick=()=>{
+            if(gamblesToday>=maxGamblesPerDay){msg('Nok gambling for i dag! 🎰');S.bad();return;}
+            if(G.money<bet){msg('Ikke nok penge!');S.bad();return;}
+            gamblesToday++;G.money-=bet;
+            if(Math.random()>.5){G.money+=bet*2;S.perf();float('+'+bet+' KR! 🎉','#ffbe0b');msg('VUNDET! +'+bet+' KR! 🎰');}
+            else{S.bad();float('-'+bet+' KR 💸','#ff006e');msg('Tabt! -'+bet+' KR 😤');}
+            updHUD();openGambling();
+        };
+        ov.appendChild(d);
+    });
+    const back=document.createElement('button');back.className='btn btn-s';back.textContent='← TILBAGE';back.style.marginTop='12px';
+    back.onclick=openPhoneApps;ov.appendChild(back);
+}
+
+const friendRel={lemming:0,malte:0,marius:0,thomas:0};
+const relTiers=[
+    {min:0,label:'Bekendt',color:'#888',icon:'🤝'},
+    {min:3,label:'Ven',color:'#3b82f6',icon:'😊'},
+    {min:6,label:'Bedste Ven',color:'#00d4aa',icon:'🤜🤛'},
+    {min:10,label:'Bro for Life',color:'#ffbe0b',icon:'👑'},
+];
+function getRelTier(pts){let t=relTiers[0];for(const r of relTiers)if(pts>=r.min)t=r;return t;}
+function openContacts(){
+    const ov=document.getElementById('phoneapps-ov');
+    ov.innerHTML=`<div class="pix" style="font-size:clamp(9px,2.5vw,14px);color:#3b82f6;margin-bottom:12px">📞 KONTAKTER</div>`;
+    const contacts=[
+        {id:'lemming',name:'Lemming 🐹',stat:'styrke',statName:'STR',msg:'Bro husk at træne!',hangCost:30,hangMsg:'Trænede med Lemming!'},
+        {id:'malte',name:'Malte 🍺',stat:'smalltalk',statName:'TLK',msg:'Yo, bodegaen har nye piger!',hangCost:50,hangMsg:'Hang med Malte på bodegaen!'},
+        {id:'marius',name:'Marius 🎮',stat:'reflex',statName:'REF',msg:'Gaming-session?',hangCost:40,hangMsg:'Gamede med Marius!'},
+        {id:'thomas',name:'Thomas ⚽',stat:'cardio',statName:'CRD',msg:'Cardio er undervurderet bro!',hangCost:20,hangMsg:'Løb med Thomas!'},
+    ];
+    contacts.forEach(c=>{
+        const rel=friendRel[c.id];const tier=getRelTier(rel);
+        const buffAmt=tier.min>=10?3:tier.min>=6?2:tier.min>=3?1:0;
+        const bars='█'.repeat(Math.min(10,rel))+'░'.repeat(Math.max(0,10-rel));
+        const d=document.createElement('div');
+        d.style.cssText='background:rgba(255,255,255,.03);border:1px solid rgba(59,130,246,.15);border-radius:8px;padding:10px;margin-bottom:6px;max-width:300px;width:100%;';
+        d.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><div class="pix" style="font-size:clamp(5px,1.3vw,8px);color:#fff">${c.name}</div><div style="font-size:.5rem;color:${tier.color}">${tier.icon} ${tier.label}</div></div><div style="font-size:.45rem;color:#555;margin:4px 0;letter-spacing:1px">${bars}</div><div style="font-size:.5rem;color:#888">${c.msg}</div>${buffAmt>0?`<div style="font-size:.45rem;color:${tier.color};margin-top:2px">Permanent buff: +${buffAmt} ${c.statName}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn-s" data-hang="${c.id}">🤙 HANG (${c.hangCost} KR)</button></div>`;
+        ov.appendChild(d);
+        d.querySelector(`[data-hang="${c.id}"]`).onclick=()=>{
+            if(G.money<c.hangCost){msg('Ikke nok penge!');S.bad();return;}
+            G.money-=c.hangCost;advTime(2);friendRel[c.id]++;
+            const newTier=getRelTier(friendRel[c.id]);const oldTier=getRelTier(friendRel[c.id]-1);
+            if(newTier.min>oldTier.min&&newTier.min>=3){
+                const newBuff=newTier.min>=10?3:newTier.min>=6?2:1;
+                G[c.stat]+=1;float('+1 '+c.statName+' permanent!',newTier.color);
+                msg(c.name.split(' ')[0]+' relation: '+newTier.label+'! +1 '+c.statName+' permanent! '+newTier.icon);
+            }else{msg(c.hangMsg+' +1 relation 🤝');}
+            S.ok();float('+1 Relation',tier.color);updHUD();openContacts();
+        };
+    });
+    const back=document.createElement('button');back.className='btn btn-s';back.textContent='← TILBAGE';back.style.marginTop='12px';
+    back.onclick=openPhoneApps;ov.appendChild(back);
 }
 
 // ===== PHONE =====
@@ -1997,7 +2475,7 @@ function loop(){
             for(let wy=gY-bh+6;wy<gY;wy+=9)for(let wx=bx+3;wx<bx+bw-3;wx+=11){
                 cx.fillStyle=Math.sin(wx*7+wy*3+t)>.3?'rgba(255,190,11,.15)':'rgba(0,0,0,.2)';cx.fillRect(wx,wy,5,5);}}
     }
-    else if(['map','gym','shop','work','tree','train','bodega','wheel','event'].includes(G.scene)){drawMap();}
+    else if(['map','gym','shop','work','work_anim','tree','train','bodega','wheel','event'].includes(G.scene)){drawMap();}
     requestAnimationFrame(loop);
 }
 
