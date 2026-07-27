@@ -136,6 +136,16 @@ const combatJokes=[
     'DJ skruer op. Du kan ikke høre dig selv tænke. 🎧',
     'Du snubler over dine egne fødder. Spil det cool. Spil det COOL. 🕺',
     'Bartenderen giver dig et medlidende blik. 🍸',
+    'Hendes ex kigger på fra baren. Du sveder MERE. 😰',
+    'Hun checker sin telefon midt i din replik. Brutalt. 📱',
+    'Hendes veninder hvisker og griner. Om DIG. 100%. 👯',
+    'Du prøver en smooth move. Spilder din drink. På hende. 🥤',
+    'Hun: "Vent... kender jeg dig ikke fra Netto?" 🛒',
+    'Dine hænder ryster. Hun ser det. ALLE ser det. 🫨',
+    'Du glemmer hvad du hedder. HVAD HEDDER DU?! 🧠❌',
+    'En random fyr råber "GO HANZI!" fra baren. Pinligt men wholesome. 📢',
+    'Hun: "Du minder mig om min eks." Er det godt? DET ER IKKE GODT. 💔',
+    'DJ dropper din yndlingssang. Du danser. Hun ser skræmt ud. 💃',
 ];
 const workJokes=[
     'Ritardo: "Hvis du arbejdede SÅ hårdt hjemme som her... nej vent, du gør det her heller ikke." 💼',
@@ -144,6 +154,16 @@ const workJokes=[
     'Ritardo: "MIN hund arbejder hurtigere end dig. Og den har tre ben." 🐕',
     'Du opdager at kopimaskinen har været i stykker i 3 uger. Ingen mærkede det. 🖨️',
     'En kunde ringer: "JEG VIL TALE MED DIN CHEF!" Ritardo: "JEG ER CHEFEN!" 📞',
+    'Ritardo: "Du får pause når JEG siger du får pause!" ...5 sek senere: "PAUSE!" ☕',
+    'Du finder en mystisk sandwich i mikrobølgen. Den har været der siden 2019. 🥪',
+    'Kollegaen fortæller den SAMME joke. For 14. gang. I DAG. 😐',
+    'Ritardo googler "hvordan fyrer man folk" mens du ser på. 💀',
+    'En kunde spørger om du er chefen. Ritardo hører det. Han er IKKE glad. 😤',
+    'Du tager 3 toiletpauser på 1 time. Ritardo fører regnskab. 🚽',
+    'Ritardo: "Da JEG var ung gik vi 20 km til arbejde! Begge veje! OPAD!" 👴',
+    'WiFi\'et dør. Ritardo: "GODT! Nu kan I ARBEJDE!" Alle: 😰',
+    'Du dropper en hel kasse. Ritardo: "DET KOMMER PÅ DIN LØN!" 📦',
+    'Nogen har tegnet en penis på Ritardos kaffekop. Alle nægter. 🖊️',
 ];
 const shopJokes=[
     'Gulle: "Prisen? Øh... hvad har du på dig?" 💰',
@@ -152,6 +172,16 @@ const shopJokes=[
     'Du ser et hår i maden. Gulle: "Det er krydderi!" 🧑‍🍳',
     'Gulle synger med til radioen. Kunderne flygter. 🎤',
     'En mus løber forbi. Gulle: "Det er maskotten!" 🐭',
+    'Gulle: "Returret? HAHA! God joke min ven!" 🚫',
+    'Sundhedsinspektøren kigger ind. Gulle lukker gardinet. 🪟',
+    'Gulle: "Denne kebab har SJÆL! ...og lidt kylling fra i mandags." 🥙',
+    'En kunde finder en plastik-gaffel i sin burger. Gulle: "GRATIS BESTIK!" 🍴',
+    'Gulle tørrer bord af med den samme klud han tørrer sved af med. 🧽',
+    'Gulle: "5 stjerner på TrustPilot! ...fra min mor, min far, og mig selv." ⭐',
+    'Gulle: "Kebab er verdens mest perfekte mad. Krig mig." 🌯',
+    'Du spørger hvad saucen er lavet af. Gulle: "Spørg ALDRIG igen." 🤫',
+    'Gulle: "Du er min yndlingskunde!" Du: "Det siger du til alle." Gulle: "...ja." 😅',
+    'En due flyver ind i butikken. Gulle: "VELKOMMEN! Vil du have en menu?!" 🕊️',
 ];
 const randomPopups=[
     {text:'📱 Leth sender: "Tro på processen bror" 💪',color:'#dc2626'},
@@ -166,6 +196,22 @@ const randomPopups=[
     {text:'🎭 Du ser en gadekunstner. Han mimer DIG.',color:'#e040fb'},
     {text:'🍕 Du kan lugte pizza. Din mave rumler.',color:'#ff6b35'},
     {text:'👴 En gammel mand nikker anerkendende til dig.',color:'#ffbe0b'},
+    {text:'📱 Malte sender: "Har du set Leths nye TikTok?! 💀"',color:'#dc2626'},
+    {text:'🐦 En due lander på dit hoved. Du er udvalgt.',color:'#8b5cf6'},
+    {text:'🎧 Nogen spiller "Toxic" på bluetooth-højtaler. Du viber.',color:'#ff006e'},
+    {text:'🧊 Du træder i en vandpyt. Sokken er DØD. RIP. 🪦',color:'#3b82f6'},
+    {text:'📱 Lemming: "bro tjek snap 😂😂😂" ...det er en selfie med en kat.',color:'#ff6b35'},
+    {text:'🚲 En cyklist råber "UD AF VEJEN!" Du var på fortovet. 🤨',color:'#ff006e'},
+    {text:'🌭 Du finder en hotdog-vogn. Fristelsen er REEL. 🌭',color:'#ffbe0b'},
+    {text:'👻 Du hører en mærkelig lyd. Det var din mave. Falsk alarm.',color:'#8b5cf6'},
+    {text:'📱 Thomas sender: "Nogen der gider FIFA?" Kl 14 en tirsdag. 🎮',color:'#00d4aa'},
+    {text:'🎤 En bums synger opera. Han er faktisk GOD?!',color:'#e040fb'},
+    {text:'💡 Du får en GENIAL idé! ...du glemmer den 3 sek senere.',color:'#ffbe0b'},
+    {text:'🐈 En kat følger efter dig. Du har nu en sidekick. 🐱',color:'#ff6b35'},
+    {text:'☔ Det begynder at regne. Du har SELVFØLGELIG ingen paraply.',color:'#3b82f6'},
+    {text:'📱 Leth: "Tænk hvis vi startede et band... 🤔" IGEN?!',color:'#dc2626'},
+    {text:'🏪 Netto har tilbud på Monster. Prioriteter: KORREKTE. ⚡',color:'#00d4aa'},
+    {text:'🎵 Du nynner. Folk kigger. Du nynner HØJERE. 🗣️',color:'#e040fb'},
 ];
 let lastPopupTime=0;
 function maybeRandomPopup(){
@@ -583,7 +629,7 @@ function onArrivedInner(id){
     }
 }
 
-function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;G.kirkePrayedToday=false;G.gydenUsedToday=false;eventMarker=null;gamblesToday=0;foodBoughtToday=0;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}stockPrices.hanzi=Math.max(10,stockPrices.hanzi+Math.floor((Math.random()-.45)*30));stockPrices.tbh=Math.max(5,stockPrices.tbh+Math.floor((Math.random()-.45)*20));stockPrices.leth=Math.max(8,stockPrices.leth+Math.floor((Math.random()-.45)*25));spawnEventMarker();
+function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);const dayHeal=Math.min(10,G.maxHP-G.currentHP);if(dayHeal>0){G.currentHP=Math.min(G.maxHP,G.currentHP+dayHeal);float('+'+dayHeal+' HP (ny dag)','#00d4aa');}bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;G.kirkePrayedToday=false;G.gydenUsedToday=false;eventMarker=null;gamblesToday=0;foodBoughtToday=0;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}stockPrices.hanzi=Math.max(10,stockPrices.hanzi+Math.floor((Math.random()-.45)*30));stockPrices.tbh=Math.max(5,stockPrices.tbh+Math.floor((Math.random()-.45)*20));stockPrices.leth=Math.max(8,stockPrices.leth+Math.floor((Math.random()-.45)*25));spawnEventMarker();
 showDayFlash();
 if(G.daysLeft===0){pendingForceClub=true;if(G.scene==='map')setTimeout(forceClub,2500);return;}
 pendingWheel=true;if(G.scene==='map')setTimeout(()=>{if(pendingWheel){pendingWheel=false;openWheel();}},2500);
@@ -597,6 +643,18 @@ const morningJokes=[
     '☀️ Telefon: 12 ubesvarede fra Lemming.',
     '☀️ Spejlet: "Vi snakker ikke om det." 🪞',
     '☀️ Du har en PLAN i dag. ...hvad var den?',
+    '☀️ Din kat stirrer på dig. Dømmende. 🐱',
+    '☀️ Nogen har spist din sidste yoghurt. Det var dig kl 3. 🥄',
+    '☀️ Du checker Instagram. 47 minutter senere... 📱',
+    '☀️ Din ryg gør ondt. Du er 22. TJUETO. 👴',
+    '☀️ "I dag bliver jeg PRODUKTIV!" *åbner TikTok* 📵',
+    '☀️ Du finder en pizza under sengen. Stadig varm?? 🍕',
+    '☀️ Lemming har sendt 8 memes kl 4 om natten 📲',
+    '☀️ Drømte du vandt X Factor. Vågnede og sang. Naboen bankede. 🎤',
+    '☀️ Du lugter dig selv. Shower: PRIORITET 1. 🚿',
+    '☀️ Kontoen siger minus. Banken siger "ring venligst". 📉',
+    '☀️ Du har en sok på. Kun én. Mysterium. 🧦',
+    '☀️ "Bare 5 min mere" gang 47... okay NU. 😤',
 ];
 function showDayFlash(){
     const f=document.getElementById('day-flash');
@@ -640,6 +698,85 @@ const locationIntros={
     marius:'🏠 MARIUS HUS\nKøb samtaler med Marius.\nNødvendigt for at unlocke den sande boss!',
 };
 let pendingNewDay=false,pendingWheel=false,pendingLore=null,pendingForceClub=false;
+
+// ===== GUTTERTID FLASHBACKS =====
+const guttertidImages=[1,2,3,4,5,6,7,8,9,10,11,12,13,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,36,38,39,40,41,42,43,44,45,46,47,48,49,50];
+const guttertidCaptions=[
+    'Gutterne samlet i byen... TBH vibes 🔥',
+    'Chillin\' på bænken med snacks og Royal 😎',
+    'Drengene på bar! Carlsberg og kamera! 📸',
+    'Tuborg-tårn bygger sig selv! Legend 🍺',
+    'TBH crew repræsenterer hårdt! 💪',
+    'Endnu en crazy aften med gutterne 🌙',
+    'Vibes: immaculate. Lokation: ukendt 🗺️',
+    'Gutter tid har INGEN regler! 🤘',
+    'Flashback til de vilde dage! ⚡',
+    'Bro-øjeblik captured forever 📱',
+    'Gutterne ejer natten! 🌃',
+    'Klassisk TBH moment 🎤',
+    'Ingen sover før solen er oppe! ☀️',
+    'De gode gamle dage... 🎶',
+    'Det CRAZIEST eventyr endnu! 🤯',
+    'Hvem tog det billede?! Ingen ved det 📷',
+    'Legendary night out med drengene 💎',
+    'Stemningen: 11/10. Altid. 🔥',
+    '"Vi tager bare ÉN øl..." - berømt sidste ord 🍻',
+    'Bros before... alt, tbh 🤝',
+    'Gutter tid episode: UKENDT 🎬',
+    'Den aften ingen husker men alle snakker om 🧠',
+    'Spontan mission: SUCCES 🎯',
+    'Kl 4 om natten og stadig going strong 💪',
+    'Nogen sagde "hjem"? Vi hørte "mere!" 🏠❌',
+    'Det her billede er BEVIS 📋',
+    'Gutterne mod verden! 🌍',
+    'Endnu en dag, endnu et eventyr 🗡️',
+    'Drengene i deres naturlige habitat 🦁',
+    'TBH reunion tour continues! 🎸',
+    'Minder der varer for evigt... eller til i morgen 😅',
+    'Gutter tid: ingen fortrydelse, kun vibes ✨',
+    'Snapshot af ren lykke 📸',
+    'Klassiker. Absolut klassiker. 👑',
+    'Den aften der startede det hele... 🌟',
+    'Brødrene rider igen! 🏇',
+    'Historier der aldrig kan fortælles i skolen 📚❌',
+    'Gutter tid level: MAKSIMAL 📈',
+    'Ingen plan, ingen regler, ingen problemer 🤷',
+    'Endnu et kapitel i legenden 📖',
+    'Kameraet fanger sandheden 🎥',
+    'Aften-vibes: immaculate as always 🌙',
+    'Den perfekte aften eksisterer ik— DETTE BILLEDE 💯',
+    'Gutterne gør det igen! Og igen! Og IGEN! 🔄',
+    'Snapshot #47: ingen kontekst nødvendig 🤔',
+    'Pure chaos. Pure broderskab. Pure gutter tid 🫡',
+    'Sæson 50 af Gutter Tid og vi er STADIG her 🏆',
+];
+function showGuttertid(){
+    const dayIdx=Math.max(0,G.day-1);
+    const imgNum=guttertidImages[dayIdx%guttertidImages.length];
+    const caption=guttertidCaptions[dayIdx%guttertidCaptions.length];
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .5s ease;';
+    const title=document.createElement('div');title.className='pix';
+    title.style.cssText='color:#ffbe0b;font-size:clamp(10px,3vw,18px);margin-bottom:12px;text-shadow:0 0 15px rgba(255,190,11,.5);';
+    title.textContent='📸 GUTTER TID #'+imgNum;
+    const img=document.createElement('img');
+    img.src='Guttertid/'+imgNum+'.jpg';
+    img.style.cssText='max-width:85%;max-height:55vh;border-radius:8px;border:2px solid rgba(255,190,11,.4);box-shadow:0 0 30px rgba(255,190,11,.2);object-fit:contain;';
+    const cap=document.createElement('div');cap.className='pix';
+    cap.style.cssText='color:#ccc;font-size:clamp(6px,1.8vw,10px);margin-top:12px;max-width:80%;text-align:center;';
+    cap.textContent=caption;
+    const hint=document.createElement('div');hint.className='pix';
+    hint.style.cssText='color:rgba(255,255,255,.3);font-size:clamp(5px,1.2vw,7px);margin-top:20px;';
+    hint.textContent='[ tryk for at fortsætte ]';
+    ov.appendChild(title);ov.appendChild(img);ov.appendChild(cap);ov.appendChild(hint);
+    document.body.appendChild(ov);
+    requestAnimationFrame(()=>ov.style.opacity='1');
+    S.click();
+    ov.onclick=()=>{
+        S.click();ov.style.opacity='0';
+        setTimeout(()=>{ov.remove();G.scene='map';Mus.play('map');},400);
+    };
+}
 function advTime(h){G.hour+=h;if(G.hour>=24){if(G.scene==='map'){newDay();}else{G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);pendingNewDay=true;}}}
 
 // ===== LORE CALLS =====
@@ -893,10 +1030,10 @@ function doRest(){
         if(frame<180){requestAnimationFrame(anim);}
         else{
             G.hour=24;advTime(0);G.hunger=Math.min(G.maxHunger,G.hunger+30);
-            const hpHeal=Math.min(20,G.maxHP-G.currentHP);
             if(G.currentHP<0)G.currentHP=1;
+            const hpHeal=Math.min(Math.floor(G.maxHP*.4),G.maxHP-G.currentHP);
             G.currentHP=Math.min(G.maxHP,G.currentHP+hpHeal);
-            S.heal();float('+'+hpHeal+' HP','#00d4aa');float('+30 SULT','#ff006e');float('NY DAG!','#3b82f6');
+            S.heal();float('+'+hpHeal+' HP (40%)','#00d4aa');float('+30 SULT','#ff006e');float('NY DAG!','#3b82f6');
             txt.textContent='Udhvilet! +'+hpHeal+' HP, +30 sult · Ny dag! 🏠';txt.style.color='#00d4aa';
             msg('Sov hele natten. +'+hpHeal+' HP, +30 sult! Ny dag! 🏠');
             setTimeout(()=>{ov.remove();G.scene='map';Mus.play('map');updHUD();flushPendingDay();flushPendingEvents();},1500);
@@ -1059,8 +1196,22 @@ const exercises=[
     {id:'critd',name:'CRIT SKADE',icon:'💥',desc:'💥 +Crit Dmg',stat:'critDmgLvl',game:'powerslam',reqGym:4},
     {id:'regen',name:'HP REGEN',icon:'💚',desc:'💚 +Heal/tur',stat:'regenLvl',game:'breathe',reqGym:3},
 ];
+const gymJokes=[
+    'Leth: "Ingen smerte, ingen gains! ...okay måske LIDT smerte." 💪',
+    'Du ser dig selv i spejlet. Gains? Hmm... snart. 🪞',
+    'En fyr løfter dobbelt så meget som dig. Med ÉN arm. 😤',
+    'Leth: "PUSH! PUSH! ...nej ikke push-up, push DIG SELV!" 🗣️',
+    'Du glemte håndklæde. Sveden rammer bænken. Alle kigger. 💦',
+    'Nogen grunter SÅ højt at vinduerne ryster. Det er Leth. 🔊',
+    'Leth: "Da JEG var på din alder... okay vi var lige stærke." 😂',
+    'Du prøver at tage en gym-selfie. Dropper telefonen. På foden. 📱🦶',
+    'Nogen hoger maskinen du ville bruge. I 45 minutter. Til selfies. 🤳',
+    'Leth: "Protein shake EFTER træning! Du drikker den UNDER?!" 🥤',
+    'Du laver øjenkontakt med dig selv i spejlet. Awkward. 👀',
+    'En gammel dame løfter mere end dig. Respekt. 👵💪',
+];
 function openGym(){
-    G.scene='gym';Mus.play('gym');sceneFlash('#ff006e');drawGymBg();
+    G.scene='gym';Mus.play('gym');sceneFlash('#ff006e');drawGymBg();maybeJoke(gymJokes);
     document.getElementById('gym-sub').textContent=`Leth: "GYM LVL ${G.gymLvl}!" | Sult: ${G.hunger} | Koster: 30 sult, 6t`;
     const g=document.getElementById('gym-g');g.innerHTML='';
     exercises.forEach(ex=>{
@@ -1110,8 +1261,8 @@ function startTrain(ex){
 function endTrain(){
     cancelAnimationFrame(tAF);tState.done=true;
     const ex=tState.ex,sc=tState.score;
-    const gainTiers=[1,1,1,2,2];
-    const tierIdx=Math.min(gainTiers.length-1,Math.max(0,Math.floor(sc*(0.35+G.gymLvl*0.08))-1));
+    const gainTiers=[0,1,1,1,2];
+    const tierIdx=Math.min(gainTiers.length-1,Math.max(0,Math.floor(sc*(0.25+G.gymLvl*0.12))-1));
     let gain=gainTiers[Math.max(0,tierIdx)];
     if(G.lossBuff){gain=Math.ceil(gain*1.2);}
     G[ex.stat]+=gain;G.charmPts+=1;G.charmTotal+=1;
@@ -1471,7 +1622,7 @@ const combatItems=[
     {name:'Adrenalin',icon:'💉',price:200,item:'adrenalin',desc:'+Full MP'},
 ];
 let shopTab='food';let foodBoughtToday=0;const maxFoodPerDay=3;
-const gulleGreetings=['Gulle: "AYYY min yndlings-kunde! 🥙"','Gulle: "Du ser sulten ud bror! Altid sulten!" 😂','Gulle: "Kebaben er FRISK... fra i går!" 🥙','Gulle: "Special tilbud! ...normal pris! HAHA!" 😂','Gulle: "Min kone siger jeg skal lukke kl 8. Det er kl 3. Shhh!" 🤫','Gulle: "Du ligner en der har brug for PROTEIN! Og kærlighed!" 💪'];
+const gulleGreetings=['Gulle: "AYYY min yndlings-kunde! 🥙"','Gulle: "Du ser sulten ud bror! Altid sulten!" 😂','Gulle: "Kebaben er FRISK... fra i går!" 🥙','Gulle: "Special tilbud! ...normal pris! HAHA!" 😂','Gulle: "Min kone siger jeg skal lukke kl 8. Det er kl 3. Shhh!" 🤫','Gulle: "Du ligner en der har brug for PROTEIN! Og kærlighed!" 💪','Gulle: "HANZI! Jeg har savnet dig! ...din pung mest." 💸','Gulle: "Prøv den nye sauce! Ingredienser? HEMMELIGT!" 🤐','Gulle: "Min kebab kurerer alt! Sorg, sult, tømmermænd!" 🏥','Gulle: "Velkommen til paradis! Altså... Gulles Grill." 😇','Gulle: "En stamkunde! DU betaler fuld pris!" 😂','Gulle: "Kebab-kongen byder dig velkommen!" 👑'];
 function openShop(){G.scene='shop';Mus.play('shop');S.door();sceneFlash('#8b5cf6');advTime(1);drawShopBg();renderShop();document.getElementById('shop-ov').classList.add('active');maybeJoke(shopJokes);if(Math.random()<.5)setTimeout(()=>msg(gulleGreetings[Math.floor(Math.random()*gulleGreetings.length)]),500);}
 function renderShop(){
     document.getElementById('shop-tabs').innerHTML=['food','gear','combat'].map(t=>`<button class="stab${shopTab===t?' act':''}" onclick="shopTab='${t}';renderShop()">${t==='food'?'🍕 MAD':t==='gear'?'👔 STYLE':'⚔️ KAMP'}</button>`).join('');
@@ -1711,8 +1862,22 @@ function rollBodegaLevel(){
     if(r<Math.max(.65,.92-bonus*.05))return 4;
     return 5;
 }
+const bodegaJokes=[
+    'Stemningen er tyk af røg og dårlige beslutninger 🌫️',
+    'Bartenderen ser ud som om han har set TING. Mange ting. 👁️',
+    'Nogen spiller dart. Pilen rammer væggen. Ikke dartskiven. 🎯',
+    'En stamgæst fortæller den samme historie for 3. gang i aften 🍺',
+    'Jukeboksen spiller kun dansk top fra 1987. Ingen klagede. 🎵',
+    'Du sidder på den klæbrige barstol. Du vil ALDRIG rejse dig. 🪑',
+    'En fyr ved baren sover. Har gjort det siden tirsdag. 😴',
+    'Bartenderen: "Vi har øl, øl, og... øl." Valgt er nemt. 🍻',
+    'Toilettet har ingen lås. Speed-run AKTIVERET. 🚽💨',
+    'Nogen har skrevet "HANZI WAS HERE" på væggen. Det var dig i går. 🖊️',
+    'Der er en mystisk plet på gulvet. Ingen spørger. Ingen VIL vide. 🤢',
+    'En due sidder på baren. Den er stamgæst. 🕊️🍺',
+];
 function openBodega(){
-    G.scene='bodega';Mus.play('bodega');S.door();sceneFlash('#f59e0b');advTime(1);drawBodegaBg();
+    G.scene='bodega';Mus.play('bodega');S.door();sceneFlash('#f59e0b');advTime(1);drawBodegaBg();maybeJoke(bodegaJokes);
     const sub=document.getElementById('bodega-sub');
     const l=document.getElementById('bodega-list');l.innerHTML='';
     if(bodegaUsedToday){sub.textContent='Du har allerede prøvet i dag! Kom igen i morgen.';
@@ -1811,7 +1976,7 @@ function spinWheel(){
             bigTextFlash(result.label,result.color);screenShake(5,200);
             setTimeout(()=>{result.fn();updHUD();
                 setTimeout(()=>{document.getElementById('wheel-ov').classList.remove('active');
-                    if(G.scene!=='end'){G.scene='map';Mus.play('map');}},2000);
+                    if(G.scene!=='end'){G.scene='guttertid';setTimeout(showGuttertid,500);}},2000);
             },800);
         }
     })();
@@ -2726,8 +2891,6 @@ function chkEnd(){
         const reward=Math.floor((50+(C.girl.rating||1)*20)*(1+gl*.3));G.money+=reward;
         const charmReward=Math.max(2,Math.floor((C.girl.rating||1)*1.5*gl));
         G.charmPts+=charmReward;G.charmTotal+=charmReward;
-        const statBonus=C.isBodega?(gl>=3?1:0):(gl>=4?0:gl>=3?1:0);
-        if(statBonus>0){const stats=['styrke','cardio','smalltalk','reflex'];stats.forEach(s=>G[s]+=statBonus);}
         if(gl>=5){G.critLvl++;G.regenLvl++;float('+1 CRIT +1 REGEN!','#e040fb');}
         const cc=document.getElementById('c-cv');
         combatParticles(cc.width*.75,cc.height*.5,'#ffbe0b',20);
@@ -2735,8 +2898,7 @@ function chkEnd(){
         screenShake(10,500);bigTextFlash('VICTORY!','#ffbe0b');
         sparkleEffect(innerWidth/2,innerHeight*.3,'#ffbe0b');sparkleEffect(innerWidth*.3,innerHeight*.4,'#ff006e');sparkleEffect(innerWidth*.7,innerHeight*.4,'#00d4aa');
         cSpeech(C.girl.win);cAct('WIN! 🏆','#ffbe0b');
-        const bonusMsg=statBonus>0?' +'+statBonus+' ALL STATS!':'';
-        setTimeout(()=>{cSpeech('BELØNNING: +'+reward+' KR, +'+charmReward+' CHARM!'+bonusMsg+' 🎉');updHUD();},2000);
+        setTimeout(()=>{cSpeech('BELØNNING: +'+reward+' KR, +'+charmReward+' CHARM! 🎉');updHUD();},2000);
         setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 3">🏆 VICTORY!</button>`;document.getElementById('c-menu').style.display='grid';},4000);return true;}
     if(C.hHP<=0){C.phase='done';cSpeech(C.girl.lose);cAct('REJECTED 💔','#ff006e');S.bad();G.totalScore+=10;
         combatFlash('#ff006e','hanzi');screenShake(12,600);hitFlash('#ff006e');bigTextFlash('REJECTED 💔','#ff006e');
