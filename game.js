@@ -1669,24 +1669,30 @@ function renderShop(){
 // ===== BRANCHING SKILL TREE =====
 const skillTree={
     root:{id:'root',name:'Charm Basis',icon:'🌟',desc:'Start',cost:0,children:['combat','defense','social']},
-    combat:{id:'combat',name:'Kampstil',icon:'⚔️',desc:'+6 STR',cost:2,effect:()=>{G.styrke+=6},children:['dmg1','crit']},
-    defense:{id:'defense',name:'Forsvar',icon:'🛡️',desc:'+6 CRD',cost:2,effect:()=>{G.cardio+=6},children:['hp1','block1']},
-    social:{id:'social',name:'Social',icon:'💬',desc:'+6 TLK',cost:2,effect:()=>{G.smalltalk+=6},children:['mp1','regen']},
-    dmg1:{id:'dmg1',name:'Heavy Hits',icon:'💥',desc:'+10 STR',cost:4,effect:()=>{G.styrke+=10},children:['berserker']},
-    crit:{id:'crit',name:'Crit Chance',icon:'🎯',desc:'+10 REF',cost:4,effect:()=>{G.reflex+=10},children:['berserker']},
-    hp1:{id:'hp1',name:'Bulk Up',icon:'💖',desc:'+10 CRD',cost:4,effect:()=>{G.cardio+=10},children:['tank']},
-    block1:{id:'block1',name:'Iron Guard',icon:'🧱',desc:'+10 REF',cost:4,effect:()=>{G.reflex+=10},children:['tank']},
-    mp1:{id:'mp1',name:'Deep Talk',icon:'🗣️',desc:'+10 TLK',cost:4,effect:()=>{G.smalltalk+=10},children:['rizz']},
-    regen:{id:'regen',name:'Recovery',icon:'💚',desc:'+8 CRD',cost:4,effect:()=>{G.cardio+=8},children:['rizz']},
-    berserker:{id:'berserker',name:'BERSERKER',icon:'🔥',desc:'+15 STR',cost:8,effect:()=>{G.styrke+=15},children:['fury','deadshot']},
-    tank:{id:'tank',name:'TANK',icon:'🏔️',desc:'+25 CRD +10 REF',cost:8,effect:()=>{G.cardio+=25;G.reflex+=10},children:['guardian','vampire']},
-    rizz:{id:'rizz',name:'RIZZ MASTER',icon:'👑',desc:'+10 ALL stats!',cost:8,effect:()=>{G.styrke+=10;G.cardio+=10;G.smalltalk+=10;G.reflex+=10},children:['healer','hypno']},
-    fury:{id:'fury',name:'FURY',icon:'💢',desc:'+12 STR → RAGE MODE',cost:6,effect:()=>{G.styrke+=12;const a=flexAbilities.find(x=>x.id==='rage');if(a)a.unlocked=true;},children:[]},
-    deadshot:{id:'deadshot',name:'DEADSHOT',icon:'🔫',desc:'+12 REF → LASER FOCUS',cost:6,effect:()=>{G.reflex+=12;const a=flexAbilities.find(x=>x.id==='focus');if(a)a.unlocked=true;},children:[]},
-    guardian:{id:'guardian',name:'GUARDIAN',icon:'🛡️',desc:'+12 CRD → SPEJLSKJOLD',cost:6,effect:()=>{G.cardio+=12;const a=flexAbilities.find(x=>x.id==='reflect');if(a)a.unlocked=true;},children:[]},
-    vampire:{id:'vampire',name:'VAMPIRE',icon:'🧛',desc:'+8 ALL → SOUL DRAIN',cost:6,effect:()=>{G.styrke+=8;G.cardio+=8;G.smalltalk+=8;G.reflex+=8;const a=flexAbilities.find(x=>x.id==='drain');if(a)a.unlocked=true;},children:[]},
-    healer:{id:'healer',name:'HEALER',icon:'💚',desc:'+12 CRD → HEALING',cost:6,effect:()=>{G.cardio+=12;const a=flexAbilities.find(x=>x.id==='heal');if(a)a.unlocked=true;},children:[]},
-    hypno:{id:'hypno',name:'HYPNO',icon:'🌀',desc:'+12 TLK → CHARM BOMB',cost:6,effect:()=>{G.smalltalk+=12;const a=flexAbilities.find(x=>x.id==='charm_bomb');if(a)a.unlocked=true;},children:[]},
+    combat:{id:'combat',name:'Kampstil',icon:'⚔️',desc:'+2 STR',cost:2,effect:()=>{G.styrke+=2},children:['dmg1','crit']},
+    defense:{id:'defense',name:'Forsvar',icon:'🛡️',desc:'+2 CRD',cost:2,effect:()=>{G.cardio+=2},children:['hp1','block1']},
+    social:{id:'social',name:'Social',icon:'💬',desc:'+2 TLK',cost:2,effect:()=>{G.smalltalk+=2},children:['mp1','regen']},
+    dmg1:{id:'dmg1',name:'Heavy Hits',icon:'💥',desc:'+3 STR',cost:4,effect:()=>{G.styrke+=3},children:['berserker']},
+    crit:{id:'crit',name:'Crit Chance',icon:'🎯',desc:'+3 REF',cost:4,effect:()=>{G.reflex+=3},children:['berserker']},
+    hp1:{id:'hp1',name:'Bulk Up',icon:'💖',desc:'+3 CRD',cost:4,effect:()=>{G.cardio+=3},children:['tank']},
+    block1:{id:'block1',name:'Iron Guard',icon:'🧱',desc:'+3 REF',cost:4,effect:()=>{G.reflex+=3},children:['tank']},
+    mp1:{id:'mp1',name:'Deep Talk',icon:'🗣️',desc:'+3 TLK',cost:4,effect:()=>{G.smalltalk+=3},children:['rizz']},
+    regen:{id:'regen',name:'Recovery',icon:'💚',desc:'+3 CRD',cost:4,effect:()=>{G.cardio+=3},children:['rizz']},
+    berserker:{id:'berserker',name:'BERSERKER',icon:'🔥',desc:'+4 STR',cost:8,effect:()=>{G.styrke+=4},children:['fury','deadshot']},
+    tank:{id:'tank',name:'TANK',icon:'🏔️',desc:'+5 CRD +3 REF',cost:8,effect:()=>{G.cardio+=5;G.reflex+=3},children:['guardian','vampire']},
+    rizz:{id:'rizz',name:'RIZZ MASTER',icon:'👑',desc:'+3 ALL stats!',cost:8,effect:()=>{G.styrke+=3;G.cardio+=3;G.smalltalk+=3;G.reflex+=3},children:['healer','hypno']},
+    fury:{id:'fury',name:'FURY',icon:'💢',desc:'+4 STR → RAGE MODE',cost:6,effect:()=>{G.styrke+=4;const a=flexAbilities.find(x=>x.id==='rage');if(a)a.unlocked=true;},children:['warlord']},
+    deadshot:{id:'deadshot',name:'DEADSHOT',icon:'🔫',desc:'+4 REF → LASER FOCUS',cost:6,effect:()=>{G.reflex+=4;const a=flexAbilities.find(x=>x.id==='focus');if(a)a.unlocked=true;},children:['assassin']},
+    guardian:{id:'guardian',name:'GUARDIAN',icon:'🛡️',desc:'+4 CRD → SPEJLSKJOLD',cost:6,effect:()=>{G.cardio+=4;const a=flexAbilities.find(x=>x.id==='reflect');if(a)a.unlocked=true;},children:['fortress']},
+    vampire:{id:'vampire',name:'VAMPIRE',icon:'🧛',desc:'+3 ALL → SOUL DRAIN',cost:6,effect:()=>{G.styrke+=3;G.cardio+=3;G.smalltalk+=3;G.reflex+=3;const a=flexAbilities.find(x=>x.id==='drain');if(a)a.unlocked=true;},children:['lifesteal']},
+    healer:{id:'healer',name:'HEALER',icon:'💚',desc:'+4 CRD → HEALING',cost:6,effect:()=>{G.cardio+=4;const a=flexAbilities.find(x=>x.id==='heal');if(a)a.unlocked=true;},children:['angel']},
+    hypno:{id:'hypno',name:'HYPNO',icon:'🌀',desc:'+4 TLK → CHARM BOMB',cost:6,effect:()=>{G.smalltalk+=4;const a=flexAbilities.find(x=>x.id==='charm_bomb');if(a)a.unlocked=true;},children:['siren']},
+    warlord:{id:'warlord',name:'WARLORD',icon:'⚔️',desc:'+5 STR → KRIGSRÅB',cost:10,effect:()=>{G.styrke+=5;const a=flexAbilities.find(x=>x.id==='warcry');if(a)a.unlocked=true;},children:[]},
+    assassin:{id:'assassin',name:'ASSASSIN',icon:'🗡️',desc:'+5 REF → EXECUTE',cost:10,effect:()=>{G.reflex+=5;const a=flexAbilities.find(x=>x.id==='execute');if(a)a.unlocked=true;},children:[]},
+    fortress:{id:'fortress',name:'FORTRESS',icon:'🏰',desc:'+5 CRD → UROKKELIG',cost:10,effect:()=>{G.cardio+=5;const a=flexAbilities.find(x=>x.id==='invincible');if(a)a.unlocked=true;},children:[]},
+    lifesteal:{id:'lifesteal',name:'LIVSTJÆLER',icon:'🩸',desc:'+3 ALL → BLODRUS',cost:10,effect:()=>{G.styrke+=3;G.cardio+=3;G.smalltalk+=3;G.reflex+=3;const a=flexAbilities.find(x=>x.id==='bloodrush');if(a)a.unlocked=true;},children:[]},
+    angel:{id:'angel',name:'ÆRKEENGEL',icon:'👼',desc:'+5 CRD → GENOPSTÅ',cost:10,effect:()=>{G.cardio+=5;const a=flexAbilities.find(x=>x.id==='revive');if(a)a.unlocked=true;},children:[]},
+    siren:{id:'siren',name:'SIRENE',icon:'🧜',desc:'+5 TLK → HYPNOSE',cost:10,effect:()=>{G.smalltalk+=5;const a=flexAbilities.find(x=>x.id==='hypnosis');if(a)a.unlocked=true;},children:[]},
 };
 
 function canUnlock(id){
@@ -1702,8 +1708,8 @@ function openTree(){
     G.perks.root=true;
 
     const cv=document.createElement('canvas');
-    const cw=Math.min(700,innerWidth-6);
-    const ch=Math.min(600,innerHeight-100);
+    const cw=Math.min(860,innerWidth-6);
+    const ch=Math.min(740,innerHeight-80);
     const dpr=window.devicePixelRatio||1;
     cv.width=cw*dpr;cv.height=ch*dpr;
     cv.style.cssText=`display:block;margin:0 auto;width:${cw}px;height:${ch}px;cursor:pointer;`;
@@ -1711,19 +1717,20 @@ function openTree(){
     const x=cv.getContext('2d');x.scale(dpr,dpr);
 
     const nodePos={
-        root:[.5,.92],
-        combat:[.20,.78],defense:[.5,.78],social:[.80,.78],
-        dmg1:[.12,.64],crit:[.28,.64],hp1:[.42,.64],block1:[.58,.64],mp1:[.72,.64],regen:[.88,.64],
-        berserker:[.20,.48],tank:[.5,.48],rizz:[.80,.48],
-        fury:[.08,.30],deadshot:[.28,.30],guardian:[.40,.30],vampire:[.60,.30],healer:[.72,.30],hypno:[.92,.30]
+        root:[.5,.94],
+        combat:[.20,.82],defense:[.5,.82],social:[.80,.82],
+        dmg1:[.12,.70],crit:[.28,.70],hp1:[.42,.70],block1:[.58,.70],mp1:[.72,.70],regen:[.88,.70],
+        berserker:[.20,.56],tank:[.5,.56],rizz:[.80,.56],
+        fury:[.08,.42],deadshot:[.28,.42],guardian:[.40,.42],vampire:[.60,.42],healer:[.72,.42],hypno:[.92,.42],
+        warlord:[.06,.24],assassin:[.26,.24],fortress:[.38,.24],lifesteal:[.58,.24],angel:[.74,.24],siren:[.92,.24]
     };
     const branchCol={
         root:'#e040fb',
-        combat:'#ff006e',dmg1:'#ff006e',crit:'#ff006e',berserker:'#ff006e',fury:'#ff006e',deadshot:'#ff006e',
-        defense:'#00d4aa',hp1:'#00d4aa',block1:'#00d4aa',tank:'#00d4aa',guardian:'#00d4aa',vampire:'#00d4aa',
-        social:'#ffbe0b',mp1:'#ffbe0b',regen:'#ffbe0b',rizz:'#ffbe0b',healer:'#ffbe0b',hypno:'#ffbe0b'
+        combat:'#ff006e',dmg1:'#ff006e',crit:'#ff006e',berserker:'#ff006e',fury:'#ff006e',deadshot:'#ff006e',warlord:'#ff006e',assassin:'#ff006e',
+        defense:'#00d4aa',hp1:'#00d4aa',block1:'#00d4aa',tank:'#00d4aa',guardian:'#00d4aa',vampire:'#00d4aa',fortress:'#00d4aa',lifesteal:'#00d4aa',
+        social:'#ffbe0b',mp1:'#ffbe0b',regen:'#ffbe0b',rizz:'#ffbe0b',healer:'#ffbe0b',hypno:'#ffbe0b',angel:'#ffbe0b',siren:'#ffbe0b'
     };
-    const endNodeAbility={fury:'RAGE MODE',deadshot:'LASER FOCUS',guardian:'SPEJLSKJOLD',vampire:'SOUL DRAIN',healer:'HEALING',hypno:'CHARM BOMB'};
+    const endNodeAbility={fury:'RAGE MODE',deadshot:'LASER FOCUS',guardian:'SPEJLSKJOLD',vampire:'SOUL DRAIN',healer:'HEALING',hypno:'CHARM BOMB',warlord:'KRIGSRÅB',assassin:'EXECUTE',fortress:'UROKKELIG',lifesteal:'BLODRUS',angel:'GENOPSTÅ',siren:'HYPNOSE'};
     const nr=Math.min(18,cw*.03);
     function nx(id){return nodePos[id][0]*cw;}
     function ny(id){return nodePos[id][1]*ch;}
@@ -2486,6 +2493,18 @@ const flexAbilities=[
      fn:()=>{ C.reflectBuff=4; S.ok(); cSpeech('MEGA SPEJLSKJOLD! 🪞 80% af modtaget skade reflekteres i 4 ture!'); cAct('REFLECT!','#ffbe0b'); sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b');bigTextFlash('SHIELD!','#ffbe0b');screenShake(4,200); updC(); setTimeout(showCMenu,2500); }},
     {id:'charm_bomb',name:'CHARM BOMB',icon:'💣',desc:'Fjende -70% ATK i 3 ture + 15% skade',cost:0,unlocked:false,
      fn:()=>{ const boom=Math.round(C.gMax*.15); C.gHP=Math.max(0,C.gHP-boom); C.enemyDebuff=(C.enemyDebuff||0)+3; S.perf(); cSpeech('CHARM BOMB! 💣💥 -'+boom+' HP + fjende svækket MASSIVT!'); cAct('BOOM! -'+boom,'#e040fb'); screenShake(10,500);bigTextFlash('BOOM!','#e040fb');sparkleEffect(innerWidth/2,innerHeight/2,'#e040fb'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
+    {id:'warcry',name:'KRIGSRÅB',icon:'⚔️',desc:'Stun fjende 2 ture + 25% skade',cost:0,unlocked:false,
+     fn:()=>{ const dmg=Math.round(C.gMax*.25); C.gHP=Math.max(0,C.gHP-dmg); C.stunBuff=2; S.perf(); cSpeech('KRIGSRÅB! ⚔️💥 -'+dmg+' HP + fjende stunnet 2 ture!'); cAct('STUN! -'+dmg,'#ff006e'); screenShake(12,500);bigTextFlash('KRIGSRÅB!','#ff006e');sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
+    {id:'execute',name:'EXECUTE',icon:'🗡️',desc:'50% HP skade hvis fjende < 30% HP',cost:0,unlocked:false,
+     fn:()=>{ if(C.gHP/C.gMax>.3){S.bad();cSpeech('Fjenden har for meget HP! Skal under 30%!');cAct('FEJL!','#888');setTimeout(showCMenu,1500);return;} const dmg=Math.floor(C.gMax*.5); C.gHP=Math.max(0,C.gHP-dmg); S.perf(); cSpeech('EXECUTE! 🗡️💀 MASSIV SKADE -'+dmg+' HP!'); cAct('EXEC! -'+dmg,'#ff006e'); screenShake(15,600);bigTextFlash('EXECUTE!','#ff006e');sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
+    {id:'invincible',name:'UROKKELIG',icon:'🏰',desc:'Immun mod skade i 2 ture',cost:0,unlocked:false,
+     fn:()=>{ C.invincBuff=2; S.perf(); cSpeech('UROKKELIG! 🏰 Du er IMMUN i 2 ture!'); cAct('IMMUN!','#00d4aa'); screenShake(8,400);bigTextFlash('UROKKELIG!','#00d4aa');sparkleEffect(innerWidth/2,innerHeight/2,'#00d4aa'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'bloodrush',name:'BLODRUS',icon:'🩸',desc:'Stjæl 40% skade som HP i 5 ture',cost:0,unlocked:false,
+     fn:()=>{ C.lifestealBuff=5; S.perf(); cSpeech('BLODRUS! 🩸 Stjæl liv med hvert angreb i 5 ture!'); cAct('BLODRUS!','#8b5cf6'); screenShake(8,400);bigTextFlash('BLODRUS!','#8b5cf6');sparkleEffect(innerWidth/2,innerHeight/2,'#8b5cf6'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'revive',name:'GENOPSTÅ',icon:'👼',desc:'Auto-genopliv ved KO (1x per kamp)',cost:0,unlocked:false,
+     fn:()=>{ C.reviveBuff=true; S.perf(); cSpeech('GENOPSTÅ! 👼 Hvis du dør, genoplives du med 50% HP!'); cAct('ENGEL!','#ffbe0b'); screenShake(6,300);bigTextFlash('GENOPSTÅ!','#ffbe0b');sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'hypnosis',name:'HYPNOSE',icon:'🧜',desc:'Fjende springer 2 ture over',cost:0,unlocked:false,
+     fn:()=>{ C.stunBuff=(C.stunBuff||0)+2; S.perf(); cSpeech('HYPNOSE! 🧜 Fjenden er lammet i 2 ture!'); cAct('HYPNO!','#e040fb'); screenShake(10,500);bigTextFlash('HYPNOSE!','#e040fb');sparkleEffect(innerWidth/2,innerHeight/2,'#e040fb'); updC(); setTimeout(showCMenu,2500); }},
 ];
 function getGirlImg(girl){
     if(!girl)return null;
@@ -2514,7 +2533,7 @@ function startCombatWithGirl(girl,keepMusic){
     if(!girl.hp)girl=makeScaledGirl(girl);
     C.girl=girl;
     C.hMax=G.maxHP;if(G.currentHP<0)G.currentHP=C.hMax;C.hHP=Math.min(G.currentHP,C.hMax);C.hMMax=G.maxMP;C.hMP=C.hMMax;
-    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;C.isBodega=false;C.isBoss=false;C.rageBuff=0;C.focusBuff=0;C.reflectBuff=0;C.turnCount=0;C.specialUsed=false;
+    C.gMax=C.girl.hp;C.gHP=C.gMax;C.phase='menu';C.shield=0;C.blockBuff=0;C.dmgBuff=0;C.enemyDebuff=0;C.poison=0;C.confused=0;C.ally=null;C.isBodega=false;C.isBoss=false;C.rageBuff=0;C.focusBuff=0;C.reflectBuff=0;C.stunBuff=0;C.invincBuff=0;C.lifestealBuff=0;C.reviveBuff=false;C.turnCount=0;C.specialUsed=false;
     document.getElementById('combat-ui').classList.add('active');
     rsz();startCombatBg();updC();
     zoomIn(document.getElementById('combat-ui'),600);
@@ -2586,9 +2605,13 @@ function updC(){
     if(C.rageBuff>0)hBuf+='🔥x'+C.rageBuff+' ';
     if(C.focusBuff>0)hBuf+='🎯x'+C.focusBuff+' ';
     if(C.reflectBuff>0)hBuf+='🪞x'+C.reflectBuff+' ';
+    if(C.invincBuff>0)hBuf+='🏰x'+C.invincBuff+' ';
+    if(C.lifestealBuff>0)hBuf+='🩸x'+C.lifestealBuff+' ';
+    if(C.reviveBuff)hBuf+='👼 ';
     if(C.ally)hBuf+='📞'+C.ally.name+'('+C.ally.turnsLeft+') ';
     let gBuf='';
     if(C.enemyDebuff>0)gBuf+='😏x'+C.enemyDebuff+' ';
+    if(C.stunBuff>0)gBuf+='💫x'+C.stunBuff+' ';
     if(C.poison>0)gBuf+='☠️x'+C.poison+' ';
     document.getElementById('c-hanzi').innerHTML=`<div class="cname" style="color:#00d4aa">HANZI 🕺 <span style="font-size:.6em">${hBuf}</span></div><div class="crow"><label style="color:#ff006e">HP</label><div class="ctrk"><div class="cf" style="width:${C.hHP/C.hMax*100}%;background:#ff006e"></div></div><span class="cv">${C.hHP}</span></div><div class="crow"><label style="color:#3b82f6">MP</label><div class="ctrk"><div class="cf" style="width:${C.hMP/C.hMMax*100}%;background:#3b82f6"></div></div><span class="cv">${C.hMP}</span></div>`;
     document.getElementById('c-girl').innerHTML=`<div class="cname" style="color:#ff006e">${C.girl.icon} ${C.girl.name} <span style="font-size:.6em">${gBuf}</span></div><div class="crow"><label style="color:#ff006e">HP</label><div class="ctrk"><div class="cf" style="width:${C.gHP/C.gMax*100}%;background:#ff006e"></div></div><span class="cv">${C.gHP}</span></div>`;
@@ -2762,6 +2785,7 @@ function doAtk(type,hitPct,mpCost,base,speech){
             if(G.perks.berserker&&type==='orm')mult*=1.5;
             let dmg=Math.max(1,Math.floor(base*mult));
             C.gHP=Math.max(0,C.gHP-dmg);
+            if(C.lifestealBuff>0){const stolen=Math.floor(dmg*.4);C.hHP=Math.min(C.hMax,C.hHP+stolen);cAct('🩸 +'+stolen+' HP','#8b5cf6');}
             const cc=document.getElementById('c-cv');
             combatSlash(cc.width*.75,cc.height*.5,C.pendingCrit?'#ffbe0b':'#ff006e');
             combatFlash(C.pendingCrit?'#ffbe0b':'#ff006e','girl');
@@ -3046,6 +3070,9 @@ function eTurn(){
     if(C.rageBuff>0)C.rageBuff--;
     if(C.focusBuff>0)C.focusBuff--;
     if(C.reflectBuff>0)C.reflectBuff--;
+    if(C.invincBuff>0)C.invincBuff--;
+    if(C.lifestealBuff>0)C.lifestealBuff--;
+    if(C.stunBuff>0){C.stunBuff--;cSpeech('Fjenden er STUNNET! 💫 Springer tur over!');cAct('💫 STUN!','#e040fb');updC();setTimeout(showCMenu,1500);return;}
     const g=C.girl,atk=g.attacks[Math.floor(Math.random()*g.attacks.length)];
     let bossSpecial=null;
     if(C.isBoss&&g.specials){
@@ -3068,6 +3095,7 @@ function eTurn(){
                 if(bossSpecial==='boltnogle')rawAtk=Math.floor(rawAtk*1.5);
                 if(C.enemyDebuff>0)rawAtk=Math.floor(rawAtk*.5);
                 let dmg=Math.max(1,Math.floor(rawAtk*(1-red)));
+                if(C.invincBuff>0){dmg=0;cSpeech('UROKKELIG! 🏰 Ingen skade!');cAct('IMMUN!','#00d4aa');}
                 // BlockBuff halves damage
                 if(C.blockBuff>0)dmg=Math.max(1,Math.floor(dmg*.5));
                 // Shield absorb (legacy)
@@ -3134,6 +3162,7 @@ function chkEnd(){
         cSpeech(C.girl.win);cAct('WIN! 🏆','#ffbe0b');
         setTimeout(()=>{cSpeech('BELØNNING: +'+reward+' KR, +'+charmReward+' CHARM! 🎉');updHUD();},2000);
         setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 3">🏆 VICTORY!</button>`;document.getElementById('c-menu').style.display='grid';},4000);return true;}
+    if(C.hHP<=0&&C.reviveBuff){C.reviveBuff=false;C.hHP=Math.floor(C.hMax*.5);S.perf();cSpeech('GENOPSTÅ! 👼 Du genoplives med 50% HP!');cAct('👼 REVIVE!','#ffbe0b');screenShake(8,400);bigTextFlash('GENOPSTÅ!','#ffbe0b');sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b');updC();return false;}
     if(C.hHP<=0){C.phase='done';cSpeech(C.girl.lose);cAct('REJECTED 💔','#ff006e');S.bad();G.totalScore+=10;
         combatFlash('#ff006e','hanzi');screenShake(12,600);hitFlash('#ff006e');bigTextFlash('REJECTED 💔','#ff006e');
         setTimeout(()=>{document.getElementById('c-menu').innerHTML=`<button class="btn" onclick="leaveCombat()" style="grid-column:span 3">💔 REJECTED...</button>`;document.getElementById('c-menu').style.display='grid';},1500);return true;}
