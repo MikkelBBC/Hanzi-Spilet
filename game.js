@@ -2630,7 +2630,7 @@ function showCMenu(){
      {name:'TBH DANS',icon:'🔥',desc:'15% · 8 MP · MEGA',color:'#ffbe0b',mp:8,act:()=>doTBH()},
      {name:'PICKUP LINE',icon:'🗣️',desc:'Taktik · 4 MP',color:'#3b82f6',mp:4,act:showPickupMenu},
      {name:'TILKALD VEN',icon:'📞',desc:'Kald hjælp · 5 MP',color:'#a855f7',mp:5,act:doCallAlly},
-     {name:'OPKAST',icon:'🤮',desc:'+7 MP',color:'#00d4aa',mp:0,act:doOpkast},
+     {name:'OPKAST',icon:'🤮',desc:'+7+ MP (TLK)',color:'#00d4aa',mp:0,act:doOpkast},
      {name:'ITEMS',icon:'🎒',desc:'Brug items',color:'#8b5cf6',mp:0,act:showCItems}
     ];
     moves.forEach(mv=>{
@@ -2714,7 +2714,7 @@ function doCallAlly(){
 
 function doOpkast(){
     S.click();document.getElementById('c-menu').style.display='none';
-    const restore=7;
+    const restore=7+Math.floor(G.smalltalk/10);
     C.hMP=Math.min(C.hMMax,C.hMP+restore);
     S.ok();cAct('🤮 +'+restore+' MP','#00d4aa');
     cSpeech('Hanzi kaster op taktisk... +'+restore+' MP! 🤮');
