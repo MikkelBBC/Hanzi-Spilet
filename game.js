@@ -2133,22 +2133,22 @@ function openBodega(){
 // ===== LUCKY WHEEL =====
 const wheelSlices=[
     {label:'+50 KR',color:'#00d4aa',fn:()=>{G.money+=50;float('+50 KR','#00d4aa');msg('Du vandt 50 kr! 💰');}},
-    {label:'+STR Buff',color:'#ff006e',fn:()=>{G.buff='str';G.buffDays=3;G.styrke+=3;float('+3 STR (3 dage)','#ff006e');msg('Styrke buff i 3 dage! 💪');}},
+    {label:'+STR Buff',color:'#ff006e',fn:()=>{G.buff='str';G.buffDays=3;G.styrke+=2;float('+2 STR (3 dage)','#ff006e');msg('Styrke buff i 3 dage! 💪');}},
     {label:'-ALL SULT',color:'#000',fn:()=>{G.hunger=Math.max(5,G.hunger-50);float('-50 SULT','#ff006e');S.bad();msg('Madforgiftning! -50 sult! 🤮');}},
     {label:'⭐ SUPER!',color:'#e040fb',fn:()=>{S.perf();msg('🌟 SUPER LYKKEHJUL! 🌟');setTimeout(()=>openSuperWheel(),1500);}},
     {label:'-50 KR',color:'#8b5cf6',fn:()=>{G.money=Math.max(0,G.money-50);float('-50 KR','#ff006e');S.bad();msg('Du tabte 50 kr! 😬');}},
-    {label:'+HP Buff',color:'#3b82f6',fn:()=>{G.buff='hp';G.buffDays=3;G.cardio+=3;float('HP Buff!','#3b82f6');msg('Buff i 3 dage! ❤️');}},
+    {label:'+HP Buff',color:'#3b82f6',fn:()=>{G.buff='hp';G.buffDays=3;G.cardio+=2;float('+2 HP (3 dage)','#3b82f6');msg('Buff i 3 dage! ❤️');}},
     {label:'+30 SULT',color:'#ff6b35',fn:()=>{G.hunger=Math.min(G.maxHunger,G.hunger+30);float('+30 SULT','#ff6b35');msg('+30 sult! 🍔');}},
     {label:'-ALL PENGE',color:'#111',fn:()=>{const lost=Math.floor(G.money*.5);G.money-=lost;float('-'+lost+' KR','#ff006e');S.bad();msg('Bestjålet! Halve penge væk! 💸');}},
 ];
 const superWheelSlices=[
-    {label:'+5 ALL STATS',color:'#ffbe0b',fn:()=>{G.styrke+=5;G.cardio+=5;G.smalltalk+=5;G.reflex+=5;float('+5 ALLE STATS!','#ffbe0b');msg('MEGA BUFF! +5 til alt! 🔥');}},
+    {label:'+3 ALL STATS',color:'#ffbe0b',fn:()=>{G.styrke+=3;G.cardio+=3;G.smalltalk+=3;G.reflex+=3;float('+3 ALLE STATS!','#ffbe0b');msg('MEGA BUFF! +3 til alt! 🔥');}},
     {label:'+500 KR',color:'#00d4aa',fn:()=>{G.money+=500;float('+500 KR!','#00d4aa');msg('JACKPOT! 500 kr! 💰💰💰');}},
-    {label:'+10 STR',color:'#ff006e',fn:()=>{G.styrke+=10;float('+10 STYRKE!','#ff006e');msg('BEASTMODE! +10 styrke! 💪🔥');}},
-    {label:'+10 CRD',color:'#3b82f6',fn:()=>{G.cardio+=10;float('+10 CARDIO!','#3b82f6');msg('MARATHON! +10 cardio! ❤️🔥');}},
-    {label:'+5 CRIT LVL',color:'#e040fb',fn:()=>{G.critLvl+=5;float('+5 CRIT!','#e040fb');msg('CRIT MASTER! +10% crit chance! 🎯');}},
-    {label:'+8 CHARM',color:'#ffbe0b',fn:()=>{G.charmPts+=8;G.charmTotal+=8;float('+8 CHARM!','#ffbe0b');msg('MEGA CHARM! +8 charm points! 🌟');}},
-    {label:'+5 REGEN',color:'#00d4aa',fn:()=>{G.regenLvl+=5;float('+5 REGEN!','#00d4aa');msg('MEGA REGEN! Healer som en gud! 💚');}},
+    {label:'+5 STR',color:'#ff006e',fn:()=>{G.styrke+=5;float('+5 STYRKE!','#ff006e');msg('BEASTMODE! +5 styrke! 💪🔥');}},
+    {label:'+5 CRD',color:'#3b82f6',fn:()=>{G.cardio+=5;float('+5 CARDIO!','#3b82f6');msg('MARATHON! +5 cardio! ❤️🔥');}},
+    {label:'+3 CRIT LVL',color:'#e040fb',fn:()=>{G.critLvl+=3;float('+3 CRIT!','#e040fb');msg('CRIT MASTER! +6% crit chance! 🎯');}},
+    {label:'+5 CHARM',color:'#ffbe0b',fn:()=>{G.charmPts+=5;G.charmTotal+=5;float('+5 CHARM!','#ffbe0b');msg('MEGA CHARM! +5 charm points! 🌟');}},
+    {label:'+3 REGEN',color:'#00d4aa',fn:()=>{G.regenLvl+=3;float('+3 REGEN!','#00d4aa');msg('MEGA REGEN! Healer som en gud! 💚');}},
     {label:'MAX SULT+KR',color:'#ff6b35',fn:()=>{G.hunger=G.maxHunger;G.money+=300;float('MAX ALT!','#ff6b35');msg('Fuld mave + 300 kr! 🍔💰');}},
 ];
 let wheelSpinning=false;
