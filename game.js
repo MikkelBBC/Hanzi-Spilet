@@ -2678,7 +2678,7 @@ function showCMenu(){
      {name:'DANS',icon:'🕺',desc:'90% · 3 MP',color:'#ff006e',mp:3,act:()=>doAtk('dans',90,3,G.dmg,'Hanzi: "Watch this move!" 🕺')},
      {name:'ORMEN',icon:'🐛',desc:'50% · 4 MP · 1.8x',color:'#ff6b35',mp:4,act:()=>doAtk('orm',50,4,Math.floor(G.dmg*1.8),'Hanzi: "ORMEN! 🐛🔥"')},
      {name:'TBH DANS',icon:'🔥',desc:'15% · 8 MP · MEGA',color:'#ffbe0b',mp:8,act:()=>doTBH(),cdKey:'tbh'},
-     {name:'PICKUP LINE',icon:'🗣️',desc:'Taktik · 4 MP',color:'#3b82f6',mp:4,act:showPickupMenu,cdKey:'pickup'},
+     {name:'PICKUP LINE',icon:'🗣️',desc:'Taktik · 4 MP',color:'#3b82f6',mp:4,act:showPickupMenu},
      {name:'TILKALD VEN',icon:'📞',desc:'Kald hjælp · 5 MP',color:'#a855f7',mp:5,act:doCallAlly,cdKey:'ally'},
      {name:'OPKAST',icon:'🤮',desc:'+7+ MP (TLK)',color:'#00d4aa',mp:0,act:doOpkast},
      {name:'ITEMS',icon:'🎒',desc:'Brug items',color:'#8b5cf6',mp:0,act:showCItems}
@@ -2735,14 +2735,16 @@ function showPickupMenu(){
     S.click();document.getElementById('c-menu').style.display='none';
     const m=document.getElementById('c-menu');m.style.display='grid';m.innerHTML='';
     const lines=[
-     {name:'SKJOLD',icon:'🛡️',desc:'Halver skade 4 ture · 4 MP',color:'#3b82f6',act:()=>{if(C.hMP<4){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-4);C.cooldowns.pickup=5;C.blockBuff=4;S.ok();cAct('🛡️ SKJOLD!','#3b82f6');cSpeech('"Du rammer mig ikke!" Halv skade i 4 ture!');sparkleEffect(innerWidth/2,innerHeight/2,'#3b82f6');updC();setTimeout(eTurn,2200);}},
-     {name:'HYPE',icon:'⚔️',desc:'+40% skade 4 ture · 5 MP',color:'#ff6b35',act:()=>{if(C.hMP<5){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-5);C.cooldowns.pickup=5;C.dmgBuff=5;S.ok();cAct('⚔️ DMG BUFF!','#ff6b35');cSpeech('"Jeg er UOVERVINDELIG!" +40% skade i 4 ture!');screenShake(4,200);updC();setTimeout(eTurn,2200);}},
-     {name:'DISS',icon:'😏',desc:'-50% fjendens skade 4 ture · 4 MP',color:'#00d4aa',act:()=>{if(C.hMP<4){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-4);C.cooldowns.pickup=5;C.enemyDebuff=5;S.ok();cAct('😏 DEBUFF!','#00d4aa');cSpeech('"Din mascara løber!" -50% skade i 4 ture!');updC();setTimeout(eTurn,2200);}},
-     {name:'GIFT',icon:'☠️',desc:'10% HP/tur i 6 ture · 6 MP',color:'#a855f7',act:()=>{if(C.hMP<6){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-6);C.cooldowns.pickup=5;C.poison=6;S.ok();cAct('☠️ FORGIFTET!','#a855f7');cSpeech('"Den drink var... speciel" ☠️ Gift i 6 ture!');poisonDrip('girl');updC();setTimeout(eTurn,2200);}},
+     {name:'SKJOLD',icon:'🛡️',desc:'Halver skade 4 ture · 4 MP',color:'#3b82f6',cdKey:'skjold',act:()=>{if(C.hMP<4){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-4);C.cooldowns.skjold=5;C.blockBuff=4;S.ok();cAct('🛡️ SKJOLD!','#3b82f6');cSpeech('"Du rammer mig ikke!" Halv skade i 4 ture!');sparkleEffect(innerWidth/2,innerHeight/2,'#3b82f6');updC();setTimeout(eTurn,2200);}},
+     {name:'HYPE',icon:'⚔️',desc:'+40% skade 4 ture · 5 MP',color:'#ff6b35',cdKey:'hype',act:()=>{if(C.hMP<5){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-5);C.cooldowns.hype=5;C.dmgBuff=5;S.ok();cAct('⚔️ DMG BUFF!','#ff6b35');cSpeech('"Jeg er UOVERVINDELIG!" +40% skade i 4 ture!');screenShake(4,200);updC();setTimeout(eTurn,2200);}},
+     {name:'DISS',icon:'😏',desc:'-50% fjendens skade 4 ture · 4 MP',color:'#00d4aa',cdKey:'diss',act:()=>{if(C.hMP<4){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-4);C.cooldowns.diss=5;C.enemyDebuff=5;S.ok();cAct('😏 DEBUFF!','#00d4aa');cSpeech('"Din mascara løber!" -50% skade i 4 ture!');updC();setTimeout(eTurn,2200);}},
+     {name:'GIFT',icon:'☠️',desc:'10% HP/tur i 6 ture · 6 MP',color:'#a855f7',cdKey:'gift',act:()=>{if(C.hMP<6){msg('Ikke nok MP!');S.bad();showCMenu();return;}m.style.display='none';C.hMP=Math.max(0,C.hMP-6);C.cooldowns.gift=5;C.poison=6;S.ok();cAct('☠️ FORGIFTET!','#a855f7');cSpeech('"Den drink var... speciel" ☠️ Gift i 6 ture!');poisonDrip('girl');updC();setTimeout(eTurn,2200);}},
     ];
     lines.forEach(l=>{
         const b=document.createElement('button');b.className='cbtn';b.style.borderColor=l.color;b.style.color=l.color;
-        b.innerHTML=`<span class="ci">${l.icon}</span>${l.name}<span class="cc">${l.desc}</span>`;
+        const cd=l.cdKey&&C.cooldowns[l.cdKey]>0?C.cooldowns[l.cdKey]:0;
+        if(cd>0){b.style.opacity='.25';b.style.pointerEvents='none';}
+        b.innerHTML=`<span class="ci">${l.icon}</span>${l.name}<span class="cc">${cd>0?'CD: '+cd+' ture':l.desc}</span>`;
         b.onclick=l.act;m.appendChild(b);
     });
     const back=document.createElement('button');back.className='cbtn';back.style.borderColor='#888';back.style.color='#888';
