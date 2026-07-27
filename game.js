@@ -3151,7 +3151,7 @@ function chkEnd(){
     if(C.gHP<=0){C.phase='done';S.perf();if(C.isBodega){G.bodegaWins++;}else{G.girlsMet++;}G.totalScore+=100;
         const gl=C.girl.lvl||1;
         const reward=Math.floor((50+(C.girl.rating||1)*20)*(1+gl*.3));G.money+=reward;
-        const charmReward=Math.max(2,Math.floor((C.girl.rating||1)*1.5*gl));
+        const charmReward=Math.min(10,Math.max(2,Math.floor((C.girl.rating||1)*1.5*gl)));
         G.charmPts+=charmReward;G.charmTotal+=charmReward;
         if(gl>=5){float('LVL '+gl+' PIGE SCORET!','#e040fb');}
         const cc=document.getElementById('c-cv');
