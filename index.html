@@ -257,11 +257,11 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 </div>
 
 <!-- SKILL TREE -->
-<div class="ov" id="tree-ov">
+<div class="ov" id="tree-ov" style="position:relative">
+<button class="btn btn-s" style="position:absolute;top:8px;right:12px;z-index:10;border-color:#ffbe0b;color:#ffbe0b;font-size:clamp(6px,1.5vw,10px)" onclick="closeOv()">✕ LUK</button>
 <div class="ov-t" style="color:#ffbe0b">🌟 CHARM SKILL TREE</div>
 <div class="ov-s" id="tree-sub"></div>
 <div class="tree" id="tree-w"></div>
-<button class="btn btn-s" style="margin-top:10px;border-color:#ffbe0b;color:#ffbe0b" onclick="closeOv()">← TILBAGE</button>
 </div>
 
 <!-- BODEGA -->
@@ -300,6 +300,6 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 <!-- RESULT -->
 <div class="ov" id="result-ov" style="justify-content:center;background:rgba(5,5,12,.97)"></div>
 
-<script src="game.js?v=51"></script>
+<script src="game.js?v=53"></script>
 </body>
 </html>

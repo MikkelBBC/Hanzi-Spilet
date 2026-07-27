@@ -1266,9 +1266,10 @@ function endTrain(){
         [1,2,3,4],
         [2,3,4,6],
         [3,4,6,8],
-        [4,6,8,10]
+        [4,6,8,10],
+        [5,7,9,12]
     ];
-    const gLevel=Math.min(G.gymLvl,gymGains.length-1);
+    const gLevel=Math.min(Math.max(0,G.gymLvl-1),gymGains.length-1);
     let grade;
     if(sc>=10){grade=3;}
     else if(sc>=6){grade=2;}
