@@ -631,7 +631,7 @@ function onArrivedInner(id){
 
 function newDay(){G.hour=8;G.day++;G.daysLeft=Math.max(0,G.daysLeft-1);const dayHeal=Math.min(10,G.maxHP-G.currentHP);if(dayHeal>0){G.currentHP=Math.min(G.maxHP,G.currentHP+dayHeal);float('+'+dayHeal+' HP (ny dag)','#00d4aa');}bodegaUsedToday=false;G.wheelUsedToday=false;G.eventDoneToday=false;G.kirkePrayedToday=false;G.gydenUsedToday=false;eventMarker=null;gamblesToday=0;foodBoughtToday=0;if(G.buffDays>0){G.buffDays--;if(G.buffDays<=0)G.buff=null;}stockPrices.hanzi=Math.max(10,stockPrices.hanzi+Math.floor((Math.random()-.45)*30));stockPrices.tbh=Math.max(5,stockPrices.tbh+Math.floor((Math.random()-.45)*20));stockPrices.leth=Math.max(8,stockPrices.leth+Math.floor((Math.random()-.45)*25));spawnEventMarker();
 showDayFlash();
-if(G.daysLeft===0){pendingForceClub=true;if(G.scene==='map')setTimeout(forceClub,2500);return;}
+if(G.daysLeft===0){pendingForceClub=false;setTimeout(forceClub,2500);return;}
 pendingWheel=true;if(G.scene==='map')setTimeout(()=>{if(pendingWheel){pendingWheel=false;openWheel();}},2500);
 const lc=loreCalls.find(c=>c.day===G.day);if(lc){pendingLore=lc;if(G.scene==='map')setTimeout(()=>{if(pendingLore){const l=pendingLore;pendingLore=null;showLoreCall(l);}},4500);}}
 const morningJokes=[
@@ -916,6 +916,7 @@ function forceClub(){
 // ===== LETH BRIEFING + CLUB =====
 let briefStep=0,briefGirl=null;
 function goClub(){
+    if(G.scene==='combat'||G.scene==='brief'||G.scene==='victory')return;
     document.querySelectorAll('.ov').forEach(o=>o.classList.remove('active'));
     G.scene='brief';
     const rg=girlsByRound[Math.min(G.round-1,girlsByRound.length-1)];
@@ -1261,17 +1262,26 @@ function startTrain(ex){
 function endTrain(){
     cancelAnimationFrame(tAF);tState.done=true;
     const ex=tState.ex,sc=tState.score;
-    const gainTiers=[1,1,1,2,2,3,4];
-    const tierIdx=Math.min(gainTiers.length-1,Math.max(0,Math.floor(sc*(0.18+G.gymLvl*0.20))-1));
-    let gain=gainTiers[Math.max(0,tierIdx)];
+    const gymGains=[
+        [1,2,3,4],
+        [2,3,4,6],
+        [3,4,6,8],
+        [4,6,8,10]
+    ];
+    const gLevel=Math.min(G.gymLvl,gymGains.length-1);
+    let grade;
+    if(sc>=10){grade=3;}
+    else if(sc>=6){grade=2;}
+    else if(sc>=3){grade=1;}
+    else{grade=0;}
+    let gain=gymGains[gLevel][grade];
     if(G.lossBuff){gain=Math.ceil(gain*1.2);}
     G[ex.stat]+=gain;G.charmPts+=1;G.charmTotal+=1;
     float('+'+gain+' '+ex.name,'#ffbe0b');
     let gr,gc;
-    if(sc>=14){gr='LEGENDARISK!';gc='#ff006e';S.perf();bigTextFlash('LEGENDARISK!','#ff006e');screenShake(8,400);sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e');}
-    else if(sc>=9){gr='PERFEKT!';gc='#ffbe0b';S.perf();bigTextFlash('PERFEKT!','#ffbe0b');sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b');}
-    else if(sc>=5){gr='GODT!';gc='#00d4aa';S.ok();}
-    else if(sc>=2){gr='OK';gc='#ff6b35';S.click();}
+    if(grade===3){gr='LEGENDARISK!';gc='#ff006e';S.perf();bigTextFlash('LEGENDARISK!','#ff006e');screenShake(8,400);sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e');}
+    else if(grade===2){gr='GODT!';gc='#00d4aa';S.ok();sparkleEffect(innerWidth/2,innerHeight/2,'#00d4aa');}
+    else if(grade===1){gr='OK';gc='#ff6b35';S.click();}
     else{gr='SVAGT...';gc='#888';S.bad();}
     maybeJoke(trainJokes);
     document.getElementById('ti').textContent='';
@@ -3115,7 +3125,7 @@ function chkEnd(){
         const reward=Math.floor((50+(C.girl.rating||1)*20)*(1+gl*.3));G.money+=reward;
         const charmReward=Math.max(2,Math.floor((C.girl.rating||1)*1.5*gl));
         G.charmPts+=charmReward;G.charmTotal+=charmReward;
-        if(gl>=5){G.critLvl++;G.regenLvl++;float('+1 CRIT +1 REGEN!','#e040fb');}
+        if(gl>=5){float('LVL '+gl+' PIGE SCORET!','#e040fb');}
         const cc=document.getElementById('c-cv');
         combatParticles(cc.width*.75,cc.height*.5,'#ffbe0b',20);
         combatFlash('#ffbe0b','girl');
@@ -3154,7 +3164,7 @@ const victoryLines=[
     'Hele klubben EKSPLODERER! 🔥',
     'Hanzi er UOVERVINDELIG! 👑',
     'Byen har en ny LEGENDE! 💪',
-    'TBH ville være stolte! 🎤',
+    'Gutterne ville være stolte! 🎤',
     'Endnu en pige scoret! Intet stopper dig! 🔥',
     'Drengene ringer allerede! De er VILDE! 📞',
     'Runde KLARET! Næste pige venter... 💃',
