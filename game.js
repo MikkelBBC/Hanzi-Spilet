@@ -78,7 +78,7 @@ buy(){this.n(600,.04,'sine',.15);setTimeout(()=>this.n(800,.04,'sine',.15),40);s
 const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100,round:1,maxRounds:7,
 styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,armor:0,gymLvl:1,
 get critChance(){return 5+this.critLvl*2},get critDmg(){return 150+this.critDmgLvl*10},
-get regenAmt(){return this.regenLvl>0?Math.min(3,Math.floor(1+this.regenLvl*0.4)):0},get armorRed(){return Math.min(this.armor,15)},
+get regenAmt(){return this.regenLvl>0?Math.min(3,Math.floor(1+this.regenLvl*0.4)):0},get armorRed(){return Math.min(Math.floor(this.armor/3),5)},
 get dmg(){return 2+Math.floor(this.styrke*0.45)},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+Math.floor(this.smalltalk*1.2)},
 get blockChance(){return Math.min(25,2+this.reflex)},get hitBonus(){return this.reflex*2},
 charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
