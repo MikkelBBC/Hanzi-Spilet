@@ -79,7 +79,7 @@ const G={scene:'title',day:1,daysLeft:7,hour:8,money:150,hunger:80,maxHunger:100
 styrke:0,cardio:0,smalltalk:0,reflex:0,critLvl:0,critDmgLvl:0,regenLvl:0,gymLvl:1,
 get critChance(){return 5+this.critLvl*2},get critDmg(){return 150+this.critDmgLvl*10},
 get regenAmt(){return this.regenLvl>0?Math.min(3,Math.floor(1+this.regenLvl*0.4)):0},
-get dmg(){return 2+Math.floor(this.styrke*0.7)},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*2},
+get dmg(){return 2+Math.floor(this.styrke*0.45)},get maxHP(){return 50+this.cardio*5},get maxMP(){return 10+this.smalltalk*2},
 get blockChance(){return Math.min(25,2+this.reflex)},get hitBonus(){return this.reflex*2},
 charmPts:0,charmTotal:0,perks:{},workLvl:1,workXP:0,workNeed(){return 3+this.workLvl*2},
 inv:[],bought:[],girlsMet:0,bodegaWins:0,beatBoss:false,totalScore:0,tutorial:0,currentHP:-1,firstClubDone:false,kbhUnlocked:false,
@@ -89,8 +89,8 @@ mariusTalks:0,gydenUsedToday:false,kirkePrayers:0,
 relics:[],
 px:.5,py:.5,tx:.5,ty:.5,walking:false};
 
-function girlScaleHP(r){return Math.round(45*Math.pow(1.22,r-1));}
-function girlScaleATK(r){return Math.round(8*Math.pow(1.18,r-1));}
+function girlScaleHP(r){return Math.round(55*Math.pow(1.35,r-1));}
+function girlScaleATK(r){return Math.round(9*Math.pow(1.25,r-1));}
 
 // ===== HELPERS =====
 function float(t,c='#fff'){const e=document.createElement('div');e.className='float';e.textContent=t;e.style.color=c;e.style.left=(innerWidth/2-30)+'px';e.style.top=(innerHeight/2-30)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),1000);}
@@ -2052,7 +2052,7 @@ const lvlNames=['','⭐','⭐⭐','⭐⭐⭐','👑'];
 function makeScaledGirl(base){
     const r=base.rating;
     const lvl=base.lvl||rollGirlLevel();
-    const lvlMult=1+(lvl-1)*.075;
+    const lvlMult=1+(lvl-1)*.15;
     const hp=Math.round(girlScaleHP(r)*lvlMult);
     const atk=Math.round(girlScaleATK(r)*lvlMult);
     return {...base,lvl,hp,atk};
@@ -2483,14 +2483,14 @@ const girlsByRound=[
 const flexAbilities=[
     {id:'heal',name:'HEALING',icon:'💚',desc:'Gendan 45% HP',cost:0,unlocked:false,
      fn:()=>{ const heal=Math.min(Math.floor(C.hMax*.45),C.hMax-C.hHP); C.hHP=Math.min(C.hMax,C.hHP+heal); S.heal(); cSpeech('MEGA HEAL! +'+heal+' HP 💚💚💚'); cAct('+'+heal+' HP','#00d4aa'); sparkleEffect(innerWidth/2,innerHeight/2,'#00d4aa');screenShake(4,200); updC(); setTimeout(showCMenu,2500); }},
-    {id:'rage',name:'RAGE MODE',icon:'🔥',desc:'3x skade i 5 ture!',cost:0,unlocked:false,
-     fn:()=>{ C.rageBuff=5; S.perf(); cSpeech('RAGE MODE AKTIVERET! 🔥🔥🔥 3x skade i 5 ture!'); cAct('RAGE!','#ff006e'); screenShake(8,400);bigTextFlash('RAGE!','#ff006e');sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e'); updC(); setTimeout(showCMenu,2500); }},
-    {id:'focus',name:'LASER FOCUS',icon:'🎯',desc:'100% hit + 50% ekstra skade i 4 ture',cost:0,unlocked:false,
-     fn:()=>{ C.focusBuff=4; C.dmgBuff=Math.max(C.dmgBuff,3); S.ok(); cSpeech('LASER FOCUS! 🎯 100% hit + 50% bonusskade i 4 ture!'); cAct('FOCUS!','#3b82f6'); sparkleEffect(innerWidth/2,innerHeight/2,'#3b82f6');bigTextFlash('FOCUS!','#3b82f6'); updC(); setTimeout(showCMenu,2500); }},
-    {id:'drain',name:'SOUL DRAIN',icon:'👻',desc:'30% skade + svækker fjende 5 ture',cost:0,unlocked:false,
-     fn:()=>{ const drain=Math.round(C.gMax*.3); C.gHP=Math.max(0,C.gHP-drain); C.enemyDebuff=(C.enemyDebuff||0)+5; S.hit(); cSpeech('SOUL DRAIN! 👻 -'+drain+' HP + fjende svækket 5 ture!'); cAct('-'+drain,'#8b5cf6'); screenShake(6,300);sparkleEffect(innerWidth/2,innerHeight/2,'#8b5cf6');bigTextFlash('DRAIN!','#8b5cf6'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
-    {id:'reflect',name:'SPEJLSKJOLD',icon:'🪞',desc:'Reflekter 80% skade i 4 ture',cost:0,unlocked:false,
-     fn:()=>{ C.reflectBuff=4; S.ok(); cSpeech('MEGA SPEJLSKJOLD! 🪞 80% af modtaget skade reflekteres i 4 ture!'); cAct('REFLECT!','#ffbe0b'); sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b');bigTextFlash('SHIELD!','#ffbe0b');screenShake(4,200); updC(); setTimeout(showCMenu,2500); }},
+    {id:'rage',name:'RAGE MODE',icon:'🔥',desc:'1.8x skade i 5 ture!',cost:0,unlocked:false,
+     fn:()=>{ C.rageBuff=5; S.perf(); cSpeech('RAGE MODE AKTIVERET! 🔥🔥🔥 1.8x skade i 5 ture!'); cAct('RAGE!','#ff006e'); screenShake(8,400);bigTextFlash('RAGE!','#ff006e');sparkleEffect(innerWidth/2,innerHeight/2,'#ff006e'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'focus',name:'LASER FOCUS',icon:'🎯',desc:'100% hit + 30% ekstra skade i 4 ture',cost:0,unlocked:false,
+     fn:()=>{ C.focusBuff=4; C.dmgBuff=Math.max(C.dmgBuff,2); S.ok(); cSpeech('LASER FOCUS! 🎯 100% hit + 30% bonusskade i 4 ture!'); cAct('FOCUS!','#3b82f6'); sparkleEffect(innerWidth/2,innerHeight/2,'#3b82f6');bigTextFlash('FOCUS!','#3b82f6'); updC(); setTimeout(showCMenu,2500); }},
+    {id:'drain',name:'SOUL DRAIN',icon:'👻',desc:'20% skade + svækker fjende 4 ture',cost:0,unlocked:false,
+     fn:()=>{ const drain=Math.round(C.gMax*.2); C.gHP=Math.max(0,C.gHP-drain); C.enemyDebuff=(C.enemyDebuff||0)+4; S.hit(); cSpeech('SOUL DRAIN! 👻 -'+drain+' HP + fjende svækket 5 ture!'); cAct('-'+drain,'#8b5cf6'); screenShake(6,300);sparkleEffect(innerWidth/2,innerHeight/2,'#8b5cf6');bigTextFlash('DRAIN!','#8b5cf6'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
+    {id:'reflect',name:'SPEJLSKJOLD',icon:'🪞',desc:'Reflekter 50% skade i 4 ture',cost:0,unlocked:false,
+     fn:()=>{ C.reflectBuff=4; S.ok(); cSpeech('SPEJLSKJOLD! 🪞 50% af modtaget skade reflekteres i 4 ture!'); cAct('REFLECT!','#ffbe0b'); sparkleEffect(innerWidth/2,innerHeight/2,'#ffbe0b');bigTextFlash('SHIELD!','#ffbe0b');screenShake(4,200); updC(); setTimeout(showCMenu,2500); }},
     {id:'charm_bomb',name:'CHARM BOMB',icon:'💣',desc:'Fjende -70% ATK i 3 ture + 15% skade',cost:0,unlocked:false,
      fn:()=>{ const boom=Math.round(C.gMax*.15); C.gHP=Math.max(0,C.gHP-boom); C.enemyDebuff=(C.enemyDebuff||0)+3; S.perf(); cSpeech('CHARM BOMB! 💣💥 -'+boom+' HP + fjende svækket MASSIVT!'); cAct('BOOM! -'+boom,'#e040fb'); screenShake(10,500);bigTextFlash('BOOM!','#e040fb');sparkleEffect(innerWidth/2,innerHeight/2,'#e040fb'); updC(); if(!chkEnd()) setTimeout(()=>eTurn(),2500); }},
     {id:'warcry',name:'KRIGSRÅB',icon:'⚔️',desc:'Stun fjende 2 ture + 25% skade',cost:0,unlocked:false,
@@ -2764,8 +2764,8 @@ function showCItems(){
 function doAtk(type,hitPct,mpCost,base,speech){
     S.click();document.getElementById('c-menu').style.display='none';
     C.hMP=Math.max(0,C.hMP-mpCost);
-    if(C.dmgBuff>0)base=Math.floor(base*1.8);
-    if(C.rageBuff>0)base=Math.floor(base*3);
+    if(C.dmgBuff>0)base=Math.floor(base*1.4);
+    if(C.rageBuff>0)base=Math.floor(base*1.8);
     if(C.focusBuff>0)hitPct=100;
     hitPct=Math.min(100,hitPct+G.hitBonus);
     if(C.confused>0){hitPct=Math.max(10,hitPct-10);C.confused--;}
@@ -3106,7 +3106,7 @@ function eTurn(){
                 }
                 C.hHP=Math.max(0,C.hHP-dmg);
                 // Reflect buff
-                if(C.reflectBuff>0){const reflectDmg=Math.floor(dmg*.8);C.gHP=Math.max(0,C.gHP-reflectDmg);cSpeech('Spejlskjold reflekterer '+reflectDmg+' skade! 🪞');updC();}
+                if(C.reflectBuff>0){const reflectDmg=Math.floor(dmg*.5);C.gHP=Math.max(0,C.gHP-reflectDmg);cSpeech('Spejlskjold reflekterer '+reflectDmg+' skade! 🪞');updC();}
                 // Girl debuff mechanic (25% chance)
                 if(Math.random()<.25){
                     const debuffRoll=Math.random();
