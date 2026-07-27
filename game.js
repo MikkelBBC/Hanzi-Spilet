@@ -1868,7 +1868,10 @@ function openTree(){
             openTree();updHUD();
         }
     };
-    cv.ontouchstart=(e)=>{e.preventDefault();const t=e.touches[0];cv.onclick({clientX:t.clientX,clientY:t.clientY});};
+    let touchStartY=0,touchMoved=false;
+    cv.ontouchstart=(e)=>{touchStartY=e.touches[0].clientY;touchMoved=false;};
+    cv.ontouchmove=(e)=>{if(Math.abs(e.touches[0].clientY-touchStartY)>10)touchMoved=true;};
+    cv.ontouchend=(e)=>{if(!touchMoved){const t=e.changedTouches[0];cv.onclick({clientX:t.clientX,clientY:t.clientY});}};
 
     document.getElementById('tree-ov').classList.add('active');
 }

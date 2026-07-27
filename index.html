@@ -37,7 +37,7 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 .msg-bar .msg{font-family:'Press Start 2P';font-size:clamp(7px,1.6vw,10px);padding:10px 14px;background:rgba(0,0,0,.92);border:1px solid rgba(255,255,255,.08);line-height:1.8}
 
 /* OVERLAYS */
-.ov{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px;background:#05050f}
+.ov{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:10px;background:#05050f}
 .ov.active{display:flex}
 .ov-t{font-family:'Press Start 2P';font-size:clamp(8px,2vw,11px);margin:8px 0 3px;letter-spacing:1px}
 .ov-s{font-family:'Press Start 2P';font-size:clamp(6px,1.4vw,8px);color:#aaa;margin-bottom:10px;text-align:center;line-height:1.8}
@@ -59,7 +59,7 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 .stabs{display:flex;gap:3px;margin-bottom:8px}
 .stab{font-family:'Press Start 2P';font-size:clamp(7px,1.5vw,9px);padding:6px 12px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#888;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .stab.act{border-color:#ffbe0b;color:#ffbe0b;background:rgba(255,190,11,.06)}
-.slist{display:flex;flex-direction:column;gap:5px;max-width:360px;width:100%;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.slist{display:flex;flex-direction:column;gap:5px;max-width:360px;width:100%;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .si{padding:8px 10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
 .si:active{border-color:#ffbe0b;transform:scale(.98)}
 .si.dis{opacity:.18;pointer-events:none}
@@ -69,7 +69,7 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 .si-p{font-family:'Press Start 2P';font-size:clamp(7px,1.5vw,9px);color:#ffbe0b}
 
 /* SKILL TREE */
-.tree{max-width:100%;width:100%;max-height:70vh;overflow:visible}
+.tree{max-width:100%;width:100%;overflow:visible;touch-action:pan-y}
 .tree-row{display:flex;justify-content:center;gap:6px;margin-bottom:4px}
 .tree-con{display:flex;justify-content:center;margin-bottom:4px}
 .tree-line{width:2px;height:10px;background:rgba(255,190,11,.15)}
@@ -300,6 +300,6 @@ canvas#cv{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:0}
 <!-- RESULT -->
 <div class="ov" id="result-ov" style="justify-content:center;background:rgba(5,5,12,.97)"></div>
 
-<script src="game.js?v=54"></script>
+<script src="game.js?v=55"></script>
 </body>
 </html>
