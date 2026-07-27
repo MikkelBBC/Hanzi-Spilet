@@ -3187,7 +3187,7 @@ function leaveCombat(){
     if(G.round>G.maxRounds&&G.girlsMet>=7&&G.mariusTalks>=10){secretBoss();return;}
     if(G.round>G.maxRounds){endGame();return;}
     if(C.gHP<=0){G.lossBuff=false;showVictoryScene();return;}
-    else{G.lossBuff=true;updHUD();msg('Træn hårdere! Runde '+G.round+' om 7 dage. 💪 +20% træningsgain næste runde!');}
+    else{endGame();return;}
 }
 
 const victoryLines=[
